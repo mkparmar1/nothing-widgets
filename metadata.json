@@ -1,0 +1,6 @@
+{
+  "name": "Dot Widgets",
+  "description": "Minimal monochrome dot-matrix widget pack with live previews, responsive sizes, customizable tap actions, and curated aesthetic setups.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

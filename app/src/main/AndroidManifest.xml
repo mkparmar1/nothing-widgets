@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyApplication">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Widget Providers: MUST be exported="true" for Launcher to load widgets -->
+        <receiver
+            android:name=".widgets.base.DotWidgetProviderS"
+            android:label="Dot Widget (2x2)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dot_widget_info_s" />
+        </receiver>
+
+        <receiver
+            android:name=".widgets.base.DotWidgetProviderM"
+            android:label="Dot Widget (4x2)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dot_widget_info_m" />
+        </receiver>
+
+        <receiver
+            android:name=".widgets.base.DotWidgetProviderL"
+            android:label="Dot Widget (4x4)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dot_widget_info_l" />
+        </receiver>
+
+        <!-- Battery sticky & Timezone broadcast receiver -->
+        <receiver
+            android:name=".widgets.base.WidgetUpdateReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_REFRESH_WIDGETS" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_TOGGLE_CLICK" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Pinned widget callback receiver -->
+        <receiver
+            android:name=".ui.config.WidgetConfigReceiver"
+            android:exported="true" />
+
+    </application>
+
+</manifest>

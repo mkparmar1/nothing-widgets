@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Dot Widgets</string>
+    <string name="widget_dot_clock">Dot Digital Clock</string>
+    <string name="widget_analog_ring">Analog Ring Clock</string>
+    <string name="widget_battery_ring">Battery Ring</string>
+    <string name="widget_weather_forecast">Weather Forecast</string>
+    <string name="widget_quick_toggles">Quick Toggles</string>
+    <string name="widget_todo_list">Quick To-Do</string>
+    <string name="widget_date_card">Date &amp; Weekday</string>
+    <string name="widget_step_counter">Step Counter</string>
+    <string name="widget_quote">Daily Quote</string>
+</resources>
