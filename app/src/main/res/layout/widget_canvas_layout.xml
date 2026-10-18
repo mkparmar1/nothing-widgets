@@ -14,7 +14,9 @@
 
     <!-- Live HH:mm:ss for seconds widgets. A bitmap can only be redrawn about once a minute,
          but TextClock is ticked every second by the launcher itself. The bitmap behind it
-         draws the background, label and date; the weights keep the time in the middle band. -->
+         draws the background, label and date; the weights keep the time in the middle band.
+         Launchers can't load an app's bundled fonts in widgets, so this uses Nothing OS's
+         system dot-matrix font by family name; other phones fall back to the default font. -->
     <LinearLayout
         android:id="@+id/live_clock_container"
         android:layout_width="match_parent"
@@ -37,8 +39,7 @@
             android:gravity="center"
             android:maxLines="1"
             android:includeFontPadding="false"
-            android:fontFamily="@font/doto"
-            android:fontVariationSettings="'wght' 900, 'ROND' 100"
+            android:fontFamily="NDot57-Aligned"
             android:format24Hour="HH:mm:ss"
             android:format12Hour="HH:mm:ss"
             android:autoSizeTextType="uniform"
