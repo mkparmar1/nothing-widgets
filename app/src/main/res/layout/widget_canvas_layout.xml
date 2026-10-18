@@ -12,6 +12,47 @@
         android:scaleType="fitCenter"
         android:contentDescription="@string/app_name" />
 
+    <!-- Live HH:mm:ss for seconds widgets. A bitmap can only be redrawn about once a minute,
+         but TextClock is ticked every second by the launcher itself. The bitmap behind it
+         draws the background, label and date; the weights keep the time in the middle band. -->
+    <LinearLayout
+        android:id="@+id/live_clock_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="27" />
+
+        <TextClock
+            android:id="@+id/live_clock"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="36"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:includeFontPadding="false"
+            android:fontFamily="@font/doto"
+            android:fontVariationSettings="'wght' 900, 'ROND' 100"
+            android:format24Hour="HH:mm:ss"
+            android:format12Hour="HH:mm:ss"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="12sp"
+            android:autoSizeMaxTextSize="96sp"
+            android:autoSizeStepGranularity="1sp"
+            android:textColor="#FFFFFFFF" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="37" />
+    </LinearLayout>
+
     <!-- Multi-region tap quadrants for 2x2 toggles (using FrameLayout for strict RemoteViews compatibility) -->
     <LinearLayout
         android:id="@+id/multi_region_container"

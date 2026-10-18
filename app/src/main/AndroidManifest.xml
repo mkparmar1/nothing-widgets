@@ -11,6 +11,13 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Read real state for the toggle widgets -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission
+        android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -70,21 +77,18 @@
                 android:resource="@xml/dot_widget_info_l" />
         </receiver>
 
-        <!-- Battery sticky, Power connection, User unlock, and Timezone broadcast receiver -->
+        <!-- Boot, time change, exact-alarm permission and widget tap receiver.
+             Not exported: the system and our own PendingIntents can still reach it,
+             but other apps can't fake widget actions. -->
         <receiver
             android:name=".widgets.base.WidgetUpdateReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="android.intent.action.USER_PRESENT" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
-                <action android:name="android.intent.action.DATE_CHANGED" />
                 <action android:name="android.intent.action.TIME_SET" />
-                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
-                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
-                <action android:name="android.intent.action.BATTERY_LOW" />
-                <action android:name="android.intent.action.BATTERY_OKAY" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_REFRESH_WIDGETS" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_TOGGLE_CLICK" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_DICE_ROLL" />
@@ -98,7 +102,7 @@
         <!-- Pinned widget callback receiver -->
         <receiver
             android:name=".ui.config.WidgetConfigReceiver"
-            android:exported="true" />
+            android:exported="false" />
 
     </application>
 

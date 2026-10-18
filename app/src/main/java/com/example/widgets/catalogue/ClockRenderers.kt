@@ -13,7 +13,11 @@ import java.util.TimeZone
 
 object ClockRenderers {
 
-    fun renderDigitalClock(spec: WidgetSpec, canvas: Canvas, showSeconds: Boolean = false, timeZoneId: String? = null) {
+    /**
+     * @param liveTime when true the digits are left out because a live TextClock is drawn on top
+     *   (see WidgetRenderEngine); layout is still computed so the date sits in the same place.
+     */
+    fun renderDigitalClock(spec: WidgetSpec, canvas: Canvas, showSeconds: Boolean = false, timeZoneId: String? = null, liveTime: Boolean = false) {
         val cal = Calendar.getInstance()
         if (!timeZoneId.isNullOrBlank()) {
             cal.timeZone = TimeZone.getTimeZone(timeZoneId)
@@ -84,18 +88,20 @@ object ClockRenderers {
         val colonIndices = mutableSetOf<Int>()
         timeStr.forEachIndexed { i, c -> if (c == ':') colonIndices.add(i) }
 
-        DotMatrixRenderer.drawText(
-            canvas = canvas,
-            text = timeStr,
-            startX = startX,
-            startY = startY,
-            dotRadius = dotRadius,
-            dotGap = dotGap,
-            onColor = onColor,
-            offColor = offColor,
-            accentIndices = colonIndices,
-            accentColor = accentColor
-        )
+        if (!liveTime) {
+            DotMatrixRenderer.drawText(
+                canvas = canvas,
+                text = timeStr,
+                startX = startX,
+                startY = startY,
+                dotRadius = dotRadius,
+                dotGap = dotGap,
+                onColor = onColor,
+                offColor = offColor,
+                accentIndices = colonIndices,
+                accentColor = accentColor
+            )
+        }
 
         // On M and L sizes, also display date below
         if (spec.sizeBucket != SizeBucket.S) {

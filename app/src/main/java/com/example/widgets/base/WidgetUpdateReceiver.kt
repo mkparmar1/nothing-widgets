@@ -1,5 +1,6 @@
 package com.example.widgets.base
 
+import android.app.AlarmManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -25,16 +26,13 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
         scope.launch {
             try {
                 when (action) {
+                    // Only broadcasts still delivered to manifest receivers on Android 8+.
+                    // Battery/charging changes are picked up by the minute tick.
                     Intent.ACTION_TIMEZONE_CHANGED,
-                    Intent.ACTION_DATE_CHANGED,
                     Intent.ACTION_TIME_CHANGED,
-                    Intent.ACTION_USER_PRESENT,
                     Intent.ACTION_BOOT_COMPLETED,
                     Intent.ACTION_MY_PACKAGE_REPLACED,
-                    Intent.ACTION_POWER_CONNECTED,
-                    Intent.ACTION_POWER_DISCONNECTED,
-                    Intent.ACTION_BATTERY_LOW,
-                    Intent.ACTION_BATTERY_OKAY,
+                    AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
                     WidgetAlarmScheduler.ACTION_REFRESH_WIDGETS -> {
                         BitmapCache.clear()
                         WidgetRenderEngine.updateAllPlacedWidgets(context)
@@ -80,7 +78,11 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
                     "com.aistudio.dotwidgets.ACTION_TOGGLE_CLICK" -> {
                         val toggleName = intent.getStringExtra("toggle_name") ?: "TOGGLE"
                         vibrateClick(context)
-                        WidgetStateManager.toggleState(context, toggleName)
+                        when (toggleName) {
+                            "TORCH" -> DeviceToggles.toggleTorch(context)
+                            "DND" -> DeviceToggles.toggleDnd(context)
+                            else -> WidgetStateManager.toggleState(context, toggleName)
+                        }
                         BitmapCache.clear()
                         WidgetRenderEngine.updateAllPlacedWidgets(context)
                     }

@@ -11,6 +11,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.AlarmClock
 import android.provider.CalendarContract
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.view.View
 import android.widget.RemoteViews
 import com.example.MainActivity
@@ -145,6 +148,7 @@ object WidgetRenderEngine {
 
         val views = RemoteViews(context.packageName, R.layout.widget_canvas_layout)
         views.setImageViewBitmap(R.id.widget_image_view, bitmap)
+        applyLiveClock(views, definition.id, spec)
 
         // Multi-region check for 2x2 toggles
         if (definition.id == "toggle.grid.2x2") {
@@ -154,6 +158,8 @@ object WidgetRenderEngine {
             views.setOnClickPendingIntent(R.id.click_region_tr, makeTogglePendingIntent(context, appWidgetId, "BT", 2))
             views.setOnClickPendingIntent(R.id.click_region_bl, makeTogglePendingIntent(context, appWidgetId, "TORCH", 3))
             views.setOnClickPendingIntent(R.id.click_region_br, makeTogglePendingIntent(context, appWidgetId, "DND", 4))
+        } else if (definition.id !in INTERACTIVE_WIDGET_IDS && tapAction == TapAction.NONE) {
+            views.setViewVisibility(R.id.multi_region_container, View.GONE)
         } else {
             views.setViewVisibility(R.id.multi_region_container, View.GONE)
 
@@ -176,6 +182,29 @@ object WidgetRenderEngine {
         }
 
         views
+    }
+
+    /** Widgets whose time is shown by the live TextClock overlay instead of the bitmap. */
+    private val LIVE_SECONDS_WIDGET_IDS = setOf("clock.seconds.live")
+
+    private fun applyLiveClock(views: RemoteViews, widgetTypeId: String, spec: WidgetSpec) {
+        if (widgetTypeId !in LIVE_SECONDS_WIDGET_IDS) {
+            views.setViewVisibility(R.id.live_clock_container, View.GONE)
+            return
+        }
+        views.setViewVisibility(R.id.live_clock_container, View.VISIBLE)
+        views.setTextColor(R.id.live_clock, if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt())
+
+        // Colour the colons with the accent, matching the dot-matrix clocks. TextClock keeps
+        // spans on literal characters of its format.
+        val format = SpannableString("HH:mm:ss")
+        format.forEachIndexed { i, c ->
+            if (c == ':') {
+                format.setSpan(ForegroundColorSpan(spec.accent.hex), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+        }
+        views.setCharSequence(R.id.live_clock, "setFormat24Hour", format)
+        views.setCharSequence(R.id.live_clock, "setFormat12Hour", format)
     }
 
     private fun makeActionPendingIntent(context: Context, appWidgetId: Int, actionStr: String): PendingIntent {
@@ -213,8 +242,9 @@ object WidgetRenderEngine {
                     putExtra("open_weather_detail", tapAction == TapAction.OPEN_WEATHER)
                 }
             }
-            TapAction.NONE -> {
-                Intent()
+            // NONE is handled by not attaching a click handler at all; fall back to the app.
+            TapAction.NONE -> Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
         }
 
@@ -222,7 +252,32 @@ object WidgetRenderEngine {
         return PendingIntent.getActivity(context, appWidgetId * 10, intent, flags)
     }
 
+    private val INTERACTIVE_WIDGET_IDS = setOf(
+        "fun.dice.roll", "fun.snake.dot", "sensor.stopwatch.chrono", "prod.focus.timer",
+        "prod.countdown.timer", "prod.water.tracker", "toggle.wifi", "toggle.bluetooth",
+        "toggle.torch", "toggle.dnd", "toggle.darkmode"
+    )
+
     private fun makeTogglePendingIntent(context: Context, appWidgetId: Int, toggleName: String, requestCodeOffset: Int): PendingIntent {
+        // Normal apps can't switch Wi-Fi, Bluetooth or dark mode, so open the system panel directly.
+        // Using an activity PendingIntent avoids background-activity-start restrictions.
+        val settingsIntent = when (toggleName) {
+            "WIFI" -> DeviceToggles.wifiSettingsIntent()
+            "BT" -> DeviceToggles.bluetoothSettingsIntent()
+            "DARK_MODE" -> DeviceToggles.darkModeSettingsIntent()
+            "DND" -> if (DeviceToggles.hasDndAccess(context)) null else DeviceToggles.dndAccessSettingsIntent()
+            else -> null
+        }
+        if (settingsIntent != null) {
+            settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            return PendingIntent.getActivity(
+                context,
+                appWidgetId * 100 + requestCodeOffset,
+                settingsIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
+
         val intent = Intent("com.aistudio.dotwidgets.ACTION_TOGGLE_CLICK").apply {
             setPackage(context.packageName)
             putExtra("app_widget_id", appWidgetId)

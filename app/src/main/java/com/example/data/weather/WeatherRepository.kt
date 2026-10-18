@@ -1,6 +1,8 @@
 package com.example.data.weather
 
 import android.content.Context
+import com.example.core.bitmap.BitmapCache
+import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -8,6 +10,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 
 data class WeatherData(
     val cityName: String,
@@ -45,11 +48,13 @@ object WeatherRepository {
         CityPreset("Mumbai", 19.0760, 72.8777, "Asia/Kolkata", 29, 3, "Overcast")
     )
 
-    private val cache = mutableMapOf<String, WeatherData>()
+    private val cache = ConcurrentHashMap<String, WeatherData>()
+    private val inFlight = ConcurrentHashMap.newKeySet<String>()
     private val scope = CoroutineScope(Dispatchers.IO)
 
     init {
-        // Pre-populate with instant data so render never blocks or shows blank
+        // Placeholder entries so rendering never blocks. They are marked stale with fetchedAt = 0,
+        // so widgets show "--" instead of made-up numbers and a real fetch starts right away.
         PRESET_CITIES.forEach { city ->
             cache[city.name.lowercase()] = WeatherData(
                 cityName = city.name,
@@ -60,8 +65,8 @@ object WeatherRepository {
                 windKmh = 14,
                 highC = city.defaultTemp + 4,
                 lowC = city.defaultTemp - 4,
-                isStale = false,
-                fetchedAt = System.currentTimeMillis()
+                isStale = true,
+                fetchedAt = 0L
             )
         }
     }
@@ -76,14 +81,25 @@ object WeatherRepository {
             cityName = cityName,
             temperatureC = 20,
             weatherCode = 1,
-            description = "Mainly Clear"
+            description = "Mainly Clear",
+            isStale = true,
+            fetchedAt = 0L
         )
 
         val now = System.currentTimeMillis()
-        if (now - cached.fetchedAt > 15 * 60 * 1000L) {
-            // Trigger asynchronous background refresh without blocking
+        if (now - cached.fetchedAt > 15 * 60 * 1000L && inFlight.add(key)) {
+            // Refresh in the background, then redraw widgets so they show the new data.
+            val appContext = context.applicationContext
             scope.launch {
-                fetchFreshWeather(cityName)
+                try {
+                    val fresh = fetchFreshWeather(cityName)
+                    if (!fresh.isStale && fresh.fetchedAt > cached.fetchedAt) {
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(appContext)
+                    }
+                } finally {
+                    inFlight.remove(key)
+                }
             }
         }
 
@@ -102,7 +118,7 @@ object WeatherRepository {
         val ninetyMinutes = 90 * 60 * 1000L
 
         try {
-            val urlString = "https://api.open-meteo.com/v1/forecast?latitude=${preset.lat}&longitude=${preset.lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&timezone=auto"
+            val urlString = "https://api.open-meteo.com/v1/forecast?latitude=${preset.lat}&longitude=${preset.lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto"
             val url = URL(urlString)
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 connectTimeout = 3000
@@ -113,10 +129,11 @@ object WeatherRepository {
             if (connection.responseCode == 200) {
                 val response = connection.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(response)
-                val current = json.getJSONObject("current_weather")
-                val temp = current.getDouble("temperature").toInt()
-                val code = current.getInt("weathercode")
-                val wind = current.optDouble("windspeed", 12.0).toInt()
+                val current = json.getJSONObject("current")
+                val temp = current.getDouble("temperature_2m").toInt()
+                val code = current.getInt("weather_code")
+                val wind = current.optDouble("wind_speed_10m", 0.0).toInt()
+                val humidity = current.optInt("relative_humidity_2m", 0)
 
                 var high = temp + 4
                 var low = temp - 4
@@ -131,7 +148,7 @@ object WeatherRepository {
                     temperatureC = temp,
                     weatherCode = code,
                     description = weatherCodeToDescription(code),
-                    humidityPct = 68,
+                    humidityPct = humidity,
                     windKmh = wind,
                     highC = high,
                     lowC = low,
@@ -158,8 +175,8 @@ object WeatherRepository {
             description = preset.defaultDesc,
             highC = preset.defaultTemp + 4,
             lowC = preset.defaultTemp - 4,
-            isStale = false,
-            fetchedAt = now
+            isStale = true,
+            fetchedAt = 0L
         )
         cache[key] = fallback
         fallback

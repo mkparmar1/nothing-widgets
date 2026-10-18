@@ -87,12 +87,23 @@ abstract class BaseDotWidgetProvider(private val defaultWidgetTypeId: String) : 
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         super.onDeleted(context, appWidgetIds)
+        val pendingResult = goAsync()
         val db = AppDatabase.getInstance(context)
         scope.launch {
-            for (id in appWidgetIds) {
-                db.widgetInstanceDao().deleteById(id)
+            try {
+                for (id in appWidgetIds) {
+                    db.widgetInstanceDao().deleteById(id)
+                }
+            } finally {
+                pendingResult.finish()
             }
         }
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        // Cancels the minute tick if no widgets from any provider remain.
+        WidgetAlarmScheduler.scheduleNextMinuteTick(context)
     }
 }
 

@@ -36,7 +36,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +54,8 @@ import com.example.core.theme.AccentOption
 import com.example.data.db.AppDatabase
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.AccentSelectorRow
+import com.example.widgets.base.DeviceToggles
+import com.example.widgets.base.WidgetAlarmScheduler
 import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.launch
 
@@ -82,6 +87,80 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF8A8A8A)
             )
+        }
+
+        // --- 0. PERMISSIONS NEEDED FOR ACCURATE WIDGETS ---
+        var exactAlarmsAllowed by remember { mutableStateOf(WidgetAlarmScheduler.canScheduleExactAlarms(context)) }
+        var dndAccessGranted by remember { mutableStateOf(DeviceToggles.hasDndAccess(context)) }
+        LifecycleResumeEffect(Unit) {
+            exactAlarmsAllowed = WidgetAlarmScheduler.canScheduleExactAlarms(context)
+            val hadDndAccess = dndAccessGranted
+            dndAccessGranted = DeviceToggles.hasDndAccess(context)
+            if (exactAlarmsAllowed) WidgetAlarmScheduler.scheduleNextMinuteTick(context)
+            // The DND widget's tap target depends on access, so redraw when it changes.
+            if (hadDndAccess != dndAccessGranted) {
+                scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context) }
+            }
+            onPauseOrDispose { }
+        }
+
+        if (!exactAlarmsAllowed || !dndAccessGranted) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, globalAccent.color, RoundedCornerShape(20.dp))
+                    .testTag("permissions_card")
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "PERMISSIONS",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (!exactAlarmsAllowed) {
+                        Text(
+                            text = "Allow \"Alarms & reminders\" so clock widgets update exactly on the minute. Without it, Android may delay updates by several minutes.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF8A8A8A)
+                        )
+                        Button(
+                            onClick = {
+                                WidgetAlarmScheduler.exactAlarmSettingsIntent(context)?.let {
+                                    try { context.startActivity(it) } catch (_: Exception) { }
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = globalAccent.color, contentColor = Color.White),
+                            modifier = Modifier.fillMaxWidth().height(44.dp)
+                        ) {
+                            Text("ALLOW EXACT ALARMS", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    if (!dndAccessGranted) {
+                        Text(
+                            text = "Allow Do Not Disturb access so the DND toggle widget can switch it on and off.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF8A8A8A)
+                        )
+                        Button(
+                            onClick = {
+                                try { context.startActivity(DeviceToggles.dndAccessSettingsIntent()) } catch (_: Exception) { }
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = globalAccent.color, contentColor = Color.White),
+                            modifier = Modifier.fillMaxWidth().height(44.dp)
+                        ) {
+                            Text("ALLOW DND ACCESS", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
         }
 
         // --- 1. GLOBAL ACCENT REPAINT CARD (§6) ---

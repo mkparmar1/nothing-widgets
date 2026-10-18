@@ -195,14 +195,20 @@ object WidgetStateManager {
         val endTime = prefs.getLong("timer_end_time", 0L)
         val remainingPaused = prefs.getInt("timer_remaining_paused", 25 * 60)
 
-        val remaining = if (isRunning) {
-            val diffSec = ((endTime - System.currentTimeMillis()) / 1000).toInt()
-            diffSec.coerceAtLeast(0)
-        } else {
-            remainingPaused
+        if (isRunning) {
+            val remaining = ((endTime - System.currentTimeMillis()) / 1000).toInt()
+            if (remaining <= 0) {
+                // Finished: stop and reset so the next tap starts a fresh session.
+                prefs.edit()
+                    .putBoolean("timer_running", false)
+                    .putInt("timer_remaining_paused", totalSeconds)
+                    .apply()
+                return FocusTimerState(false, totalSeconds, totalSeconds)
+            }
+            return FocusTimerState(true, remaining, totalSeconds)
         }
 
-        return FocusTimerState(isRunning, remaining, totalSeconds)
+        return FocusTimerState(false, remainingPaused, totalSeconds)
     }
 
     fun toggleFocusTimer(context: Context): FocusTimerState {
