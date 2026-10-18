@@ -4,14 +4,17 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import com.example.core.render.DotMatrixRenderer
+import com.example.core.render.RenderKit
+import com.example.data.activity.StepRepository
 import com.example.data.prefs.PreferencesManager
 import com.example.widgets.base.WidgetSpec
+import com.example.widgets.base.WidgetStateManager
 
 object ProductivityRenderers {
 
     fun renderNotesPin(context: Context, spec: WidgetSpec, canvas: Canvas) {
         val note = PreferencesManager.getInstance(context).getNoteText()
-        val lines = note.lines().take(4)
+        val lines = note.lines().filter { it.isNotBlank() }.take(4).ifEmpty { listOf("TAP TO WRITE A NOTE") }
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
@@ -57,7 +60,7 @@ object ProductivityRenderers {
         }
     }
 
-    fun renderTodoList(spec: WidgetSpec, canvas: Canvas, maxItems: Int = 3) {
+    fun renderTodoList(context: Context, spec: WidgetSpec, canvas: Canvas, maxItems: Int = 3) {
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
         val accentColor = spec.accent.hex
@@ -80,15 +83,19 @@ object ProductivityRenderers {
             textSize = (10f * spec.density).coerceAtMost(14f)
             isFakeBoldText = true
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "DAILY TASKS", pad, pad + 12f * spec.density, maxW, paintLabel)
+        val allTasks = PreferencesManager.getInstance(context).getTodos()
+        val doneCount = allTasks.count { it.done }
+        val header = if (allTasks.isEmpty()) "DAILY TASKS" else "DAILY TASKS • $doneCount/${allTasks.size} DONE"
+        DotMatrixRenderer.drawFittedLabel(canvas, header, pad, pad + 12f * spec.density, maxW, paintLabel)
 
-        val tasks = listOf(
-            true to "FINISH CODEBASE MIGRATION",
-            true to "AUDIT BATTERY USAGE",
-            false to "SHIP RELEASE BUILD v1.0",
-            false to "RECORD DEMO TEASER",
-            false to "UPDATE CHANGELOG"
-        ).take(maxItems)
+        // Unfinished tasks first so the widget shows what's left to do.
+        val tasks = (allTasks.filter { !it.done } + allTasks.filter { it.done })
+            .take(maxItems)
+            .map { it.done to it.text.uppercase() }
+        if (tasks.isEmpty()) {
+            DotMatrixRenderer.drawFittedLabel(canvas, "ADD TASKS IN THE APP", pad, spec.heightPx * 0.55f, maxW, Paint(paintLabel).apply { color = onColor })
+            return
+        }
 
         val startY = pad + (32f * spec.density)
         val availableH = spec.heightPx - startY - pad
@@ -134,7 +141,8 @@ object ProductivityRenderers {
     }
 
     fun renderStepCounter(context: Context, spec: WidgetSpec, canvas: Canvas) {
-        val steps = PreferencesManager.getInstance(context).getStepCount()
+        val steps = StepRepository.todaySteps(context)
+            ?: return RenderKit.message(spec, canvas, "DAILY STEPS", "ALLOW ACTIVITY ACCESS IN THE APP")
         val goal = 10000
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
@@ -163,7 +171,7 @@ object ProductivityRenderers {
         DotMatrixRenderer.drawFittedLabel(canvas, "DAILY STEPS", pad, pad + 12f * spec.density, maxW, paintLabel)
 
         // Step number in dot matrix
-        val stepStr = String.format("%,d", steps)
+        val stepStr = steps.toString()
         val maxStepW = maxW * 0.50f
         val maxStepH = spec.heightPx * 0.38f
         val dotGap = DotMatrixRenderer.fitDotGap(stepStr.length, maxStepW, maxStepH, 8.5f * spec.density)
@@ -295,8 +303,20 @@ object ProductivityRenderers {
         )
     }
 
-    fun renderFocusTimer(context: Context, spec: WidgetSpec, canvas: Canvas) {
-        val state = com.example.widgets.base.WidgetStateManager.getFocusTimerState(context)
+    fun renderFocusTimer(context: Context, spec: WidgetSpec, canvas: Canvas) =
+        renderTimer(spec, canvas, WidgetStateManager.getFocusTimerState(context), "POMODORO", "FOCUSING")
+
+    /** Countdown Pill: same layout with its own timer and length. */
+    fun renderCountdownTimer(context: Context, spec: WidgetSpec, canvas: Canvas) =
+        renderTimer(spec, canvas, WidgetStateManager.getCountdownState(context), "COUNTDOWN", "RUNNING")
+
+    private fun renderTimer(
+        spec: WidgetSpec,
+        canvas: Canvas,
+        state: WidgetStateManager.FocusTimerState,
+        title: String,
+        runningLabel: String
+    ) {
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
         val accentColor = spec.accent.hex
@@ -314,13 +334,17 @@ object ProductivityRenderers {
             accentColor = accentColor
         )
 
-        val statusStr = if (state.isRunning) "FOCUSING" else "PAUSED"
+        val statusStr = when {
+            state.isRunning -> runningLabel
+            state.remainingSeconds == state.totalSeconds -> "TAP TO START"
+            else -> "PAUSED"
+        }
         val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = if (state.isRunning) accentColor else 0xFF8A8A8A.toInt()
             textSize = (10f * spec.density).coerceAtMost(14f)
             isFakeBoldText = true
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "POMODORO • $statusStr", pad, pad + 12f * spec.density, maxW, paintLabel)
+        DotMatrixRenderer.drawFittedLabel(canvas, "$title • $statusStr", pad, pad + 12f * spec.density, maxW, paintLabel)
 
         val mins = state.remainingSeconds / 60
         val secs = state.remainingSeconds % 60
@@ -335,18 +359,21 @@ object ProductivityRenderers {
         val startX = (spec.widthPx - textW) / 2f
         val startY = spec.heightPx * 0.35f
 
-        DotMatrixRenderer.drawText(
-            canvas = canvas,
-            text = timeStr,
-            startX = startX,
-            startY = startY,
-            dotRadius = dotRadius,
-            dotGap = dotGap,
-            onColor = onColor,
-            offColor = offColor,
-            accentIndices = setOf(2),
-            accentColor = accentColor
-        )
+        // While running, a live countdown Chronometer drawn by the launcher shows the time.
+        if (!state.isRunning) {
+            DotMatrixRenderer.drawText(
+                canvas = canvas,
+                text = timeStr,
+                startX = startX,
+                startY = startY,
+                dotRadius = dotRadius,
+                dotGap = dotGap,
+                onColor = onColor,
+                offColor = offColor,
+                accentIndices = setOf(2),
+                accentColor = accentColor
+            )
+        }
 
         // Progress bar across bottom
         val totalDots = 20
@@ -371,7 +398,4 @@ object ProductivityRenderers {
         )
     }
 
-    fun renderCountdownTimer(context: Context, spec: WidgetSpec, canvas: Canvas) {
-        renderFocusTimer(context, spec, canvas)
-    }
 }

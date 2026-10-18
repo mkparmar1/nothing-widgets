@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.example.core.bitmap.BitmapCache
+import com.example.data.media.MediaRepository
 import com.example.data.prefs.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,6 +67,42 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
                         WidgetRenderEngine.updateAllPlacedWidgets(context)
                     }
 
+                    WidgetTapTargets.ACTION_STOPWATCH_RESET -> {
+                        vibrateClick(context)
+                        WidgetStateManager.resetStopwatch(context)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    WidgetAlarmScheduler.ACTION_TIMER_DONE -> {
+                        // Timer finished: buzz three times; drawing resets it to its full length.
+                        vibratePattern(context, longArrayOf(0, 300, 150, 300, 150, 500))
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    WidgetTapTargets.ACTION_MEDIA_COMMAND -> {
+                        vibrateClick(context)
+                        intent.getStringExtra(WidgetTapTargets.EXTRA_MEDIA_COMMAND)
+                            ?.let { runCatching { MediaRepository.Command.valueOf(it) }.getOrNull() }
+                            ?.let { MediaRepository.send(context, it) }
+                        // The media session callback redraws the widgets once the player reacts.
+                    }
+
+                    "com.aistudio.dotwidgets.ACTION_COUNTDOWN_TOGGLE" -> {
+                        vibrateClick(context)
+                        WidgetStateManager.toggleCountdown(context)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    "com.aistudio.dotwidgets.ACTION_HABIT_TOGGLE" -> {
+                        vibrateClick(context)
+                        PreferencesManager.getInstance(context).toggleHabitToday()
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
                     "com.aistudio.dotwidgets.ACTION_WATER_ADD" -> {
                         vibrateClick(context)
                         val prefs = PreferencesManager.getInstance(context)
@@ -90,6 +127,19 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
             } finally {
                 pendingResult.finish()
             }
+        }
+    }
+
+    private fun vibratePattern(context: Context, pattern: LongArray) {
+        try {
+            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(pattern, -1)
+            }
+        } catch (_: Exception) {
         }
     }
 

@@ -54,6 +54,51 @@
             android:layout_weight="37" />
     </LinearLayout>
 
+    <!-- Live stopwatch / countdown for running timers, ticked by the launcher every second.
+         Same middle band and Nothing dot font as the live clock above. -->
+    <LinearLayout
+        android:id="@+id/live_timer_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="24" />
+
+        <Chronometer
+            android:id="@+id/live_timer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="40"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:gravity="center"
+            android:maxLines="1"
+            android:includeFontPadding="false"
+            android:fontFamily="NDot57-Aligned"
+            android:autoSizeTextType="uniform"
+            android:autoSizeMinTextSize="12sp"
+            android:autoSizeMaxTextSize="96sp"
+            android:autoSizeStepGranularity="1sp"
+            android:textColor="#FFFFFFFF" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="36" />
+    </LinearLayout>
+
+    <!-- Tap regions built at runtime (rows of cells) for widgets with several buttons. -->
+    <LinearLayout
+        android:id="@+id/dynamic_regions"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:visibility="gone" />
+
     <!-- Multi-region tap quadrants for 2x2 toggles (using FrameLayout for strict RemoteViews compatibility) -->
     <LinearLayout
         android:id="@+id/multi_region_container"

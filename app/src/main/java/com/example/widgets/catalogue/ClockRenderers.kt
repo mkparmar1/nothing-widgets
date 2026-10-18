@@ -68,7 +68,7 @@ object ClockRenderers {
         }
 
         // Calculate dot dimensions dynamically so text never clips or overflows
-        val maxAllowedH = spec.heightPx * (if (spec.sizeBucket == SizeBucket.S) 0.52f else 0.44f)
+        val maxAllowedH = spec.heightPx * (if (spec.sizeBucket == SizeBucket.S) 0.52f else 0.40f)
         val preferredGap = when (spec.sizeBucket) {
             SizeBucket.S -> 8.5f * spec.density
             SizeBucket.M -> 12.0f * spec.density
@@ -81,7 +81,8 @@ object ClockRenderers {
         val textHeight = 7 * dotGap
 
         val startX = (spec.widthPx - textWidth) / 2f
-        val centerY = if (spec.sizeBucket != SizeBucket.S) spec.heightPx * 0.42f else spec.heightPx * 0.52f
+        // Centre sits low enough on M/L that the digits clear the top label.
+        val centerY = if (spec.sizeBucket != SizeBucket.S) spec.heightPx * 0.47f else spec.heightPx * 0.52f
         val startY = centerY - (textHeight / 2f) + (if (spec.showLabel) 6f * spec.density else 0f)
 
         // Accent colon ':' indices
@@ -124,7 +125,6 @@ object ClockRenderers {
         val cal = Calendar.getInstance()
         val hours = cal.get(Calendar.HOUR_OF_DAY)
         val minutes = cal.get(Calendar.MINUTE)
-        val seconds = cal.get(Calendar.SECOND)
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
@@ -154,7 +154,8 @@ object ClockRenderers {
             radius = radius,
             hours = hours,
             minutes = minutes,
-            seconds = seconds,
+            // Widgets redraw once a minute, so a second marker would be wrong most of the time.
+            seconds = -1,
             accentColor = accentColor,
             onColor = onColor,
             offColor = offColor
@@ -306,7 +307,6 @@ object ClockRenderers {
         val cal = Calendar.getInstance()
         val hours = cal.get(Calendar.HOUR_OF_DAY)
         val minutes = cal.get(Calendar.MINUTE)
-        val seconds = cal.get(Calendar.SECOND)
 
         val timeStr = String.format(Locale.US, "%02d:%02d", hours, minutes)
 
@@ -348,14 +348,14 @@ object ClockRenderers {
             accentColor = accentColor
         )
 
-        // 30 dots representing 60 seconds (2 sec per dot)
+        // 30 dots for the 60 minutes of the hour (2 min per dot): accurate with once-a-minute redraws.
         val totalSecDots = 30
         val secDotGap = maxW / (totalSecDots - 1)
         val secStartY = spec.heightPx - padding - (8f * spec.density)
 
         DotMatrixRenderer.drawDotRun(
             canvas = canvas,
-            current = seconds,
+            current = minutes,
             max = 60,
             totalDots = totalSecDots,
             startX = padding,
@@ -374,7 +374,7 @@ object ClockRenderers {
                 textSize = (10f * spec.density).coerceAtMost(14f)
                 isFakeBoldText = true
             }
-            DotMatrixRenderer.drawFittedLabel(canvas, "PRECISION SECONDS", padding, padding + 12f * spec.density, maxW * 0.65f, paintLabel)
+            DotMatrixRenderer.drawFittedLabel(canvas, "HOUR PROGRESS • ${minutes} / 60 MIN", padding, padding + 12f * spec.density, maxW * 0.65f, paintLabel)
         }
     }
 }

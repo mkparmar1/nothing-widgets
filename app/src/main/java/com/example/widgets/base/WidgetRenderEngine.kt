@@ -10,6 +10,7 @@ import android.graphics.Canvas
 import android.net.Uri
 import android.os.Bundle
 import android.provider.AlarmClock
+import android.os.SystemClock
 import android.provider.CalendarContract
 import android.text.SpannableString
 import android.text.Spanned
@@ -149,9 +150,16 @@ object WidgetRenderEngine {
         val views = RemoteViews(context.packageName, R.layout.widget_canvas_layout)
         views.setImageViewBitmap(R.id.widget_image_view, bitmap)
         applyLiveClock(views, definition.id, spec)
+        applyLiveTimer(context, views, definition.id, spec)
+
+        val regions = WidgetTapTargets.regions(context, appWidgetId, definition.id, sizeBucket)
+        if (regions == null) views.setViewVisibility(R.id.dynamic_regions, View.GONE)
 
         // Multi-region check for 2x2 toggles
-        if (definition.id == "toggle.grid.2x2") {
+        if (regions != null) {
+            views.setViewVisibility(R.id.multi_region_container, View.GONE)
+            WidgetTapTargets.applyRegions(context, views, regions)
+        } else if (definition.id == "toggle.grid.2x2") {
             views.setViewVisibility(R.id.multi_region_container, View.VISIBLE)
 
             views.setOnClickPendingIntent(R.id.click_region_tl, makeTogglePendingIntent(context, appWidgetId, "WIFI", 1))
@@ -163,17 +171,23 @@ object WidgetRenderEngine {
         } else {
             views.setViewVisibility(R.id.multi_region_container, View.GONE)
 
-            val pendingIntent = when (definition.id) {
+            val pendingIntent = WidgetTapTargets.single(context, appWidgetId, definition.id) ?: when (definition.id) {
                 "fun.dice.roll" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_DICE_ROLL")
                 "fun.snake.dot" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_SNAKE_STEP")
                 "sensor.stopwatch.chrono" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_STOPWATCH_TOGGLE")
-                "prod.focus.timer", "prod.countdown.timer" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_TIMER_TOGGLE")
+                "prod.focus.timer" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_TIMER_TOGGLE")
+                "prod.countdown.timer" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_COUNTDOWN_TOGGLE")
                 "prod.water.tracker" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_WATER_ADD")
                 "toggle.wifi" -> makeTogglePendingIntent(context, appWidgetId, "WIFI", 1)
                 "toggle.bluetooth" -> makeTogglePendingIntent(context, appWidgetId, "BT", 2)
                 "toggle.torch" -> makeTogglePendingIntent(context, appWidgetId, "TORCH", 3)
                 "toggle.dnd" -> makeTogglePendingIntent(context, appWidgetId, "DND", 4)
                 "toggle.darkmode" -> makeTogglePendingIntent(context, appWidgetId, "DARK_MODE", 5)
+                "toggle.rotation" -> makeTogglePendingIntent(context, appWidgetId, "ROTATION", 6)
+                "toggle.datasaver" -> makeTogglePendingIntent(context, appWidgetId, "DATA_SAVER", 7)
+                "toggle.hotspot" -> makeTogglePendingIntent(context, appWidgetId, "HOTSPOT", 8)
+                "toggle.airplane" -> makeTogglePendingIntent(context, appWidgetId, "AIRPLANE", 9)
+                "prod.habit.dots" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_HABIT_TOGGLE")
                 else -> createTapPendingIntent(context, appWidgetId, tapAction)
             }
 
@@ -205,6 +219,32 @@ object WidgetRenderEngine {
         }
         views.setCharSequence(R.id.live_clock, "setFormat24Hour", format)
         views.setCharSequence(R.id.live_clock, "setFormat12Hour", format)
+    }
+
+    /**
+     * Running stopwatch / focus timer / countdown: a Chronometer ticks every second on the launcher
+     * side, so the time stays live between our once-a-minute redraws.
+     */
+    private fun applyLiveTimer(context: Context, views: RemoteViews, widgetTypeId: String, spec: WidgetSpec) {
+        val now = SystemClock.elapsedRealtime()
+        val base: Long? = when (widgetTypeId) {
+            "sensor.stopwatch.chrono" -> WidgetStateManager.getStopwatchState(context)
+                .takeIf { it.isRunning }?.let { now - it.elapsedMs }
+            "prod.focus.timer" -> WidgetStateManager.getFocusTimerState(context)
+                .takeIf { it.isRunning }?.let { now + it.remainingSeconds * 1000L }
+            "prod.countdown.timer" -> WidgetStateManager.getCountdownState(context)
+                .takeIf { it.isRunning }?.let { now + it.remainingSeconds * 1000L }
+            else -> null
+        }
+        if (base == null) {
+            views.setViewVisibility(R.id.live_timer_container, View.GONE)
+            views.setChronometer(R.id.live_timer, now, null, false)
+            return
+        }
+        views.setViewVisibility(R.id.live_timer_container, View.VISIBLE)
+        views.setTextColor(R.id.live_timer, if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt())
+        views.setChronometerCountDown(R.id.live_timer, widgetTypeId != "sensor.stopwatch.chrono")
+        views.setChronometer(R.id.live_timer, base, null, true)
     }
 
     private fun makeActionPendingIntent(context: Context, appWidgetId: Int, actionStr: String): PendingIntent {
@@ -255,7 +295,9 @@ object WidgetRenderEngine {
     private val INTERACTIVE_WIDGET_IDS = setOf(
         "fun.dice.roll", "fun.snake.dot", "sensor.stopwatch.chrono", "prod.focus.timer",
         "prod.countdown.timer", "prod.water.tracker", "toggle.wifi", "toggle.bluetooth",
-        "toggle.torch", "toggle.dnd", "toggle.darkmode"
+        "toggle.torch", "toggle.dnd", "toggle.darkmode", "toggle.rotation", "toggle.datasaver",
+        "toggle.hotspot", "toggle.airplane", "prod.habit.dots", "media.nowplaying.compact",
+        "media.nowplaying.art", "media.volume.dots"
     )
 
     private fun makeTogglePendingIntent(context: Context, appWidgetId: Int, toggleName: String, requestCodeOffset: Int): PendingIntent {
@@ -265,6 +307,10 @@ object WidgetRenderEngine {
             "WIFI" -> DeviceToggles.wifiSettingsIntent()
             "BT" -> DeviceToggles.bluetoothSettingsIntent()
             "DARK_MODE" -> DeviceToggles.darkModeSettingsIntent()
+            "ROTATION" -> DeviceToggles.autoRotateSettingsIntent()
+            "DATA_SAVER" -> DeviceToggles.dataSaverSettingsIntent()
+            "HOTSPOT" -> DeviceToggles.hotspotSettingsIntent()
+            "AIRPLANE" -> DeviceToggles.airplaneSettingsIntent()
             "DND" -> if (DeviceToggles.hasDndAccess(context)) null else DeviceToggles.dndAccessSettingsIntent()
             else -> null
         }
@@ -297,6 +343,7 @@ object WidgetRenderEngine {
             android.content.ComponentName(context, DotWidgetProviderL::class.java) to "clock.dotdigital.l"
         )
 
+        val placed = mutableListOf<WidgetInstance>()
         for ((provider, defaultType) in providers) {
             val ids = try { manager.getAppWidgetIds(provider) } catch (_: Exception) { IntArray(0) }
             for (id in ids) {
@@ -310,12 +357,19 @@ object WidgetRenderEngine {
                     )
                     db.widgetInstanceDao().insertOrUpdate(instance)
                 }
-                try {
-                    val views = buildRemoteViews(context, id, instance)
-                    manager.updateAppWidget(id, views)
-                } catch (e: Exception) {
-                    android.util.Log.e("WidgetRenderEngine", "Failed to update widget $id", e)
-                }
+                placed += instance
+            }
+        }
+
+        // Read slow data sources once, and only when a widget on screen needs them.
+        WidgetDataPrefetch.prefetch(context, placed.map { it.widgetTypeId }.toSet())
+
+        for (instance in placed) {
+            try {
+                val views = buildRemoteViews(context, instance.appWidgetId, instance)
+                manager.updateAppWidget(instance.appWidgetId, views)
+            } catch (e: Exception) {
+                android.util.Log.e("WidgetRenderEngine", "Failed to update widget ${instance.appWidgetId}", e)
             }
         }
     }

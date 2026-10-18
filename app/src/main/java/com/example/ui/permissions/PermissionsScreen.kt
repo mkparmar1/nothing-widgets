@@ -1,13 +1,14 @@
 package com.example.ui.permissions
 
 import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,9 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.DoNotDisturbOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -29,58 +28,60 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import com.example.core.bitmap.BitmapCache
 import com.example.core.theme.AccentOption
-import com.example.widgets.base.DeviceToggles
+import com.example.data.weather.WeatherRepository
 import com.example.widgets.base.WidgetAlarmScheduler
 import com.example.widgets.base.WidgetRenderEngine
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/** True when every special permission the widgets rely on has been granted. */
-fun allPermissionsGranted(context: Context): Boolean =
-    WidgetAlarmScheduler.canScheduleExactAlarms(context) && DeviceToggles.hasDndAccess(context)
+/** True when every permission the widgets can use has been granted. */
+fun allPermissionsGranted(context: Context): Boolean = AppPermission.missing(context).isEmpty()
+
+private const val ONBOARDING_PREFS = "dot_widgets_onboarding"
 
 /**
- * Shown on launch while permissions are missing. Exact alarms and DND access have no runtime
- * dialog on Android, so each row opens the matching system settings page; state is re-checked
- * whenever the user returns to the app.
+ * The permissions screen shows on first launch, and again while exact alarms (needed by every
+ * clock) are off. Everything else can be granted later from Settings.
  */
+fun shouldShowPermissions(context: Context): Boolean {
+    if (allPermissionsGranted(context)) return false
+    val seen = context.getSharedPreferences(ONBOARDING_PREFS, Context.MODE_PRIVATE).getBoolean("seen", false)
+    return !seen || !AppPermission.ExactAlarms.isGranted(context)
+}
+
+fun markPermissionsSeen(context: Context) {
+    context.getSharedPreferences(ONBOARDING_PREFS, Context.MODE_PRIVATE).edit().putBoolean("seen", true).apply()
+}
+
+/** Called after any permission changes: reschedules the minute tick and redraws every widget. */
+fun onPermissionsChanged(context: Context, scope: CoroutineScope) {
+    WidgetAlarmScheduler.scheduleNextMinuteTick(context)
+    BitmapCache.clear()
+    scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context.applicationContext) }
+}
+
+/** Shown on launch while permissions are missing; every row can also be granted later in Settings. */
 @Composable
 fun PermissionsScreen(
     accent: AccentOption,
     onDone: () -> Unit
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var exactAlarmsAllowed by remember { mutableStateOf(WidgetAlarmScheduler.canScheduleExactAlarms(context)) }
-    var dndAccessGranted by remember { mutableStateOf(DeviceToggles.hasDndAccess(context)) }
-
-    LifecycleResumeEffect(Unit) {
-        val hadDndAccess = dndAccessGranted
-        exactAlarmsAllowed = WidgetAlarmScheduler.canScheduleExactAlarms(context)
-        dndAccessGranted = DeviceToggles.hasDndAccess(context)
-        if (exactAlarmsAllowed) WidgetAlarmScheduler.scheduleNextMinuteTick(context)
-        // The DND widget's tap target depends on access, so redraw when it changes.
-        if (hadDndAccess != dndAccessGranted) {
-            scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context) }
-        }
-        if (exactAlarmsAllowed && dndAccessGranted) onDone()
-        onPauseOrDispose { }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -103,60 +104,84 @@ fun PermissionsScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Dot Widgets needs two permissions so your widgets stay accurate. Tap each one, switch it on, then come back.",
+                text = "Each permission powers specific widgets with your real data. Allow the ones you want — you can change them any time in Settings.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF8A8A8A)
             )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            PermissionRow(
-                icon = Icons.Default.Alarm,
-                title = "Alarms & reminders",
-                description = "Updates clock widgets exactly on the minute. Without it, Android can delay them by several minutes.",
-                granted = exactAlarmsAllowed,
-                accent = accent,
-                onAllow = {
-                    WidgetAlarmScheduler.exactAlarmSettingsIntent(context)?.let {
-                        try { context.startActivity(it) } catch (_: Exception) { }
-                    }
-                }
-            )
-
-            PermissionRow(
-                icon = Icons.Default.DoNotDisturbOn,
-                title = "Do Not Disturb access",
-                description = "Lets the DND toggle widget switch Do Not Disturb on and off.",
-                granted = dndAccessGranted,
-                accent = accent,
-                onAllow = {
-                    try { context.startActivity(DeviceToggles.dndAccessSettingsIntent()) } catch (_: Exception) { }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            PermissionList(accent = accent, showGranted = true, onAllGranted = onDone)
             TextButton(
                 onClick = onDone,
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("permissions_skip")
             ) {
-                Text(
-                    text = if (exactAlarmsAllowed || dndAccessGranted) "CONTINUE" else "SKIP FOR NOW",
-                    color = Color(0xFF8A8A8A),
-                    fontWeight = FontWeight.Bold
-                )
+                Text("CONTINUE", color = Color(0xFF8A8A8A), fontWeight = FontWeight.Bold)
             }
+        }
+    }
+}
+
+/**
+ * Rows for every permission. Runtime ones show Android's dialog; settings ones open the system
+ * page and are re-checked when the user comes back.
+ */
+@Composable
+fun PermissionList(accent: AccentOption, showGranted: Boolean, onAllGranted: () -> Unit = {}) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // Bumped whenever something may have changed, to re-read every isGranted().
+    var version by remember { mutableIntStateOf(0) }
+    val previouslyGranted = remember { mutableMapOf<String, Boolean>() }
+
+    val runtimeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
+        version++
+    }
+
+    LifecycleResumeEffect(Unit) {
+        version++
+        onPauseOrDispose { }
+    }
+
+    val states = remember(version) { AppPermission.ALL.associateWith { it.isGranted(context) } }
+
+    // React to permissions that changed since the last check.
+    LaunchedEffect(states) {
+        var changed = false
+        states.forEach { (permission, granted) ->
+            val before = previouslyGranted.put(permission.id, granted)
+            if (before != null && before != granted) {
+                changed = true
+                if (permission == AppPermission.Location && granted && !WeatherRepository.hasChosenPlace(context)) {
+                    WeatherRepository.placeFromDevice(context)?.let { WeatherRepository.setPlace(context, it) }
+                }
+            }
+        }
+        if (changed) onPermissionsChanged(context, scope)
+        if (states.values.all { it }) onAllGranted()
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        AppPermission.ALL.filter { showGranted || states[it] != true }.forEach { permission ->
+            PermissionRow(
+                permission = permission,
+                granted = states[permission] == true,
+                accent = accent,
+                onAllow = {
+                    when (permission) {
+                        is AppPermission.Runtime -> runtimeLauncher.launch(permission.permissions)
+                        is AppPermission.SettingsPage -> permission.intent(context)?.let {
+                            try { context.startActivity(it) } catch (_: Exception) { }
+                        }
+                    }
+                }
+            )
         }
     }
 }
 
 @Composable
 private fun PermissionRow(
-    icon: ImageVector,
-    title: String,
-    description: String,
+    permission: AppPermission,
     granted: Boolean,
     accent: AccentOption,
     onAllow: () -> Unit
@@ -166,23 +191,24 @@ private fun PermissionRow(
             .fillMaxWidth()
             .border(1.dp, if (granted) Color(0x338A8A8A) else accent.color, RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
-            .padding(18.dp),
+            .padding(18.dp)
+            .testTag("permission_${permission.id}"),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(icon, contentDescription = null, tint = accent.color, modifier = Modifier.size(22.dp))
+            Icon(permission.icon, contentDescription = null, tint = accent.color, modifier = Modifier.size(22.dp))
             Text(
-                text = title.uppercase(),
+                text = permission.title.uppercase(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
         Text(
-            text = description,
+            text = permission.description,
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xFF8A8A8A)
         )

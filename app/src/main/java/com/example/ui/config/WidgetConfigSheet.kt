@@ -91,6 +91,7 @@ fun WidgetConfigSheet(
     var cornerRadius by remember { mutableIntStateOf(20) }
     var showLabel by remember { mutableStateOf(true) }
     var selectedTap by remember { mutableStateOf(definition.defaultTap) }
+    var contentVersion by remember { mutableIntStateOf(0) }
 
     val isDark = when (selectedTheme) {
         ThemeMode.FORCE_DARK -> true
@@ -165,10 +166,13 @@ fun WidgetConfigSheet(
                 spec = spec,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("config_live_preview")
+                    .testTag("config_live_preview"),
+                refreshKey = contentVersion
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            WidgetContentEditor(definition.id, selectedAccent) { contentVersion++ }
 
             // Size Selector (if multiple sizes supported)
             if (definition.sizes.size > 1) {

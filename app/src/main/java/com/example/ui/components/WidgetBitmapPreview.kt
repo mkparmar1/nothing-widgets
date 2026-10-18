@@ -32,14 +32,16 @@ import com.example.widgets.base.WidgetSpec
 fun WidgetBitmapPreview(
     definition: WidgetDefinition,
     spec: WidgetSpec,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Bump to force a redraw after content the spec doesn't capture (notes, to-dos...) changes. */
+    refreshKey: Int = 0
 ) {
     val context = LocalContext.current
-    var bitmap by remember(definition.id, spec.sizeBucket, spec.accent, spec.isDark, spec.bgMode) {
+    var bitmap by remember(definition.id, spec.sizeBucket) {
         mutableStateOf<Bitmap?>(null)
     }
 
-    LaunchedEffect(definition.id, spec.sizeBucket, spec.accent, spec.isDark, spec.bgMode) {
+    LaunchedEffect(definition.id, spec, refreshKey) {
         try {
             bitmap = WidgetRenderEngine.renderBitmap(context, definition, spec, 0)
         } catch (e: Exception) {

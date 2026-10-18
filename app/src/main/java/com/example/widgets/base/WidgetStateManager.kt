@@ -2,6 +2,7 @@ package com.example.widgets.base
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.data.prefs.PreferencesManager
 import kotlin.random.Random
 
 object WidgetStateManager {
@@ -188,20 +189,39 @@ object WidgetStateManager {
         val totalSeconds: Int
     )
 
-    fun getFocusTimerState(context: Context): FocusTimerState {
+    fun getFocusTimerState(context: Context): FocusTimerState =
+        getTimerState(context, "timer", getPrefs(context).getInt("timer_total_seconds", 25 * 60))
+
+    fun toggleFocusTimer(context: Context): FocusTimerState =
+        toggleTimer(context, "timer", getPrefs(context).getInt("timer_total_seconds", 25 * 60))
+
+    /** Countdown Pill: its own timer, length set in the widget's CONTENT section. */
+    fun getCountdownState(context: Context): FocusTimerState =
+        getTimerState(context, "countdown", PreferencesManager.getInstance(context).getCountdownMinutes() * 60)
+
+    fun toggleCountdown(context: Context): FocusTimerState =
+        toggleTimer(context, "countdown", PreferencesManager.getInstance(context).getCountdownMinutes() * 60)
+
+    private fun getTimerState(context: Context, prefix: String, totalSeconds: Int): FocusTimerState {
         val prefs = getPrefs(context)
-        val totalSeconds = prefs.getInt("timer_total_seconds", 25 * 60)
-        val isRunning = prefs.getBoolean("timer_running", false)
-        val endTime = prefs.getLong("timer_end_time", 0L)
-        val remainingPaused = prefs.getInt("timer_remaining_paused", 25 * 60)
+        val isRunning = prefs.getBoolean("${prefix}_running", false)
+        val endTime = prefs.getLong("${prefix}_end_time", 0L)
+        // If the length was changed while idle, start from the new length.
+        if (!isRunning && prefs.getInt("${prefix}_length_seconds", totalSeconds) != totalSeconds) {
+            prefs.edit()
+                .putInt("${prefix}_length_seconds", totalSeconds)
+                .putInt("${prefix}_remaining_paused", totalSeconds)
+                .apply()
+        }
+        val remainingPaused = prefs.getInt("${prefix}_remaining_paused", totalSeconds)
 
         if (isRunning) {
             val remaining = ((endTime - System.currentTimeMillis()) / 1000).toInt()
             if (remaining <= 0) {
                 // Finished: stop and reset so the next tap starts a fresh session.
                 prefs.edit()
-                    .putBoolean("timer_running", false)
-                    .putInt("timer_remaining_paused", totalSeconds)
+                    .putBoolean("${prefix}_running", false)
+                    .putInt("${prefix}_remaining_paused", totalSeconds)
                     .apply()
                 return FocusTimerState(false, totalSeconds, totalSeconds)
             }
@@ -211,24 +231,27 @@ object WidgetStateManager {
         return FocusTimerState(false, remainingPaused, totalSeconds)
     }
 
-    fun toggleFocusTimer(context: Context): FocusTimerState {
-        val current = getFocusTimerState(context)
+    private fun toggleTimer(context: Context, prefix: String, totalSeconds: Int): FocusTimerState {
+        val current = getTimerState(context, prefix, totalSeconds)
         val prefs = getPrefs(context)
         val editor = prefs.edit()
 
         if (current.isRunning) {
             // Pause
-            editor.putBoolean("timer_running", false)
-            editor.putInt("timer_remaining_paused", current.remainingSeconds)
+            editor.putBoolean("${prefix}_running", false)
+            editor.putInt("${prefix}_remaining_paused", current.remainingSeconds)
             editor.apply()
+            WidgetAlarmScheduler.cancelTimerEnd(context, prefix)
             return FocusTimerState(false, current.remainingSeconds, current.totalSeconds)
         } else {
             // Start / Resume
             val resumeSec = if (current.remainingSeconds <= 0) current.totalSeconds else current.remainingSeconds
             val endTime = System.currentTimeMillis() + (resumeSec * 1000L)
-            editor.putBoolean("timer_running", true)
-            editor.putLong("timer_end_time", endTime)
+            editor.putBoolean("${prefix}_running", true)
+            editor.putLong("${prefix}_end_time", endTime)
+            editor.putInt("${prefix}_length_seconds", totalSeconds)
             editor.apply()
+            WidgetAlarmScheduler.scheduleTimerEnd(context, prefix, endTime)
             return FocusTimerState(true, resumeSec, current.totalSeconds)
         }
     }

@@ -8,6 +8,12 @@ import com.example.core.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class PreferencesManager(context: Context) {
 
@@ -52,17 +58,64 @@ class PreferencesManager(context: Context) {
         _themeMode.value = mode
     }
 
-    // Step counter simulation / reading
-    fun getStepCount(): Int = prefs.getInt("step_count", 7420)
-    fun setStepCount(steps: Int) = prefs.edit().putInt("step_count", steps).apply()
-
-    // Water intake (glasses 0..8)
-    fun getWaterCount(): Int = prefs.getInt("water_count", 5)
-    fun setWaterCount(count: Int) = prefs.edit().putInt("water_count", count).apply()
+    // Water intake (glasses 0..8), reset every day
+    fun getWaterCount(): Int =
+        if (prefs.getString("water_date", null) == today()) prefs.getInt("water_count", 0) else 0
+    fun setWaterCount(count: Int) =
+        prefs.edit().putInt("water_count", count).putString("water_date", today()).apply()
 
     // Notes widget memo
-    fun getNoteText(): String = prefs.getString("quick_note", "MEETING AT 14:30\nREVIEW DESIGN SYSTEM\nCALL ALEX") ?: ""
+    fun getNoteText(): String = prefs.getString("quick_note", "") ?: ""
     fun setNoteText(text: String) = prefs.edit().putString("quick_note", text).apply()
+
+    // To-do checklist widget
+    data class TodoItem(val text: String, val done: Boolean)
+
+    fun getTodos(): List<TodoItem> = try {
+        val arr = JSONArray(prefs.getString("todos", "[]"))
+        (0 until arr.length()).map { i ->
+            val o = arr.getJSONObject(i)
+            TodoItem(o.optString("text"), o.optBoolean("done"))
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    fun setTodos(items: List<TodoItem>) {
+        val arr = JSONArray()
+        items.forEach { arr.put(JSONObject().put("text", it.text).put("done", it.done)) }
+        prefs.edit().putString("todos", arr.toString()).apply()
+    }
+
+    // Habit streak widget: name plus the set of days (yyyy-MM-dd) it was done
+    fun getHabitName(): String = prefs.getString("habit_name", "DAILY HABIT") ?: "DAILY HABIT"
+    fun setHabitName(name: String) = prefs.edit().putString("habit_name", name).apply()
+
+    fun getHabitDays(): Set<String> = prefs.getStringSet("habit_days", emptySet()) ?: emptySet()
+
+    /** Marks or unmarks today; returns whether today is now done. */
+    fun toggleHabitToday(): Boolean {
+        val days = getHabitDays().toMutableSet()
+        val today = today()
+        val done = if (days.remove(today)) false else days.add(today)
+        prefs.edit().putStringSet("habit_days", days).apply()
+        return done
+    }
+
+    // Event countdown widget
+    fun getEventName(): String = prefs.getString("event_name", "NEW YEAR") ?: "NEW YEAR"
+    fun setEventName(name: String) = prefs.edit().putString("event_name", name).apply()
+
+    /** Event date as yyyy-MM-dd; defaults to the next 1 January. */
+    fun getEventDate(): String = prefs.getString("event_date", null)
+        ?: String.format(Locale.US, "%04d-01-01", Calendar.getInstance().get(Calendar.YEAR) + 1)
+    fun setEventDate(date: String) = prefs.edit().putString("event_date", date).apply()
+
+    // Countdown pill timer length
+    fun getCountdownMinutes(): Int = prefs.getInt("countdown_minutes", 10)
+    fun setCountdownMinutes(minutes: Int) = prefs.edit().putInt("countdown_minutes", minutes).apply()
+
+    private fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
     companion object {
         @Volatile

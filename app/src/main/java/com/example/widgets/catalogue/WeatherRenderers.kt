@@ -3,16 +3,22 @@ package com.example.widgets.catalogue
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.example.core.astro.Astronomy
 import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
+import com.example.core.render.RenderKit
 import com.example.data.weather.WeatherRepository
 import com.example.widgets.base.WidgetSpec
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
+import kotlin.math.roundToInt
 
 object WeatherRenderers {
 
     fun renderCurrentWeather(context: Context, spec: WidgetSpec, canvas: Canvas, cityNameOverride: String? = null) {
-        val city = cityNameOverride ?: "London"
-        val data = WeatherRepository.getWeatherInstant(context, city)
+        val data = WeatherRepository.getWeatherInstant(context, cityNameOverride)
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
@@ -41,7 +47,11 @@ object WeatherRenderers {
                 textSize = (11f * spec.density).coerceAtMost(14f)
                 isFakeBoldText = true
             }
-            val label = if (data.isStale) "${data.cityName.uppercase()} (STALE)" else data.cityName.uppercase()
+            val label = when {
+                data.fetchedAt == 0L -> data.cityName.uppercase()
+                data.isStale -> "${data.cityName.uppercase()} (OFFLINE)"
+                else -> data.cityName.uppercase()
+            }
             DotMatrixRenderer.drawFittedLabel(canvas, label, pad, pad + 12f * spec.density, maxW * 0.70f, paintLabel)
         }
 
@@ -92,7 +102,7 @@ object WeatherRenderers {
                 textSize = (10f * spec.density).coerceAtMost(13f)
                 isFakeBoldText = true
             }
-            val subText = "${data.description.uppercase()} • H:${data.highC}° L:${data.lowC}°"
+            val subText = if (data.fetchedAt == 0L) "WAITING FOR DATA" else "${data.description.uppercase()} • H:${data.highC}° L:${data.lowC}°"
             val subY = spec.heightPx - pad - (8f * spec.density)
             DotMatrixRenderer.drawFittedLabel(canvas, subText, pad, subY, maxW, paintSub)
 
@@ -141,146 +151,214 @@ object WeatherRenderers {
                 textSize = (11f * spec.density).coerceAtMost(15f)
                 isFakeBoldText = true
             }
-            val subText = "${data.description.uppercase()} • HIGH ${data.highC}° • LOW ${data.lowC}° • WIND ${data.windKmh}KM/H"
+            val subText = if (data.fetchedAt == 0L) "WAITING FOR WEATHER DATA" else "${data.description.uppercase()} • HIGH ${data.highC}° • LOW ${data.lowC}° • WIND ${data.windKmh}KM/H"
             val subY = spec.heightPx - pad - (8f * spec.density)
             DotMatrixRenderer.drawFittedLabel(canvas, subText, pad, subY, maxW, paintSub)
         }
     }
 
-    fun renderForecast5Day(context: Context, spec: WidgetSpec, canvas: Canvas) {
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+    /**
+     * Real 5-day outlook from Open-Meteo. With [showPrecipitation] the bottom row shows the
+     * chance of rain as a dot column instead of the high temperature.
+     */
+    fun renderForecast5Day(context: Context, spec: WidgetSpec, canvas: Canvas, showPrecipitation: Boolean = false) {
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
 
-        val pad = spec.widthPx * 0.08f
-        val maxW = spec.widthPx - (2 * pad)
+        val data = WeatherRepository.getWeatherInstant(context)
+        val title = if (showPrecipitation) "RAIN CHANCE" else "5-DAY FORECAST"
+        kit.header("$title • ${data.cityName.uppercase()}", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor, 0.95f)
 
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
-
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
+        val days = data.daily.take(5)
+        if (days.isEmpty()) {
+            kit.dotTextCentered("--", kit.height * 0.55f, kit.height * 0.30f, 10f * d)
+            return
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "5-DAY FORECAST", pad, pad + 12f * spec.density, maxW, paintLabel)
 
-        val days = listOf(
-            Triple("TODAY", 19, 1),
-            Triple("TUE", 22, 0),
-            Triple("WED", 18, 61),
-            Triple("THU", 21, 2),
-            Triple("FRI", 24, 0)
-        )
+        val parse = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val dayName = SimpleDateFormat("EEE", Locale.US)
+        val colW = kit.maxW / days.size
+        val labelY = kit.pad + (32f * d)
+        val paintOn = kit.fill(kit.onColor)
+        val paintOff = kit.fill(kit.offColor)
+        val paintAccent = kit.fill(kit.accentColor)
 
-        val colW = maxW / 5f
-        val startY = pad + (32f * spec.density)
+        days.forEachIndexed { i, day ->
+            val cx = kit.pad + (i * colW) + (colW / 2f)
+            val name = if (i == 0) "TODAY" else runCatching { dayName.format(parse.parse(day.date)!!).uppercase() }.getOrDefault("--")
+            val paintDay = kit.textPaint(if (i == 0) kit.accentColor else kit.greyColor, 10f, 13f)
+            canvas.drawText(name, cx - paintDay.measureText(name) / 2f, labelY, paintDay)
 
-        days.forEachIndexed { i, (day, temp, code) ->
-            val cx = pad + (i * colW) + (colW / 2f)
-
-            // Day label
-            val paintDay = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = if (i == 0) accentColor else 0xFF8A8A8A.toInt()
-                textSize = (10f * spec.density).coerceAtMost(13f)
-                isFakeBoldText = true
+            if (showPrecipitation) {
+                // 5-dot column: one dot per 20% chance of rain
+                val filled = ((day.precipitationPct + 10) / 20).coerceIn(0, 5)
+                val gap = 7f * d
+                val baseY = labelY + 50f * d
+                for (k in 0 until 5) {
+                    val on = k < filled
+                    canvas.drawCircle(cx, baseY - k * gap, if (on) 2.6f * d else 2.0f * d, if (on) (if (k == filled - 1) paintAccent else paintOn) else paintOff)
+                }
+                val pct = "${day.precipitationPct}%"
+                val paintPct = kit.textPaint(kit.onColor, 11f, 14f)
+                canvas.drawText(pct, cx - paintPct.measureText(pct) / 2f, labelY + 70f * d, paintPct)
+            } else {
+                DotMatrixRenderer.drawWeatherIcon(
+                    canvas = canvas,
+                    weatherCode = day.weatherCode,
+                    centerX = cx,
+                    centerY = labelY + 28f * d,
+                    dotGap = 3.6f * d,
+                    dotRadius = 1.3f * d,
+                    onColor = kit.onColor,
+                    offColor = kit.offColor,
+                    accentColor = kit.accentColor
+                )
+                val paintTemp = kit.textPaint(kit.onColor, 11f, 14f)
+                val high = "${day.highC}°"
+                canvas.drawText(high, cx - paintTemp.measureText(high) / 2f, labelY + 58f * d, paintTemp)
+                if (spec.sizeBucket == SizeBucket.L) {
+                    val paintLow = kit.textPaint(kit.greyColor, 10f, 13f)
+                    val low = "${day.lowC}°"
+                    canvas.drawText(low, cx - paintLow.measureText(low) / 2f, labelY + 74f * d, paintLow)
+                }
             }
-            val dw = paintDay.measureText(day)
-            canvas.drawText(day, cx - (dw / 2f), startY, paintDay)
-
-            // Weather icon
-            DotMatrixRenderer.drawWeatherIcon(
-                canvas = canvas,
-                weatherCode = code,
-                centerX = cx,
-                centerY = startY + 28f * spec.density,
-                dotGap = 3.6f * spec.density,
-                dotRadius = 1.3f * spec.density,
-                onColor = onColor,
-                offColor = offColor,
-                accentColor = accentColor
-            )
-
-            // Temperature
-            val paintTemp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = onColor
-                textSize = (11f * spec.density).coerceAtMost(14f)
-                isFakeBoldText = true
-            }
-            val tStr = "$temp°"
-            val tw = paintTemp.measureText(tStr)
-            canvas.drawText(tStr, cx - (tw / 2f), startY + 58f * spec.density, paintTemp)
         }
     }
 
-    fun renderSunriseSunsetArc(spec: WidgetSpec, canvas: Canvas) {
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+    /** Sun position between today's sunrise and sunset, calculated offline for the default city. */
+    fun renderSunriseSunsetArc(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
 
-        val pad = spec.widthPx * 0.08f
-        val maxW = spec.widthPx - (2 * pad)
+        val preset = WeatherRepository.currentPlace(context)
+        val tz = TimeZone.getTimeZone(preset.timezone)
+        val now = Calendar.getInstance(tz)
+        val sun = Astronomy.sunTimes(preset.lat, preset.lon, tz, now)
+        val nowMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
 
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
+        kit.header("SUN TRACKER • ${preset.name.uppercase()}", widthFraction = 0.95f)
 
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
-        }
-        DotMatrixRenderer.drawFittedLabel(canvas, "SUN TRACKER", pad, pad + 12f * spec.density, maxW, paintLabel)
-
-        val cx = spec.widthPx / 2f
-        val cy = spec.heightPx - pad - (20f * spec.density)
-        val arcRadius = minOf(spec.widthPx * 0.34f, spec.heightPx * 0.45f)
-
-        // Semicircular arc of dots
+        val cx = kit.width / 2f
+        val cy = kit.height - kit.pad - (20f * d)
+        val arcRadius = minOf(kit.width * 0.34f, kit.height * 0.45f)
         val totalArcDots = 15
-        val sunProgressIndex = 9 // afternoon
 
-        val paintOn = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = onColor }
-        val paintOff = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = offColor }
-        val paintAccent = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
+        val rise = sun.sunriseMin
+        val set = sun.sunsetMin
+        // Progress 0..1 across the day; null while the sun is down.
+        val progress = if (rise != null && set != null && nowMin in rise..set) (nowMin - rise).toFloat() / (set - rise) else null
+        val sunIndex = progress?.let { (it * (totalArcDots - 1)).toInt() }
+
+        val paintOn = kit.fill(kit.onColor)
+        val paintOff = kit.fill(kit.offColor)
+        val paintAccent = kit.fill(kit.accentColor)
 
         for (i in 0 until totalArcDots) {
-            val angleDeg = 180f + (i * (180f / (totalArcDots - 1)))
-            val angleRad = Math.toRadians(angleDeg.toDouble())
+            val angleRad = Math.toRadians(180.0 + i * (180.0 / (totalArcDots - 1)))
             val x = cx + (arcRadius * Math.cos(angleRad)).toFloat()
             val y = cy + (arcRadius * Math.sin(angleRad)).toFloat()
-
-            if (i == sunProgressIndex) {
-                // Sun position
-                canvas.drawCircle(x, y, 6.0f * spec.density, paintAccent)
-            } else if (i < sunProgressIndex) {
-                canvas.drawCircle(x, y, 3.2f * spec.density, paintOn)
-            } else {
-                canvas.drawCircle(x, y, 2.4f * spec.density, paintOff)
+            when {
+                sunIndex != null && i == sunIndex -> canvas.drawCircle(x, y, 6.0f * d, paintAccent)
+                sunIndex != null && i < sunIndex -> canvas.drawCircle(x, y, 3.2f * d, paintOn)
+                else -> canvas.drawCircle(x, y, 2.4f * d, paintOff)
             }
         }
 
-        // Times
-        val paintTime = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(13f)
-            isFakeBoldText = true
+        val paintTime = kit.textPaint(kit.greyColor, 10f, 13f)
+        val riseStr = rise?.let { formatMinutes(it) } ?: "--:--"
+        val setStr = set?.let { formatMinutes(it) } ?: "--:--"
+        canvas.drawText(riseStr, kit.pad, cy + 16f * d, paintTime)
+        canvas.drawText(setStr, kit.width - kit.pad - paintTime.measureText(setStr), cy + 16f * d, paintTime)
+
+        // Centre caption: time until the next sunrise/sunset
+        val caption = when {
+            rise == null || set == null -> "NO SUNRISE TODAY"
+            nowMin < rise -> "SUNRISE IN ${formatDuration(rise - nowMin)}"
+            nowMin <= set -> "SUNSET IN ${formatDuration(set - nowMin)}"
+            else -> "SUNRISE IN ${formatDuration(1440 - nowMin + rise)}"
         }
-        canvas.drawText("06:42", pad, cy + 16f * spec.density, paintTime)
-        val sunsetW = paintTime.measureText("18:15")
-        canvas.drawText("18:15", spec.widthPx - pad - sunsetW, cy + 16f * spec.density, paintTime)
+        kit.labelCentered(caption, cy + 16f * d, kit.textPaint(kit.onColor, 10f, 13f), kit.maxW * 0.5f)
     }
+
+    /** Humidity and "feels like" temperature for the default city. */
+    fun renderComfort(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
+
+        val data = WeatherRepository.getWeatherInstant(context)
+        kit.header("COMFORT • ${data.cityName.uppercase()}", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+
+        val colW = kit.maxW / 2f
+        val valueY = kit.height * 0.50f
+        val feels = if (data.isStale) "--°" else "${data.feelsLikeC}°"
+        val humidity = if (data.isStale) "--%" else "${data.humidityPct}%"
+
+        listOf("FEELS LIKE" to feels, "HUMIDITY" to humidity).forEachIndexed { i, (label, value) ->
+            val left = kit.pad + i * colW
+            val gap = DotMatrixRenderer.fitDotGap(value.length, colW * 0.85f, kit.height * 0.30f, 9f * d)
+            DotMatrixRenderer.drawText(
+                canvas = canvas,
+                text = value,
+                startX = left,
+                startY = valueY - 3 * gap,
+                dotRadius = gap * 0.38f,
+                dotGap = gap,
+                onColor = kit.onColor,
+                offColor = kit.offColor,
+                accentIndices = setOf(value.length - 1),
+                accentColor = kit.accentColor
+            )
+            DotMatrixRenderer.drawFittedLabel(canvas, label, left, valueY + 4 * gap + 10f * d, colW * 0.9f, kit.textPaint(kit.greyColor, 10f, 13f))
+        }
+
+        if (!data.isStale) {
+            val sub = "ACTUAL ${data.temperatureC}° • ${data.description.uppercase()}"
+            DotMatrixRenderer.drawFittedLabel(canvas, sub, kit.pad, kit.height - kit.pad - 4f * d, kit.maxW, kit.textPaint(kit.greyColor, 10f, 13f))
+        }
+    }
+
+    /** Current UV index with a 0..11+ dot scale and WHO risk level. */
+    fun renderUvIndex(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
+
+        val data = WeatherRepository.getWeatherInstant(context)
+        kit.header("UV INDEX", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+
+        val uv = data.uvIndex.roundToInt()
+        val value = if (data.isStale) "--" else uv.toString()
+        kit.dotTextCentered(value, kit.height * 0.44f, kit.height * 0.32f, 10f * d, kit.maxW * 0.6f)
+
+        // 11-dot scale; risky levels (6+) drawn in the accent colour
+        val dots = 11
+        val gap = kit.maxW / (dots - 1)
+        val y = kit.height * 0.70f
+        for (i in 0 until dots) {
+            val on = !data.isStale && i < uv
+            val paint = when {
+                !on -> kit.fill(kit.offColor)
+                i >= 5 -> kit.fill(kit.accentColor)
+                else -> kit.fill(kit.onColor)
+            }
+            canvas.drawCircle(kit.pad + i * gap, y, if (on) 3.0f * d else 2.2f * d, paint)
+        }
+
+        val risk = when {
+            data.isStale -> "NO DATA"
+            uv <= 2 -> "LOW"
+            uv <= 5 -> "MODERATE"
+            uv <= 7 -> "HIGH"
+            uv <= 10 -> "VERY HIGH"
+            else -> "EXTREME"
+        }
+        kit.labelCentered(risk, kit.height - kit.pad - 2f * d, kit.textPaint(if (uv >= 6) kit.accentColor else kit.greyColor, 10f, 13f))
+    }
+
+    private fun formatMinutes(min: Int) = String.format(Locale.US, "%02d:%02d", min / 60, min % 60)
+
+    private fun formatDuration(min: Int) = if (min >= 60) "${min / 60}H ${min % 60}M" else "${min}M"
 }

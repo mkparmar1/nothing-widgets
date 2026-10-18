@@ -57,11 +57,13 @@ fun WeatherDetailSheet(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var selectedCity by remember { mutableStateOf("London") }
+    // null = the user's own place (chosen city or device location)
+    var selectedCity by remember { mutableStateOf<String?>(null) }
+    val myPlaceName = remember { WeatherRepository.currentPlace(context).name }
     var weatherData by remember { mutableStateOf<WeatherData?>(null) }
     var isLoading by remember { mutableStateOf(true) }
 
-    fun refreshWeather(city: String) {
+    fun refreshWeather(city: String?) {
         isLoading = true
         scope.launch {
             weatherData = WeatherRepository.getWeather(context, city)
@@ -118,11 +120,11 @@ fun WeatherDetailSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf("London", "New York", "Tokyo", "Berlin").forEach { city ->
+                (listOf<String?>(null) + listOf("London", "New York", "Tokyo").filter { it != myPlaceName }).forEach { city ->
                     FilterChip(
                         selected = city == selectedCity,
                         onClick = { selectedCity = city },
-                        label = { Text(city.uppercase()) },
+                        label = { Text((city ?: myPlaceName).uppercase()) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = accent.color,
                             selectedLabelColor = Color.White

@@ -251,12 +251,15 @@ object DotMatrixRenderer {
             canvas.drawCircle(mx, my, radius * 0.06f, paintOn)
         }
 
-        // Second indicator dot on outer edge
-        val secondAngle = Math.toRadians((-90f + (seconds * 6f)).toDouble())
-        val sx = centerX + (radius * 0.92f * cos(secondAngle)).toFloat()
-        val sy = centerY + (radius * 0.92f * sin(secondAngle)).toFloat()
-        paintOn.color = accentColor
-        canvas.drawCircle(sx, sy, radius * 0.09f, paintOn)
+        // Second indicator dot on outer edge (pass seconds < 0 to hide it, e.g. on home-screen
+        // widgets that only redraw once a minute)
+        if (seconds >= 0) {
+            val secondAngle = Math.toRadians((-90f + (seconds * 6f)).toDouble())
+            val sx = centerX + (radius * 0.92f * cos(secondAngle)).toFloat()
+            val sy = centerY + (radius * 0.92f * sin(secondAngle)).toFloat()
+            paintOn.color = accentColor
+            canvas.drawCircle(sx, sy, radius * 0.09f, paintOn)
+        }
 
         // Center pivot dot
         paintOn.color = accentColor

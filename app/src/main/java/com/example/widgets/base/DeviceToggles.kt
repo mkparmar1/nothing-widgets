@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
@@ -102,6 +103,35 @@ object DeviceToggles {
             cont.invokeOnCancellation { cm.unregisterTorchCallback(callback) }
         }
     }
+
+    fun isAutoRotateOn(context: Context): Boolean =
+        Settings.System.getInt(context.contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0) == 1
+
+    fun isAirplaneModeOn(context: Context): Boolean =
+        Settings.Global.getInt(context.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0) == 1
+
+    fun isDataSaverOn(context: Context): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+        return cm.restrictBackgroundStatus == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED
+    }
+
+    /** There's no public hotspot API; this hidden method works on most builds and reports false otherwise. */
+    fun isHotspotOn(context: Context): Boolean = try {
+        val wm = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        wm.javaClass.getMethod("isWifiApEnabled").invoke(wm) as? Boolean ?: false
+    } catch (_: Exception) {
+        false
+    }
+
+    fun autoRotateSettingsIntent(): Intent = Intent(Settings.ACTION_DISPLAY_SETTINGS)
+
+    fun airplaneSettingsIntent(): Intent = Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
+
+    fun dataSaverSettingsIntent(): Intent =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) Intent(Settings.ACTION_DATA_USAGE_SETTINGS)
+        else Intent(Settings.ACTION_WIRELESS_SETTINGS)
+
+    fun hotspotSettingsIntent(): Intent = Intent(Settings.ACTION_WIRELESS_SETTINGS)
 
     fun wifiSettingsIntent(): Intent =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) Intent(Settings.Panel.ACTION_WIFI)

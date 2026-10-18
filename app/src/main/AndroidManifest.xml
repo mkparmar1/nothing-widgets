@@ -18,6 +18,23 @@
         android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
+    <!-- Optional, each asked for only when the user turns on the matching widget data -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Package visibility: list launchable apps for the app shortcut widgets -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -96,8 +113,23 @@
                 <action android:name="com.aistudio.dotwidgets.ACTION_STOPWATCH_TOGGLE" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_TIMER_TOGGLE" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_WATER_ADD" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_HABIT_TOGGLE" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_COUNTDOWN_TOGGLE" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_MEDIA_COMMAND" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_STOPWATCH_RESET" />
             </intent-filter>
         </receiver>
+
+        <!-- Watches media sessions for the Now Playing widgets (needs notification access) -->
+        <service
+            android:name=".data.media.MediaListenerService"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
         <!-- Pinned widget callback receiver -->
         <receiver

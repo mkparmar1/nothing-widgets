@@ -7,102 +7,25 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.os.Environment
 import android.os.StatFs
+import com.example.core.astro.Astronomy
 import com.example.core.render.DotMatrixRenderer
+import com.example.core.render.RenderKit
+import com.example.data.activity.StepRepository
 import com.example.data.battery.BatteryHelper
-import com.example.data.prefs.PreferencesManager
 import com.example.widgets.base.WidgetSpec
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.cos
+import kotlin.math.roundToInt
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 object UniqueSensorRenderers {
 
-    /**
-     * 1. Compass & Digital Heading Matrix
-     */
-    fun renderCompassHeading(spec: WidgetSpec, canvas: Canvas, headingDeg: Int = 42) {
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
-
-        val pad = spec.widthPx * 0.08f
-        val maxW = spec.widthPx - (2 * pad)
-
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
-
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
-        }
-        DotMatrixRenderer.drawFittedLabel(canvas, "DIGITAL COMPASS", pad, pad + 12f * spec.density, maxW, paintLabel)
-
-        val cx = spec.widthPx * 0.32f
-        val cy = spec.heightPx * 0.54f
-        val radius = minOf(spec.widthPx * 0.24f, spec.heightPx * 0.30f)
-
-        // 16-dot compass dial
-        DotMatrixRenderer.drawDotRing(
-            canvas = canvas,
-            centerX = cx,
-            centerY = cy,
-            radius = radius,
-            totalDots = 16,
-            filledDots = 16,
-            dotRadius = radius * 0.10f,
-            onColor = offColor,
-            offColor = offColor,
-            accentColor = accentColor
-        )
-
-        // Cardinal North point in accent
-        val northAngle = Math.toRadians((headingDeg - 90.0))
-        val nx = cx + (radius * cos(northAngle)).toFloat()
-        val ny = cy + (radius * sin(northAngle)).toFloat()
-        val paintNorth = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
-        canvas.drawCircle(nx, ny, radius * 0.15f, paintNorth)
-
-        // Center pivot
-        canvas.drawCircle(cx, cy, radius * 0.12f, paintNorth)
-
-        // Heading Text on right side
-        val headingStr = String.format(Locale.US, "%03d°", headingDeg)
-        val textStartX = spec.widthPx * 0.58f
-        val maxTextW = spec.widthPx - pad - textStartX
-        val textGap = DotMatrixRenderer.fitDotGap(headingStr.length, maxTextW, spec.heightPx * 0.38f, 7.5f * spec.density)
-        val textStartY = cy - (3.5f * textGap)
-
-        DotMatrixRenderer.drawText(
-            canvas = canvas,
-            text = headingStr,
-            startX = textStartX,
-            startY = textStartY,
-            dotRadius = textGap * 0.38f,
-            dotGap = textGap,
-            onColor = onColor,
-            offColor = offColor,
-            accentIndices = setOf(headingStr.length - 1),
-            accentColor = accentColor
-        )
-
-        val paintDir = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accentColor
-            textSize = (11f * spec.density).coerceAtMost(15f)
-            isFakeBoldText = true
-        }
-        val dirY = (textStartY + (7 * textGap) + (16f * spec.density)).coerceAtMost(spec.heightPx - pad - 6f)
-        DotMatrixRenderer.drawFittedLabel(canvas, "NE • NORTH EAST", textStartX, dirY, maxTextW, paintDir)
-    }
+    /** Standard or summer-time abbreviation for the calendar's zone at its current instant. */
+    private fun zoneAbbrev(cal: Calendar, standard: String, daylight: String): String =
+        if (cal.timeZone.inDaylightTime(cal.time)) daylight else standard
 
     /**
      * 2. Memory & RAM Usage Matrix
@@ -198,67 +121,6 @@ object UniqueSensorRenderers {
     }
 
     /**
-     * 3. Audio Visualizer Frequency Bars
-     */
-    fun renderVisualizer(spec: WidgetSpec, canvas: Canvas) {
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
-
-        val pad = spec.widthPx * 0.08f
-        val maxW = spec.widthPx - (2 * pad)
-
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
-
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
-        }
-        DotMatrixRenderer.drawFittedLabel(canvas, "SPECTRUM EQUALIZER", pad, pad + 12f * spec.density, maxW, paintLabel)
-
-        // 8 frequency columns of 7 dots each
-        val cols = 8
-        val rows = 7
-        val levels = intArrayOf(3, 5, 7, 6, 4, 7, 5, 2)
-
-        val colGap = maxW / (cols - 1)
-        val maxH = spec.heightPx - pad - (50f * spec.density)
-        val rowGap = (maxH / rows).coerceIn(10f, 20f)
-        val startY = spec.heightPx - pad - (12f * spec.density)
-
-        val paintOn = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = onColor }
-        val paintOff = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = offColor }
-        val paintPeak = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
-
-        for (c in 0 until cols) {
-            val cx = pad + (c * colGap)
-            val currentLevel = levels[c]
-
-            for (r in 0 until rows) {
-                val cy = startY - (r * rowGap)
-                val isFilled = r < currentLevel
-                val isPeak = (r == currentLevel - 1)
-
-                val paint = when {
-                    isPeak -> paintPeak
-                    isFilled -> paintOn
-                    else -> paintOff
-                }
-                canvas.drawCircle(cx, cy, 3.2f * spec.density, paint)
-            }
-        }
-    }
-
-    /**
      * 4. Dual Capsule World Time (NYC & LON)
      */
     fun renderDualCapsule(spec: WidgetSpec, canvas: Canvas) {
@@ -295,7 +157,7 @@ object UniqueSensorRenderers {
             textSize = (11f * spec.density).coerceAtMost(14f)
             isFakeBoldText = true
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "LON (GMT)", pad, startY - (10f * spec.density), colWidth, paintCity)
+        DotMatrixRenderer.drawFittedLabel(canvas, "LON (${zoneAbbrev(calLon, "GMT", "BST")})", pad, startY - (10f * spec.density), colWidth, paintCity)
 
         DotMatrixRenderer.drawText(
             canvas = canvas,
@@ -318,7 +180,7 @@ object UniqueSensorRenderers {
             textSize = (11f * spec.density).coerceAtMost(14f)
             isFakeBoldText = true
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "NYC (EST)", startX2, startY - (10f * spec.density), colWidth, paintCity2)
+        DotMatrixRenderer.drawFittedLabel(canvas, "NYC (${zoneAbbrev(calNyc, "EST", "EDT")})", startX2, startY - (10f * spec.density), colWidth, paintCity2)
 
         DotMatrixRenderer.drawText(
             canvas = canvas,
@@ -438,8 +300,8 @@ object UniqueSensorRenderers {
             accentColor = accentColor
         )
 
-        var totalGb = 256
-        var freeGb = 118
+        var totalGb = 0
+        var freeGb = 0
         try {
             val path = Environment.getDataDirectory()
             val stat = StatFs(path.path)
@@ -448,8 +310,8 @@ object UniqueSensorRenderers {
             freeGb = ((stat.availableBlocksLong * blockSize) / (1024L * 1024L * 1024L)).toInt()
         } catch (_: Exception) {
         }
-        val usedGb = (totalGb - freeGb).coerceAtLeast(1)
-        val pct = ((usedGb.toFloat() / totalGb) * 100).toInt()
+        val usedGb = (totalGb - freeGb).coerceAtLeast(0)
+        val pct = if (totalGb > 0) ((usedGb.toFloat() / totalGb) * 100).toInt().coerceIn(0, 100) else 0
 
         val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = 0xFF8A8A8A.toInt()
@@ -510,92 +372,59 @@ object UniqueSensorRenderers {
      * 7. Lunar Moon Phase Matrix
      */
     fun renderLunarMoonPhase(spec: WidgetSpec, canvas: Canvas) {
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
+        kit.header("LUNAR MOON MATRIX")
 
-        val pad = spec.widthPx * 0.08f
-        val maxW = spec.widthPx - (2 * pad)
+        val phase = Astronomy.moonPhase()
 
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
-
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
+        // Dot-grid moon disc on the left; each dot is lit if it's on the sunlit side of the terminator.
+        val cx = kit.width * 0.28f
+        val cy = kit.height * 0.54f
+        val moonRadius = minOf(kit.width * 0.20f, kit.height * 0.28f)
+        val gridSize = 11
+        val gap = (moonRadius * 2) / (gridSize - 1)
+        val k = cos(2 * Math.PI * phase.fraction)
+        val paintLit = kit.fill(kit.onColor)
+        val paintDark = kit.fill(kit.offColor)
+        for (row in 0 until gridSize) {
+            for (col in 0 until gridSize) {
+                val nx = (col - (gridSize - 1) / 2.0) / ((gridSize - 1) / 2.0)
+                val ny = (row - (gridSize - 1) / 2.0) / ((gridSize - 1) / 2.0)
+                if (nx * nx + ny * ny > 1.0) continue
+                val edge = sqrt(1 - ny * ny)
+                val lit = if (phase.isWaxing) nx > edge * k else nx < -edge * k
+                canvas.drawCircle(
+                    cx + (nx * moonRadius).toFloat(),
+                    cy + (ny * moonRadius).toFloat(),
+                    if (lit) gap * 0.36f else gap * 0.28f,
+                    if (lit) paintLit else paintDark
+                )
+            }
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "LUNAR MOON MATRIX", pad, pad + 12f * spec.density, maxW, paintLabel)
-
-        // Draw 9x9 dot matrix moon on left
-        val cx = spec.widthPx * 0.28f
-        val cy = spec.heightPx * 0.54f
-        val moonRadius = minOf(spec.widthPx * 0.20f, spec.heightPx * 0.28f)
-
-        // Moon disc
-        DotMatrixRenderer.drawDotRing(
-            canvas = canvas,
-            centerX = cx,
-            centerY = cy,
-            radius = moonRadius,
-            totalDots = 20,
-            filledDots = 17, // Waxing Gibbous
-            dotRadius = moonRadius * 0.12f,
-            onColor = onColor,
-            offColor = offColor,
-            accentColor = accentColor
-        )
-        // Center moon body
-        DotMatrixRenderer.drawDotRing(
-            canvas = canvas,
-            centerX = cx,
-            centerY = cy,
-            radius = moonRadius * 0.55f,
-            totalDots = 10,
-            filledDots = 8,
-            dotRadius = moonRadius * 0.14f,
-            onColor = onColor,
-            offColor = offColor,
-            accentColor = accentColor
-        )
 
         // Readout on right
-        val rightX = spec.widthPx * 0.54f
-        val rightW = spec.widthPx - pad - rightX
-
-        val paintPhase = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = onColor
-            textSize = (12f * spec.density).coerceAtMost(16f)
-            isFakeBoldText = true
-        }
-        val paintIllum = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accentColor
-            textSize = (11f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
-        }
-        val paintNext = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(13f)
-            isFakeBoldText = true
+        val rightX = kit.width * 0.54f
+        val rightW = kit.width - kit.pad - rightX
+        val illumPct = (phase.illumination * 100).roundToInt()
+        val next = if (phase.isWaxing) {
+            if (phase.daysToFull == 0) "FULL MOON TODAY" else "FULL MOON IN ${phase.daysToFull}D"
+        } else {
+            if (phase.daysToNew == 0) "NEW MOON TODAY" else "NEW MOON IN ${phase.daysToNew}D"
         }
 
-        DotMatrixRenderer.drawFittedLabel(canvas, "WAXING GIBBOUS", rightX, cy - (14f * spec.density), rightW, paintPhase)
-        DotMatrixRenderer.drawFittedLabel(canvas, "88% ILLUMINATED", rightX, cy + (6f * spec.density), rightW, paintIllum)
-        DotMatrixRenderer.drawFittedLabel(canvas, "FULL MOON IN 3D", rightX, cy + (24f * spec.density), rightW, paintNext)
+        DotMatrixRenderer.drawFittedLabel(canvas, phase.name, rightX, cy - (14f * d), rightW, kit.textPaint(kit.onColor, 12f, 16f))
+        DotMatrixRenderer.drawFittedLabel(canvas, "$illumPct% ILLUMINATED", rightX, cy + (6f * d), rightW, kit.textPaint(kit.accentColor, 11f, 14f))
+        DotMatrixRenderer.drawFittedLabel(canvas, next, rightX, cy + (24f * d), rightW, kit.textPaint(kit.greyColor, 10f, 13f))
     }
 
     /**
      * 8. Concentric Fitness Activity Rings
      */
     fun renderFitnessActivityRings(context: Context, spec: WidgetSpec, canvas: Canvas) {
-        val steps = PreferencesManager.getInstance(context).getStepCount()
+        val steps = StepRepository.todaySteps(context)
+            ?: return RenderKit.message(spec, canvas, "ACTIVITY", "ALLOW ACTIVITY ACCESS IN THE APP")
         val stepGoal = 10000
         val calGoal = 600
         val calBurned = (steps * 0.045f).toInt()
@@ -730,305 +559,33 @@ object UniqueSensorRenderers {
         val startX = (spec.widthPx - textW) / 2f
         val startY = spec.heightPx * 0.34f
 
-        DotMatrixRenderer.drawText(
-            canvas = canvas,
-            text = chronoStr,
-            startX = startX,
-            startY = startY,
-            dotRadius = gap * 0.38f,
-            dotGap = gap,
-            onColor = onColor,
-            offColor = offColor,
-            accentIndices = setOf(2, 5),
-            accentColor = accentColor
-        )
-
-        // Lap readout below
-        val paintLap = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accentColor
-            textSize = (11f * spec.density).coerceAtMost(15f)
-            isFakeBoldText = true
-        }
-        val lapStr = if (swState.isRunning) "LAP ${String.format(Locale.US, "%02d", swState.lapCount)} • TAP TO PAUSE" else "TAP TO START • SPLIT"
-        val lapY = spec.heightPx - pad - (10f * spec.density)
-        DotMatrixRenderer.drawFittedLabel(canvas, lapStr, pad, lapY, maxW, paintLap)
-    }
-
-    fun renderChronographStopwatch(spec: WidgetSpec, canvas: Canvas) {
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
-
-        val pad = spec.widthPx * 0.08f
-        val maxW = spec.widthPx - (2 * pad)
-
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
-
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
-        }
-        DotMatrixRenderer.drawFittedLabel(canvas, "DOT CHRONOGRAPH", pad, pad + 12f * spec.density, maxW, paintLabel)
-
-        val chronoStr = "00:00.0"
-        val maxTextW = maxW * 0.90f
-        val maxTextH = spec.heightPx * 0.40f
-        val gap = DotMatrixRenderer.fitDotGap(chronoStr.length, maxTextW, maxTextH, 11f * spec.density)
-        val textW = DotMatrixRenderer.measureTextWidth(chronoStr.length, gap)
-        val startX = (spec.widthPx - textW) / 2f
-        val startY = spec.heightPx * 0.34f
-
-        DotMatrixRenderer.drawText(
-            canvas = canvas,
-            text = chronoStr,
-            startX = startX,
-            startY = startY,
-            dotRadius = gap * 0.38f,
-            dotGap = gap,
-            onColor = onColor,
-            offColor = offColor,
-            accentIndices = setOf(2, 5),
-            accentColor = accentColor
-        )
-
-        val paintLap = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accentColor
-            textSize = (11f * spec.density).coerceAtMost(15f)
-            isFakeBoldText = true
-        }
-        val lapStr = "TAP TO START"
-        val lapY = spec.heightPx - pad - (10f * spec.density)
-        DotMatrixRenderer.drawFittedLabel(canvas, lapStr, pad, lapY, maxW, paintLap)
-    }
-
-    /**
-     * 10. Nothing Glyph Light Interface
-     */
-    fun renderGlyphMatrix(spec: WidgetSpec, canvas: Canvas) {
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
-
-        val pad = spec.widthPx * 0.08f
-        val maxW = spec.widthPx - (2 * pad)
-
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
-
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
-        }
-        DotMatrixRenderer.drawFittedLabel(canvas, "GLYPH LIGHT MATRIX", pad, pad + 12f * spec.density, maxW, paintLabel)
-
-        val cx = spec.widthPx / 2f
-        val cy = spec.heightPx * 0.54f
-        val radius = minOf(spec.widthPx * 0.28f, spec.heightPx * 0.32f)
-
-        // Center Ring glyph
-        DotMatrixRenderer.drawDotRing(
-            canvas = canvas,
-            centerX = cx,
-            centerY = cy,
-            radius = radius * 0.75f,
-            totalDots = 20,
-            filledDots = 20,
-            dotRadius = radius * 0.08f,
-            onColor = onColor,
-            offColor = offColor,
-            accentColor = accentColor
-        )
-
-        // Diagonal top-right strip
-        val paintAccent = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
-        canvas.drawCircle(cx + radius * 0.95f, cy - radius * 0.70f, 4.5f * spec.density, paintAccent)
-        canvas.drawCircle(cx + radius * 1.15f, cy - radius * 0.85f, 4.5f * spec.density, paintAccent)
-
-        // Bottom exclamation line
-        val paintOn = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = onColor }
-        canvas.drawLine(cx, cy + radius * 0.90f, cx, cy + radius * 1.25f, paintOn.apply { strokeWidth = 3f * spec.density })
-        canvas.drawCircle(cx, cy + radius * 1.40f, 3.5f * spec.density, paintAccent)
-
-        // Active state badge
-        val paintState = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accentColor
-            textSize = (10f * spec.density).coerceAtMost(13f)
-            isFakeBoldText = true
-        }
-        DotMatrixRenderer.drawFittedLabel(canvas, "GLYPH ACTIVE • 100%", pad, spec.heightPx - pad - (6f * spec.density), maxW, paintState)
-    }
-
-    /**
-     * 11. Crypto / Stock Ticker Matrix
-     */
-    fun renderCryptoTicker(spec: WidgetSpec, canvas: Canvas) {
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
-
-        val pad = spec.widthPx * 0.08f
-        val maxW = spec.widthPx - (2 * pad)
-
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
-
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
-        }
-        DotMatrixRenderer.drawFittedLabel(canvas, "BTC / USD • 24H TICKER", pad, pad + 12f * spec.density, maxW, paintLabel)
-
-        // Price in dot matrix
-        val priceStr = "68,420"
-        val maxPriceW = maxW * 0.60f
-        val gap = DotMatrixRenderer.fitDotGap(priceStr.length, maxPriceW, spec.heightPx * 0.38f, 10f * spec.density)
-        val startX = pad
-        val startY = spec.heightPx * 0.32f
-
-        DotMatrixRenderer.drawText(
-            canvas = canvas,
-            text = priceStr,
-            startX = startX,
-            startY = startY,
-            dotRadius = gap * 0.38f,
-            dotGap = gap,
-            onColor = onColor,
-            offColor = offColor
-        )
-
-        // Change badge on the right
-        val paintChange = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accentColor
-            textSize = (12f * spec.density).coerceAtMost(16f)
-            isFakeBoldText = true
-        }
-        val changeStartX = (startX + DotMatrixRenderer.measureTextWidth(priceStr.length, gap) + 14f * spec.density).coerceAtLeast(spec.widthPx * 0.58f)
-        DotMatrixRenderer.drawFittedLabel(canvas, "+3.8% ▲", changeStartX, startY + (3.5f * gap), spec.widthPx - pad - changeStartX, paintChange)
-
-        // 12-dot trend sparkline run across bottom
-        val sparkDots = 16
-        val sparkGap = maxW / (sparkDots - 1)
-        val sparkY = spec.heightPx - pad - (10f * spec.density)
-
-        DotMatrixRenderer.drawDotRun(
-            canvas = canvas,
-            current = 13,
-            max = 16,
-            totalDots = sparkDots,
-            startX = pad,
-            startY = sparkY,
-            dotRadius = 2.6f * spec.density,
-            dotGap = sparkGap,
-            onColor = onColor,
-            offColor = offColor,
-            accentColor = accentColor,
-            useAccentOnActive = true
-        )
-    }
-
-    /**
-     * 12. 4-up Nothing Ecosystem Battery Dock
-     */
-    fun renderDeviceEcosystemQuad(context: Context, spec: WidgetSpec, canvas: Canvas) {
-        val status = BatteryHelper.getBatteryStatus(context)
-        val phoneLevel = status.level
-
-        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
-
-        val pad = spec.widthPx * 0.06f
-        val usableW = spec.widthPx - (2 * pad)
-
-        DotMatrixRenderer.drawBackground(
-            canvas = canvas,
-            width = spec.widthPx.toFloat(),
-            height = spec.heightPx.toFloat(),
-            cornerRadius = spec.cornerRadiusDp * spec.density,
-            bgMode = spec.bgMode,
-            isDark = spec.isDark,
-            accentColor = accentColor
-        )
-
-        val devices = listOf(
-            Triple("PHONE", phoneLevel, status.isCharging),
-            Triple("EAR(2)", 95, false),
-            Triple("WATCH", 74, false),
-            Triple("CMF", 60, false)
-        )
-
-        val slotWidth = usableW / 4f
-        val cy = spec.heightPx * 0.50f
-        val radius = minOf(slotWidth * 0.36f, spec.heightPx * 0.22f)
-
-        devices.forEachIndexed { i, (name, pct, charging) ->
-            val cx = pad + (i * slotWidth) + (slotWidth / 2f)
-
-            // Mini ring
-            val filled = ((pct / 100f) * 16).toInt()
-            DotMatrixRenderer.drawDotRing(
+        // While running, a live Chronometer drawn by the launcher shows the time (see WidgetRenderEngine).
+        if (!swState.isRunning) {
+            DotMatrixRenderer.drawText(
                 canvas = canvas,
-                centerX = cx,
-                centerY = cy - 3f * spec.density,
-                radius = radius,
-                totalDots = 16,
-                filledDots = filled,
-                dotRadius = radius * 0.12f,
+                text = chronoStr,
+                startX = startX,
+                startY = startY,
+                dotRadius = gap * 0.38f,
+                dotGap = gap,
                 onColor = onColor,
                 offColor = offColor,
-                accentColor = if (charging) accentColor else onColor
+                accentIndices = setOf(2, 5),
+                accentColor = accentColor
             )
-
-            // Percentage in center
-            val paintPct = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = if (charging) accentColor else onColor
-                textSize = (radius * 0.44f).coerceIn(8f, 12f)
-                isFakeBoldText = true
-            }
-            val pctLabel = "$pct%"
-            val pw = paintPct.measureText(pctLabel)
-            canvas.drawText(pctLabel, cx - (pw / 2f), cy, paintPct)
-
-            // Device Name
-            val paintName = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xFF8A8A8A.toInt()
-                textSize = (8.5f * spec.density).coerceAtMost(11f)
-                isFakeBoldText = true
-            }
-            val nw = paintName.measureText(name)
-            canvas.drawText(name, cx - (nw / 2f), cy + radius + 12f * spec.density, paintName)
         }
 
-        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
-            textSize = (10f * spec.density).coerceAtMost(14f)
+        // The left half starts/pauses, the right half resets.
+        val paintAction = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = accentColor
+            textSize = (11f * spec.density).coerceAtMost(15f)
             isFakeBoldText = true
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "ECOSYSTEM DOCK (4-UP)", pad, pad + 12f * spec.density, usableW * 0.70f, paintLabel)
+        val paintReset = Paint(paintAction).apply { color = if (swState.elapsedMs > 0) onColor else offColor }
+        val actionY = spec.heightPx - pad - (6f * spec.density)
+        val left = if (swState.isRunning) "PAUSE" else if (swState.elapsedMs > 0) "RESUME" else "START"
+        canvas.drawText(left, spec.widthPx * 0.25f - paintAction.measureText(left) / 2f, actionY, paintAction)
+        canvas.drawText("RESET", spec.widthPx * 0.75f - paintReset.measureText("RESET") / 2f, actionY, paintReset)
     }
+
 }

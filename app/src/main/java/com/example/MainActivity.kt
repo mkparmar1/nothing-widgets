@@ -64,7 +64,8 @@ import com.example.data.prefs.PreferencesManager
 import com.example.ui.browse.BrowserScreen
 import com.example.ui.components.AccentSelectorRow
 import com.example.ui.permissions.PermissionsScreen
-import com.example.ui.permissions.allPermissionsGranted
+import com.example.ui.permissions.markPermissionsSeen
+import com.example.ui.permissions.shouldShowPermissions
 import com.example.ui.setups.SetupsScreen
 import com.example.ui.settings.SettingsScreen
 import com.example.ui.theme.DotWidgetsTheme
@@ -91,14 +92,17 @@ class MainActivity : ComponentActivity() {
             val currentAccent by prefs.accent.collectAsState()
 
             var showWeatherSheet by remember { mutableStateOf(openWeatherDetail) }
-            // Ask for missing permissions on every launch until granted; "Skip" hides it for this session.
-            var showPermissions by remember { mutableStateOf(!allPermissionsGranted(context)) }
+            // First launch, or while exact alarms are off: ask for permissions before showing the app.
+            var showPermissions by remember { mutableStateOf(shouldShowPermissions(context)) }
 
             DotWidgetsTheme(accentOption = currentAccent) {
                 if (showPermissions) {
                     PermissionsScreen(
                         accent = currentAccent,
-                        onDone = { showPermissions = false }
+                        onDone = {
+                            markPermissionsSeen(context)
+                            showPermissions = false
+                        }
                     )
                 } else {
                     DotWidgetsApp(

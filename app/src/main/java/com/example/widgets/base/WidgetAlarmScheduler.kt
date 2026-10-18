@@ -69,6 +69,32 @@ object WidgetAlarmScheduler {
         }
     }
 
+    const val ACTION_TIMER_DONE = "com.aistudio.dotwidgets.ACTION_TIMER_DONE"
+
+    /** Exact alarm at the moment a focus/countdown timer reaches zero, so it can buzz and redraw. */
+    fun scheduleTimerEnd(context: Context, timerKey: String, endTimeMs: Long) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+        val pi = timerEndPendingIntent(context, timerKey)
+        try {
+            if (canScheduleExactAlarms(context)) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, endTimeMs, pi)
+            else alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, endTimeMs, pi)
+        } catch (e: Exception) {
+            Log.e("WidgetAlarmScheduler", "Failed to schedule timer end", e)
+        }
+    }
+
+    fun cancelTimerEnd(context: Context, timerKey: String) {
+        (context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager)?.cancel(timerEndPendingIntent(context, timerKey))
+    }
+
+    private fun timerEndPendingIntent(context: Context, timerKey: String): PendingIntent {
+        val intent = Intent(context, WidgetUpdateReceiver::class.java).apply {
+            action = ACTION_TIMER_DONE
+            data = Uri.parse("dotwidgets://timer/$timerKey")
+        }
+        return PendingIntent.getBroadcast(context, REQUEST_CODE + 1, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
+
     fun cancelMinuteTick(context: Context) {
         try {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
