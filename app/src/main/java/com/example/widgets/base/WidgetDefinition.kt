@@ -11,7 +11,6 @@ interface WidgetDefinition {
     val description: String
     val sizes: Set<SizeBucket>
     val defaultTap: TapAction
-    val isFree: Boolean
     val requiresNetwork: Boolean
         get() = false
 

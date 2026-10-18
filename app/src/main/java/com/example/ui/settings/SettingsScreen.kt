@@ -20,11 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -67,7 +65,6 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val prefs = remember { PreferencesManager.getInstance(context) }
     val globalAccent by prefs.accent.collectAsState()
-    val isUnlocked by prefs.isUnlocked.collectAsState()
 
     Column(
         modifier = modifier
@@ -253,82 +250,6 @@ fun SettingsScreen(
                 AuditRow("Weather stale-guard (>90 min)", "Shows '—' not wrong temp")
                 AuditRow("Transaction size safety", "< 1.5MB RemoteViews cap")
                 AuditRow("No foreground services", "Compliant")
-            }
-        }
-
-        // --- 3. LIFETIME UNLOCK STATUS (§8) ---
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(1.dp, if (isUnlocked) globalAccent.color else Color(0x338A8A8A), RoundedCornerShape(20.dp))
-        ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            if (isUnlocked) Icons.Default.CheckCircle else Icons.Default.Star,
-                            contentDescription = null,
-                            tint = globalAccent.color
-                        )
-                        Text(
-                            text = if (isUnlocked) "DOT WIDGETS PRO: UNLOCKED" else "LIFETIME UNLOCK",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    if (isUnlocked) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(globalAccent.color)
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text("ACTIVE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (isUnlocked)
-                        "All 80 widgets, 30 wallpapers, and 8 setups are fully unlocked."
-                    else
-                        "Free tier: 30 widgets, 10 wallpapers, 2 setups. Unlock all 80 widgets forever.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8A8A8A)
-                )
-
-                if (!isUnlocked) {
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Button(
-                        onClick = {
-                            prefs.unlockLifetime()
-                            Toast.makeText(context, "Lifetime Pro Unlocked! Enjoy all 80 widgets.", Toast.LENGTH_LONG).show()
-                        },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = globalAccent.color,
-                            contentColor = Color.White
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(44.dp)
-                            .testTag("unlock_lifetime_button")
-                    ) {
-                        Text("UNLOCK LIFETIME PRO (FREE PREVIEW)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
             }
         }
     }

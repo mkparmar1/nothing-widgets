@@ -16,9 +16,6 @@ class PreferencesManager(context: Context) {
     private val _accent = MutableStateFlow(getSavedAccent())
     val accent: StateFlow<AccentOption> = _accent.asStateFlow()
 
-    private val _isUnlocked = MutableStateFlow(prefs.getBoolean("is_unlocked", false))
-    val isUnlocked: StateFlow<Boolean> = _isUnlocked.asStateFlow()
-
     private val _bgMode = MutableStateFlow(getSavedBgMode())
     val bgMode: StateFlow<BackgroundMode> = _bgMode.asStateFlow()
 
@@ -53,11 +50,6 @@ class PreferencesManager(context: Context) {
     fun setGlobalThemeMode(mode: ThemeMode) {
         prefs.edit().putString("global_theme_mode", mode.name).apply()
         _themeMode.value = mode
-    }
-
-    fun unlockLifetime() {
-        prefs.edit().putBoolean("is_unlocked", true).apply()
-        _isUnlocked.value = true
     }
 
     // Step counter simulation / reading

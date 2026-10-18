@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -73,7 +72,6 @@ fun BrowserScreen(
     val context = LocalContext.current
     val prefs = remember { PreferencesManager.getInstance(context) }
     val globalAccent by prefs.accent.collectAsState()
-    val isUnlocked by prefs.isUnlocked.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(Category.ALL) }
@@ -220,7 +218,6 @@ fun BrowserScreen(
                 WidgetCard(
                     definition = widget,
                     accent = globalAccent,
-                    isUnlocked = isUnlocked || widget.isFree,
                     onConfigure = { activeConfigWidget = widget },
                     modifier = Modifier.testTag("widget_card_${widget.id}")
                 )
@@ -240,7 +237,6 @@ fun BrowserScreen(
 fun WidgetCard(
     definition: WidgetDefinition,
     accent: AccentOption,
-    isUnlocked: Boolean,
     onConfigure: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -309,37 +305,29 @@ fun WidgetCard(
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+        }
 
-            Button(
-                onClick = onConfigure,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isUnlocked) accent.color else Color(0x338A8A8A),
-                    contentColor = Color.White
-                ),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                modifier = Modifier.height(36.dp)
-            ) {
-                if (!isUnlocked) {
-                    Icon(
-                        Icons.Default.Lock,
-                        contentDescription = "Pro",
-                        modifier = Modifier.size(14.dp),
-                        tint = Color(0xFFD4D4D4)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("PRO", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                } else {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add",
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("ADD", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-            }
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onConfigure,
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = accent.color,
+                contentColor = Color.White
+            ),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(40.dp)
+        ) {
+            Icon(
+                Icons.Default.Add,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text("USE THIS WIDGET", fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
