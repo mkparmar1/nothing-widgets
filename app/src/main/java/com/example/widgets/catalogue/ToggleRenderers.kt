@@ -48,14 +48,16 @@ object ToggleRenderers {
         }
         canvas.drawCircle(cx, cy, radius * 0.36f, paintCenter)
 
-        // Toggle label
+        // Toggle label with safe boundary
         val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = if (isActive) onColor else 0xFF8A8A8A.toInt()
-            textSize = 11f * spec.density
+            textSize = (11f * spec.density).coerceAtMost(14f)
             isFakeBoldText = true
         }
-        val lw = paintLabel.measureText(name)
-        canvas.drawText(name, cx - (lw / 2f), cy + radius + 18f * spec.density, paintLabel)
+        val maxLabelW = spec.widthPx * 0.85f
+        val labelY = (cy + radius + 18f * spec.density).coerceAtMost(spec.heightPx - 10f * spec.density)
+        val measuredW = paintLabel.measureText(name).coerceAtMost(maxLabelW)
+        DotMatrixRenderer.drawFittedLabel(canvas, name, (cx - (measuredW / 2f)).coerceAtLeast(spec.widthPx * 0.08f), labelY, maxLabelW, paintLabel)
     }
 
     fun render2x2Grid(spec: WidgetSpec, canvas: Canvas, wifiOn: Boolean = true, btOn: Boolean = true, torchOn: Boolean = false, dndOn: Boolean = false) {

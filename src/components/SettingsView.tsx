@@ -54,14 +54,35 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <a
               href="/app-debug.apk"
               download="DotWidgets-v1.0.0.apk"
-              className="px-6 py-3 rounded-2xl font-mono text-xs font-bold bg-white text-black hover:bg-zinc-200 flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+              className="px-6 py-3.5 rounded-2xl font-mono text-xs font-bold bg-white text-black hover:bg-zinc-200 flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
             >
               <Download size={16} />
-              DOWNLOAD APK (22.6 MB)
+              DOWNLOAD APK (23.1 MB)
             </a>
             <span className="text-[10px] font-mono text-zinc-500 text-center">
-              Target SDK 36 • Android 7.0+ (Min SDK 24)
+              Verified Android Package • Min SDK 24+
             </span>
+          </div>
+        </div>
+
+        {/* Nothing Phone Install Guide */}
+        <div className="mt-4 p-4 rounded-2xl bg-black/40 border border-white/5 space-y-2">
+          <span className="text-[11px] font-mono font-bold text-zinc-300 block">
+            HOW TO INSTALL ON NOTHING PHONE / ANDROID:
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono text-zinc-400">
+            <div className="flex items-start gap-1.5">
+              <span className="text-white bg-zinc-800 rounded-full w-4 h-4 flex items-center justify-center text-[9px] shrink-0">1</span>
+              <span>Tap <strong>DOWNLOAD APK</strong> (file size: ~23.1 MB).</span>
+            </div>
+            <div className="flex items-start gap-1.5">
+              <span className="text-white bg-zinc-800 rounded-full w-4 h-4 flex items-center justify-center text-[9px] shrink-0">2</span>
+              <span>Open the download & allow <em>"Install unknown apps"</em> if prompted.</span>
+            </div>
+            <div className="flex items-start gap-1.5">
+              <span className="text-white bg-zinc-800 rounded-full w-4 h-4 flex items-center justify-center text-[9px] shrink-0">3</span>
+              <span>Long-press home screen &gt; <em>Widgets</em> &gt; <em>Dot Widgets</em> to place!</span>
+            </div>
           </div>
         </div>
 

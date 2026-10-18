@@ -9,4 +9,7 @@
     <string name="widget_date_card">Date &amp; Weekday</string>
     <string name="widget_step_counter">Step Counter</string>
     <string name="widget_quote">Daily Quote</string>
+    <string name="widget_desc_s">Dot Widget (2x2 Square)</string>
+    <string name="widget_desc_m">Dot Widget (4x2 Wide)</string>
+    <string name="widget_desc_l">Dot Widget (4x4 Large)</string>
 </resources>

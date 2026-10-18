@@ -40,29 +40,29 @@ object SizeResolver {
     ): RenderDimensions {
         return when (sizeBucket) {
             SizeBucket.S -> {
-                // 320x320 @ ARGB_8888 = ~410 KB (Safe under 1MB limit)
+                // 280x280 @ ARGB_8888 = ~313 KB (Strictly under Binder buffer limit)
                 RenderDimensions(
-                    widthPx = 320,
-                    heightPx = 320,
-                    density = 2.0f,
+                    widthPx = 280,
+                    heightPx = 280,
+                    density = 1.75f,
                     sizeBucket = sizeBucket
                 )
             }
             SizeBucket.M -> {
-                // 640x320 @ ARGB_8888 = ~819 KB (Safe under 1MB limit)
+                // 480x240 @ ARGB_8888 = ~460 KB (Safe on Nothing OS, Pixel, Samsung launchers)
                 RenderDimensions(
-                    widthPx = 640,
-                    heightPx = 320,
-                    density = 2.0f,
+                    widthPx = 480,
+                    heightPx = 240,
+                    density = 1.60f,
                     sizeBucket = sizeBucket
                 )
             }
             SizeBucket.L -> {
-                // 480x480 @ ARGB_8888 = ~921 KB (Safe under 1MB limit)
+                // 380x380 @ ARGB_8888 = ~577 KB (Reliable multi-widget concurrent updates)
                 RenderDimensions(
-                    widthPx = 480,
-                    heightPx = 480,
-                    density = 2.0f,
+                    widthPx = 380,
+                    heightPx = 380,
+                    density = 1.60f,
                     sizeBucket = sizeBucket
                 )
             }

@@ -11,5 +11,5 @@
     android:initialLayout="@layout/widget_canvas_layout"
     android:previewLayout="@layout/widget_canvas_layout"
     android:previewImage="@mipmap/ic_launcher"
-    android:description="@string/widget_dot_clock"
+    android:description="@string/widget_desc_m"
     android:widgetCategory="home_screen" />
