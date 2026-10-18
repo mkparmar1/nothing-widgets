@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -66,16 +70,28 @@
                 android:resource="@xml/dot_widget_info_l" />
         </receiver>
 
-        <!-- Battery sticky & Timezone broadcast receiver -->
+        <!-- Battery sticky, Power connection, User unlock, and Timezone broadcast receiver -->
         <receiver
             android:name=".widgets.base.WidgetUpdateReceiver"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.USER_PRESENT" />
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
                 <action android:name="android.intent.action.DATE_CHANGED" />
                 <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+                <action android:name="android.intent.action.BATTERY_LOW" />
+                <action android:name="android.intent.action.BATTERY_OKAY" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_REFRESH_WIDGETS" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_TOGGLE_CLICK" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_DICE_ROLL" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_SNAKE_STEP" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_STOPWATCH_TOGGLE" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_TIMER_TOGGLE" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_WATER_ADD" />
             </intent-filter>
         </receiver>
 

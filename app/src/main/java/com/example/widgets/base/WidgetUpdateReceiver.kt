@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.example.core.bitmap.BitmapCache
+import com.example.data.prefs.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,26 +16,77 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
+        val pendingResult = goAsync()
         val scope = CoroutineScope(Dispatchers.IO)
 
-        when (action) {
-            Intent.ACTION_TIMEZONE_CHANGED,
-            Intent.ACTION_DATE_CHANGED,
-            Intent.ACTION_TIME_CHANGED,
-            "com.aistudio.dotwidgets.ACTION_REFRESH_WIDGETS" -> {
-                BitmapCache.clear()
-                scope.launch {
-                    WidgetRenderEngine.updateAllPlacedWidgets(context)
-                }
-            }
+        // Always ensure the minute-alarm tick is scheduled
+        WidgetAlarmScheduler.scheduleNextMinuteTick(context)
 
-            "com.aistudio.dotwidgets.ACTION_TOGGLE_CLICK" -> {
-                val toggleName = intent.getStringExtra("toggle_name") ?: "TOGGLE"
-                vibrateClick(context)
-                BitmapCache.clear()
-                scope.launch {
-                    WidgetRenderEngine.updateAllPlacedWidgets(context)
+        scope.launch {
+            try {
+                when (action) {
+                    Intent.ACTION_TIMEZONE_CHANGED,
+                    Intent.ACTION_DATE_CHANGED,
+                    Intent.ACTION_TIME_CHANGED,
+                    Intent.ACTION_USER_PRESENT,
+                    Intent.ACTION_BOOT_COMPLETED,
+                    Intent.ACTION_MY_PACKAGE_REPLACED,
+                    Intent.ACTION_POWER_CONNECTED,
+                    Intent.ACTION_POWER_DISCONNECTED,
+                    Intent.ACTION_BATTERY_LOW,
+                    Intent.ACTION_BATTERY_OKAY,
+                    WidgetAlarmScheduler.ACTION_REFRESH_WIDGETS -> {
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    "com.aistudio.dotwidgets.ACTION_DICE_ROLL" -> {
+                        vibrateClick(context)
+                        WidgetStateManager.rollDice(context)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    "com.aistudio.dotwidgets.ACTION_SNAKE_STEP" -> {
+                        vibrateClick(context)
+                        WidgetStateManager.stepSnake(context)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    "com.aistudio.dotwidgets.ACTION_STOPWATCH_TOGGLE" -> {
+                        vibrateClick(context)
+                        WidgetStateManager.toggleStopwatch(context)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    "com.aistudio.dotwidgets.ACTION_TIMER_TOGGLE" -> {
+                        vibrateClick(context)
+                        WidgetStateManager.toggleFocusTimer(context)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    "com.aistudio.dotwidgets.ACTION_WATER_ADD" -> {
+                        vibrateClick(context)
+                        val prefs = PreferencesManager.getInstance(context)
+                        val cur = prefs.getWaterCount()
+                        prefs.setWaterCount((cur + 1) % 9)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    "com.aistudio.dotwidgets.ACTION_TOGGLE_CLICK" -> {
+                        val toggleName = intent.getStringExtra("toggle_name") ?: "TOGGLE"
+                        vibrateClick(context)
+                        WidgetStateManager.toggleState(context, toggleName)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
                 }
+            } finally {
+                pendingResult.finish()
             }
         }
     }

@@ -689,7 +689,8 @@ object UniqueSensorRenderers {
     /**
      * 9. Minimalist Dot Chronometer / Stopwatch
      */
-    fun renderChronographStopwatch(spec: WidgetSpec, canvas: Canvas) {
+    fun renderChronographStopwatch(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val swState = com.example.widgets.base.WidgetStateManager.getStopwatchState(context)
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
         val accentColor = spec.accent.hex
@@ -707,15 +708,21 @@ object UniqueSensorRenderers {
             accentColor = accentColor
         )
 
+        val statusStr = if (swState.isRunning) "RUNNING" else "PAUSED"
         val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFF8A8A8A.toInt()
+            color = if (swState.isRunning) accentColor else 0xFF8A8A8A.toInt()
             textSize = (10f * spec.density).coerceAtMost(14f)
             isFakeBoldText = true
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "DOT CHRONOGRAPH", pad, pad + 12f * spec.density, maxW, paintLabel)
+        DotMatrixRenderer.drawFittedLabel(canvas, "CHRONO • $statusStr", pad, pad + 12f * spec.density, maxW, paintLabel)
 
         // Elapsed time display
-        val chronoStr = "04:28.6"
+        val totalSec = swState.elapsedMs / 1000
+        val mins = (totalSec / 60) % 60
+        val secs = totalSec % 60
+        val tenths = (swState.elapsedMs % 1000) / 100
+        val chronoStr = String.format(Locale.US, "%02d:%02d.%d", mins, secs, tenths)
+
         val maxTextW = maxW * 0.90f
         val maxTextH = spec.heightPx * 0.40f
         val gap = DotMatrixRenderer.fitDotGap(chronoStr.length, maxTextW, maxTextH, 11f * spec.density)
@@ -742,7 +749,63 @@ object UniqueSensorRenderers {
             textSize = (11f * spec.density).coerceAtMost(15f)
             isFakeBoldText = true
         }
-        val lapStr = "LAP 03 • SPLIT +0.4s • RUNNING"
+        val lapStr = if (swState.isRunning) "LAP ${String.format(Locale.US, "%02d", swState.lapCount)} • TAP TO PAUSE" else "TAP TO START • SPLIT"
+        val lapY = spec.heightPx - pad - (10f * spec.density)
+        DotMatrixRenderer.drawFittedLabel(canvas, lapStr, pad, lapY, maxW, paintLap)
+    }
+
+    fun renderChronographStopwatch(spec: WidgetSpec, canvas: Canvas) {
+        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
+        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
+        val accentColor = spec.accent.hex
+
+        val pad = spec.widthPx * 0.08f
+        val maxW = spec.widthPx - (2 * pad)
+
+        DotMatrixRenderer.drawBackground(
+            canvas = canvas,
+            width = spec.widthPx.toFloat(),
+            height = spec.heightPx.toFloat(),
+            cornerRadius = spec.cornerRadiusDp * spec.density,
+            bgMode = spec.bgMode,
+            isDark = spec.isDark,
+            accentColor = accentColor
+        )
+
+        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFF8A8A8A.toInt()
+            textSize = (10f * spec.density).coerceAtMost(14f)
+            isFakeBoldText = true
+        }
+        DotMatrixRenderer.drawFittedLabel(canvas, "DOT CHRONOGRAPH", pad, pad + 12f * spec.density, maxW, paintLabel)
+
+        val chronoStr = "00:00.0"
+        val maxTextW = maxW * 0.90f
+        val maxTextH = spec.heightPx * 0.40f
+        val gap = DotMatrixRenderer.fitDotGap(chronoStr.length, maxTextW, maxTextH, 11f * spec.density)
+        val textW = DotMatrixRenderer.measureTextWidth(chronoStr.length, gap)
+        val startX = (spec.widthPx - textW) / 2f
+        val startY = spec.heightPx * 0.34f
+
+        DotMatrixRenderer.drawText(
+            canvas = canvas,
+            text = chronoStr,
+            startX = startX,
+            startY = startY,
+            dotRadius = gap * 0.38f,
+            dotGap = gap,
+            onColor = onColor,
+            offColor = offColor,
+            accentIndices = setOf(2, 5),
+            accentColor = accentColor
+        )
+
+        val paintLap = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = accentColor
+            textSize = (11f * spec.density).coerceAtMost(15f)
+            isFakeBoldText = true
+        }
+        val lapStr = "TAP TO START"
         val lapY = spec.heightPx - pad - (10f * spec.density)
         DotMatrixRenderer.drawFittedLabel(canvas, lapStr, pad, lapY, maxW, paintLap)
     }

@@ -16,8 +16,14 @@ abstract class BaseDotWidgetProvider(private val defaultWidgetTypeId: String) : 
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        WidgetAlarmScheduler.scheduleNextMinuteTick(context)
+    }
+
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
+        WidgetAlarmScheduler.scheduleNextMinuteTick(context)
         val pendingResult = goAsync()
         val db = AppDatabase.getInstance(context)
 

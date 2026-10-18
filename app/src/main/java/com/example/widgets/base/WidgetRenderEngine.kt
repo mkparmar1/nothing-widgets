@@ -35,17 +35,31 @@ object WidgetRenderEngine {
         spec: WidgetSpec,
         instanceId: Int = 0
     ): Bitmap = withContext(Dispatchers.Default) {
-        val cacheKey = BitmapCache.makeKey(
-            widgetTypeId = definition.id,
-            instanceId = instanceId,
-            valueHash = spec.configJson.hashCode() + (System.currentTimeMillis() / 60000).toInt(),
-            size = spec.sizeBucket,
-            isDark = spec.isDark,
-            accent = spec.accent.name
-        )
+        val isDynamic = definition.id.startsWith("battery.") || 
+                        definition.id.startsWith("fun.") || 
+                        definition.id.startsWith("sensor.stopwatch") ||
+                        definition.id.startsWith("prod.focus.timer") ||
+                        definition.id.startsWith("prod.countdown") ||
+                        definition.id.startsWith("prod.water") ||
+                        definition.id.startsWith("toggle.")
 
-        val cached = BitmapCache.get(cacheKey)
-        if (cached != null) return@withContext cached
+        val cacheKey = if (isDynamic) {
+            null
+        } else {
+            BitmapCache.makeKey(
+                widgetTypeId = definition.id,
+                instanceId = instanceId,
+                valueHash = spec.configJson.hashCode() + (System.currentTimeMillis() / 60000).toInt(),
+                size = spec.sizeBucket,
+                isDark = spec.isDark,
+                accent = spec.accent.name
+            )
+        }
+
+        if (cacheKey != null) {
+            val cached = BitmapCache.get(cacheKey)
+            if (cached != null) return@withContext cached
+        }
 
         val bitmap = Bitmap.createBitmap(
             spec.widthPx.coerceAtLeast(100),
@@ -60,7 +74,9 @@ object WidgetRenderEngine {
             android.util.Log.e("WidgetRenderEngine", "Render failed for ${definition.id}", e)
             com.example.widgets.catalogue.ClockRenderers.renderDigitalClock(spec, canvas)
         }
-        BitmapCache.put(cacheKey, bitmap)
+        if (cacheKey != null) {
+            BitmapCache.put(cacheKey, bitmap)
+        }
         bitmap
     }
 
@@ -141,12 +157,35 @@ object WidgetRenderEngine {
         } else {
             views.setViewVisibility(R.id.multi_region_container, View.GONE)
 
-            val pendingIntent = createTapPendingIntent(context, appWidgetId, tapAction)
+            val pendingIntent = when (definition.id) {
+                "fun.dice.roll" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_DICE_ROLL")
+                "fun.snake.dot" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_SNAKE_STEP")
+                "sensor.stopwatch.chrono" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_STOPWATCH_TOGGLE")
+                "prod.focus.timer", "prod.countdown.timer" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_TIMER_TOGGLE")
+                "prod.water.tracker" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_WATER_ADD")
+                "toggle.wifi" -> makeTogglePendingIntent(context, appWidgetId, "WIFI", 1)
+                "toggle.bluetooth" -> makeTogglePendingIntent(context, appWidgetId, "BT", 2)
+                "toggle.torch" -> makeTogglePendingIntent(context, appWidgetId, "TORCH", 3)
+                "toggle.dnd" -> makeTogglePendingIntent(context, appWidgetId, "DND", 4)
+                "toggle.darkmode" -> makeTogglePendingIntent(context, appWidgetId, "DARK_MODE", 5)
+                else -> createTapPendingIntent(context, appWidgetId, tapAction)
+            }
+
             views.setOnClickPendingIntent(R.id.widget_image_view, pendingIntent)
             views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
         }
 
         views
+    }
+
+    private fun makeActionPendingIntent(context: Context, appWidgetId: Int, actionStr: String): PendingIntent {
+        val intent = Intent(actionStr).apply {
+            setPackage(context.packageName)
+            putExtra("app_widget_id", appWidgetId)
+        }
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        val reqCode = appWidgetId * 1000 + (kotlin.math.abs(actionStr.hashCode()) % 900)
+        return PendingIntent.getBroadcast(context, reqCode, intent, flags)
     }
 
     private fun createTapPendingIntent(context: Context, appWidgetId: Int, tapAction: TapAction): PendingIntent {

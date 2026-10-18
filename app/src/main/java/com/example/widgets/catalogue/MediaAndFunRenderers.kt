@@ -71,6 +71,63 @@ object MediaAndFunRenderers {
         )
     }
 
+    fun renderRetroSnake(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val snakeState = com.example.widgets.base.WidgetStateManager.getSnakeState(context)
+        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
+        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
+        val accentColor = spec.accent.hex
+
+        val pad = spec.widthPx * 0.08f
+        val maxW = spec.widthPx - (2 * pad)
+
+        DotMatrixRenderer.drawBackground(
+            canvas = canvas,
+            width = spec.widthPx.toFloat(),
+            height = spec.heightPx.toFloat(),
+            cornerRadius = spec.cornerRadiusDp * spec.density,
+            bgMode = spec.bgMode,
+            isDark = spec.isDark,
+            accentColor = accentColor
+        )
+
+        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = accentColor
+            textSize = (10f * spec.density).coerceAtMost(14f)
+            isFakeBoldText = true
+        }
+        DotMatrixRenderer.drawFittedLabel(canvas, "SNAKE • SCORE: ${snakeState.score} • TAP TO STEP", pad, pad + 12f * spec.density, maxW, paintLabel)
+
+        val cols = 15
+        val rows = 8
+        val dotGap = (maxW / (cols - 1)).coerceAtMost((spec.heightPx - pad - 42f * spec.density) / rows)
+        val dotRadius = dotGap * 0.34f
+
+        val startX = (spec.widthPx - ((cols - 1) * dotGap)) / 2f
+        val startY = pad + (30f * spec.density)
+
+        val paintOn = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = onColor }
+        val paintOff = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = offColor }
+        val paintFood = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
+
+        val bodySet = snakeState.body.toSet()
+        val foodCoord = snakeState.food
+
+        for (r in 0 until rows) {
+            for (c in 0 until cols) {
+                val cx = startX + (c * dotGap)
+                val cy = startY + (r * dotGap)
+
+                if (c == foodCoord.first && r == foodCoord.second) {
+                    canvas.drawCircle(cx, cy, dotRadius * 1.3f, paintFood)
+                } else if (bodySet.contains(c to r)) {
+                    canvas.drawCircle(cx, cy, dotRadius, paintOn)
+                } else {
+                    canvas.drawCircle(cx, cy, dotRadius * 0.65f, paintOff)
+                }
+            }
+        }
+    }
+
     fun renderRetroSnake(spec: WidgetSpec, canvas: Canvas) {
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
@@ -182,6 +239,42 @@ object MediaAndFunRenderers {
         }
         val authorY = startY + (quoteLines.size * lineSpacing) + (6f * spec.density)
         DotMatrixRenderer.drawFittedLabel(canvas, author, pad, authorY, maxW, paintAuthor)
+    }
+
+    fun renderDiceRoll(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val (die1, die2) = com.example.widgets.base.WidgetStateManager.getDiceRoll(context)
+        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
+        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
+        val accentColor = spec.accent.hex
+
+        val pad = spec.widthPx * 0.08f
+        val maxW = spec.widthPx - (2 * pad)
+
+        DotMatrixRenderer.drawBackground(
+            canvas = canvas,
+            width = spec.widthPx.toFloat(),
+            height = spec.heightPx.toFloat(),
+            cornerRadius = spec.cornerRadiusDp * spec.density,
+            bgMode = spec.bgMode,
+            isDark = spec.isDark,
+            accentColor = accentColor
+        )
+
+        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = accentColor
+            textSize = (10f * spec.density).coerceAtMost(14f)
+            isFakeBoldText = true
+        }
+        DotMatrixRenderer.drawFittedLabel(canvas, "DICE ROLL: ${die1 + die2} • TAP TO ROLL", pad, pad + 12f * spec.density, maxW, paintLabel)
+
+        val maxAvailableH = spec.heightPx - pad - (40f * spec.density)
+        val diceSize = minOf(52f * spec.density, maxAvailableH * 0.75f, maxW * 0.40f)
+        val gap = 16f * spec.density
+        val startX = (spec.widthPx - (2 * diceSize + gap)) / 2f
+        val startY = (spec.heightPx - diceSize) / 2f + (8f * spec.density)
+
+        drawDie(canvas, startX, startY, diceSize, die1, onColor, offColor, accentColor, spec.density)
+        drawDie(canvas, startX + diceSize + gap, startY, diceSize, die2, onColor, offColor, accentColor, spec.density)
     }
 
     fun renderDiceRoll(spec: WidgetSpec, canvas: Canvas, die1: Int = 4, die2: Int = 6) {

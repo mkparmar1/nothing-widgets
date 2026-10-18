@@ -76,7 +76,7 @@ object WidgetRegistry {
         register(createDef("sensor.year.progress", Category.SYSTEM, "Annual Year Progress", "Day of year countdown and 25-dot annual run", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR, true) { c, s, cv -> UniqueSensorRenderers.renderYearProgress(s, cv) })
         register(createDef("sensor.lunar.moon", Category.SYSTEM, "Lunar Phase Matrix", "Dot matrix moon phase with illumination readout", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, true) { c, s, cv -> UniqueSensorRenderers.renderLunarMoonPhase(s, cv) })
         register(createDef("sensor.fitness.rings", Category.SYSTEM, "Concentric Activity Rings", "Dual dot rings for Steps and Active Calories", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, true) { c, s, cv -> UniqueSensorRenderers.renderFitnessActivityRings(c, s, cv) })
-        register(createDef("sensor.stopwatch.chrono", Category.SYSTEM, "Dot Chronometer", "Precision split chronometer with lap tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, true) { c, s, cv -> UniqueSensorRenderers.renderChronographStopwatch(s, cv) })
+        register(createDef("sensor.stopwatch.chrono", Category.SYSTEM, "Dot Chronometer", "Precision split chronometer with lap tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, true) { c, s, cv -> UniqueSensorRenderers.renderChronographStopwatch(c, s, cv) })
         register(createDef("sensor.glyph.lights", Category.SYSTEM, "Glyph Light Interface", "Nothing signature glyph matrix pattern", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, true) { c, s, cv -> UniqueSensorRenderers.renderGlyphMatrix(s, cv) })
         register(createDef("sensor.crypto.ticker", Category.SYSTEM, "Crypto Market Ticker", "BTC real-time price with 16-dot trend sparkline", setOf(SizeBucket.M), TapAction.DEFAULT, true) { c, s, cv -> UniqueSensorRenderers.renderCryptoTicker(s, cv) })
         register(createDef("sensor.battery.quad", Category.SYSTEM, "Ecosystem Quad Dock", "4-up battery matrix for Phone, Ear(2), Watch, CMF", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY, true) { c, s, cv -> UniqueSensorRenderers.renderDeviceEcosystemQuad(c, s, cv) })
@@ -115,9 +115,9 @@ object WidgetRegistry {
         register(createDef("prod.todo.5", Category.PRODUCTIVITY, "To-Do Checklist (5)", "Extended 5-item daily checklist", setOf(SizeBucket.L), TapAction.OPEN_MAIN, false) { c, s, cv -> ProductivityRenderers.renderTodoList(s, cv, 5) })
         register(createDef("prod.step.counter", Category.PRODUCTIVITY, "Daily Step Counter", "Live step metrics with 20-dot progress run", setOf(SizeBucket.M), TapAction.OPEN_MAIN, true) { c, s, cv -> ProductivityRenderers.renderStepCounter(c, s, cv) })
         register(createDef("prod.water.tracker", Category.PRODUCTIVITY, "Hydration Tracker", "8-glass daily water intake dots", setOf(SizeBucket.M), TapAction.OPEN_MAIN, true) { c, s, cv -> ProductivityRenderers.renderWaterTracker(c, s, cv) })
-        register(createDef("prod.focus.timer", Category.PRODUCTIVITY, "Focus Timer", "Pomodoro work session tracker", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, false) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
+        register(createDef("prod.focus.timer", Category.PRODUCTIVITY, "Focus Timer", "Pomodoro work session tracker", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, true) { c, s, cv -> ProductivityRenderers.renderFocusTimer(c, s, cv) })
         register(createDef("prod.habit.dots", Category.PRODUCTIVITY, "Habit Matrix Streak", "Weekly habit completion dot grid", setOf(SizeBucket.M), TapAction.OPEN_MAIN, false) { c, s, cv -> CalendarRenderers.renderWeekProgress(s, cv) })
-        register(createDef("prod.countdown.timer", Category.PRODUCTIVITY, "Countdown Pill", "Target minutes remaining indicator", setOf(SizeBucket.S), TapAction.OPEN_MAIN, false) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
+        register(createDef("prod.countdown.timer", Category.PRODUCTIVITY, "Countdown Pill", "Target minutes remaining indicator", setOf(SizeBucket.S), TapAction.DEFAULT, true) { c, s, cv -> ProductivityRenderers.renderCountdownTimer(c, s, cv) })
 
         // --- 9. PHOTO (4 widgets) ---
         register(createDef("photo.single.frame", Category.PHOTO, "Dot Border Photo Frame", "Aesthetic minimal framed photo", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, true) { c, s, cv -> MediaAndFunRenderers.renderDailyQuote(s, cv) })
@@ -126,10 +126,10 @@ object WidgetRegistry {
         register(createDef("photo.monochrome.art", Category.PHOTO, "Monochrome Halftone Art", "Dot matrix stylized art frame", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, false) { c, s, cv -> MediaAndFunRenderers.renderDailyQuote(s, cv) })
 
         // --- 10. FUN & LAB (4 widgets) ---
-        register(createDef("fun.snake.dot", Category.FUN, "Retro Dot Snake", "Classic retro dot matrix snake on screen", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, true) { c, s, cv -> MediaAndFunRenderers.renderRetroSnake(s, cv) })
+        register(createDef("fun.snake.dot", Category.FUN, "Retro Dot Snake", "Classic retro dot matrix snake on screen", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, true) { c, s, cv -> MediaAndFunRenderers.renderRetroSnake(c, s, cv) })
         register(createDef("fun.quote.daily", Category.FUN, "Daily Quote", "Inspiring minimalist thought in dot font", setOf(SizeBucket.M), TapAction.DEFAULT, true) { c, s, cv -> MediaAndFunRenderers.renderDailyQuote(s, cv) })
-        register(createDef("fun.dice.roll", Category.FUN, "Dice Roll Pair", "Tap to roll a pair of dot-matrix dice", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, false) { c, s, cv -> MediaAndFunRenderers.renderDiceRoll(s, cv) })
-        register(createDef("fun.pattern.generator", Category.FUN, "Ambient Dot Matrix", "Procedural geometric dot matrix rhythm", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, false) { c, s, cv -> MediaAndFunRenderers.renderRetroSnake(s, cv) })
+        register(createDef("fun.dice.roll", Category.FUN, "Dice Roll Pair", "Tap to roll a pair of dot-matrix dice", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, true) { c, s, cv -> MediaAndFunRenderers.renderDiceRoll(c, s, cv) })
+        register(createDef("fun.pattern.generator", Category.FUN, "Ambient Dot Matrix", "Procedural geometric dot matrix rhythm", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, false) { c, s, cv -> MediaAndFunRenderers.renderRetroSnake(c, s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {

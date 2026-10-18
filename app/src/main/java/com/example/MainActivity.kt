@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
 
         val openWeatherDetail = intent.getBooleanExtra("open_weather_detail", false)
 
+        com.example.widgets.base.WidgetAlarmScheduler.scheduleNextMinuteTick(this)
         lifecycleScope.launch(Dispatchers.IO) {
             com.example.widgets.base.WidgetRenderEngine.updateAllPlacedWidgets(this@MainActivity)
         }

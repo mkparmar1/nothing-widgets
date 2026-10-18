@@ -294,4 +294,84 @@ object ProductivityRenderers {
             useAccentOnActive = true
         )
     }
+
+    fun renderFocusTimer(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val state = com.example.widgets.base.WidgetStateManager.getFocusTimerState(context)
+        val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
+        val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
+        val accentColor = spec.accent.hex
+
+        val pad = spec.widthPx * 0.08f
+        val maxW = spec.widthPx - (2 * pad)
+
+        DotMatrixRenderer.drawBackground(
+            canvas = canvas,
+            width = spec.widthPx.toFloat(),
+            height = spec.heightPx.toFloat(),
+            cornerRadius = spec.cornerRadiusDp * spec.density,
+            bgMode = spec.bgMode,
+            isDark = spec.isDark,
+            accentColor = accentColor
+        )
+
+        val statusStr = if (state.isRunning) "FOCUSING" else "PAUSED"
+        val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = if (state.isRunning) accentColor else 0xFF8A8A8A.toInt()
+            textSize = (10f * spec.density).coerceAtMost(14f)
+            isFakeBoldText = true
+        }
+        DotMatrixRenderer.drawFittedLabel(canvas, "POMODORO • $statusStr", pad, pad + 12f * spec.density, maxW, paintLabel)
+
+        val mins = state.remainingSeconds / 60
+        val secs = state.remainingSeconds % 60
+        val timeStr = String.format(java.util.Locale.US, "%02d:%02d", mins, secs)
+
+        val maxTextW = maxW * 0.85f
+        val maxTextH = spec.heightPx * 0.40f
+        val dotGap = DotMatrixRenderer.fitDotGap(timeStr.length, maxTextW, maxTextH, 10f * spec.density)
+        val dotRadius = dotGap * 0.38f
+        val textW = DotMatrixRenderer.measureTextWidth(timeStr.length, dotGap)
+
+        val startX = (spec.widthPx - textW) / 2f
+        val startY = spec.heightPx * 0.35f
+
+        DotMatrixRenderer.drawText(
+            canvas = canvas,
+            text = timeStr,
+            startX = startX,
+            startY = startY,
+            dotRadius = dotRadius,
+            dotGap = dotGap,
+            onColor = onColor,
+            offColor = offColor,
+            accentIndices = setOf(2),
+            accentColor = accentColor
+        )
+
+        // Progress bar across bottom
+        val totalDots = 20
+        val elapsedFraction = 1f - (state.remainingSeconds.toFloat() / state.totalSeconds.coerceAtLeast(1))
+        val filledDots = (elapsedFraction * totalDots).toInt().coerceIn(0, totalDots)
+        val segGap = maxW / (totalDots - 1)
+        val segY = spec.heightPx - pad - (10f * spec.density)
+
+        DotMatrixRenderer.drawDotRun(
+            canvas = canvas,
+            current = filledDots,
+            max = totalDots,
+            totalDots = totalDots,
+            startX = pad,
+            startY = segY,
+            dotRadius = 2.8f * spec.density,
+            dotGap = segGap,
+            onColor = onColor,
+            offColor = offColor,
+            accentColor = accentColor,
+            useAccentOnActive = true
+        )
+    }
+
+    fun renderCountdownTimer(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        renderFocusTimer(context, spec, canvas)
+    }
 }
