@@ -3,6 +3,7 @@ package com.example.widgets.catalogue
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.RenderKit
 import com.example.data.activity.StepRepository
@@ -14,7 +15,10 @@ object ProductivityRenderers {
 
     fun renderNotesPin(context: Context, spec: WidgetSpec, canvas: Canvas) {
         val note = PreferencesManager.getInstance(context).getNoteText()
-        val lines = note.lines().filter { it.isNotBlank() }.take(4).ifEmpty { listOf("TAP TO WRITE A NOTE") }
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        val lines = note.lines().filter { it.isNotBlank() }
+            .take(if (isLarge) 8 else 4)
+            .ifEmpty { listOf("TAP TO WRITE A NOTE") }
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
@@ -42,11 +46,12 @@ object ProductivityRenderers {
 
         val startY = pad + (32f * spec.density)
         val availableH = spec.heightPx - startY - pad
-        val lineSpacing = (availableH / lines.size.coerceAtLeast(1)).coerceIn(18f, 28f)
+        val lineSpacing = (availableH / lines.size.coerceAtLeast(1))
+            .coerceIn(if (isLarge) 24f else 18f, if (isLarge) 44f else 28f)
 
         val paintText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = onColor
-            textSize = (11f * spec.density).coerceAtMost(14f)
+            textSize = if (isLarge) (14f * spec.density).coerceAtMost(20f) else (11f * spec.density).coerceAtMost(14f)
             isFakeBoldText = true
         }
 
@@ -89,8 +94,10 @@ object ProductivityRenderers {
         DotMatrixRenderer.drawFittedLabel(canvas, header, pad, pad + 12f * spec.density, maxW, paintLabel)
 
         // Unfinished tasks first so the widget shows what's left to do.
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        val limit = if (isLarge) 8 else maxItems
         val tasks = (allTasks.filter { !it.done } + allTasks.filter { it.done })
-            .take(maxItems)
+            .take(limit)
             .map { it.done to it.text.uppercase() }
         if (tasks.isEmpty()) {
             DotMatrixRenderer.drawFittedLabel(canvas, "ADD TASKS IN THE APP", pad, spec.heightPx * 0.55f, maxW, Paint(paintLabel).apply { color = onColor })
@@ -99,16 +106,18 @@ object ProductivityRenderers {
 
         val startY = pad + (32f * spec.density)
         val availableH = spec.heightPx - startY - pad
-        val lineSpacing = (availableH / tasks.size).coerceIn(20f, 32f)
+        val lineSpacing = (availableH / tasks.size).coerceIn(if (isLarge) 24f else 20f, if (isLarge) 46f else 32f)
+        val todoTextSize = (if (isLarge) 15f else 11f) * spec.density
+        val todoTextCap = if (isLarge) 22f else 14f
 
         val paintDone = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = 0xFF8A8A8A.toInt()
-            textSize = (11f * spec.density).coerceAtMost(14f)
+            textSize = todoTextSize.coerceAtMost(todoTextCap)
             isFakeBoldText = true
         }
         val paintPending = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = onColor
-            textSize = (11f * spec.density).coerceAtMost(14f)
+            textSize = todoTextSize.coerceAtMost(todoTextCap)
             isFakeBoldText = true
         }
         val paintCheck = Paint(Paint.ANTI_ALIAS_FLAG).apply {

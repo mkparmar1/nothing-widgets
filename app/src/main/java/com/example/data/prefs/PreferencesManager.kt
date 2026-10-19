@@ -115,6 +115,15 @@ class PreferencesManager(context: Context) {
     fun getCountdownMinutes(): Int = prefs.getInt("countdown_minutes", 10)
     fun setCountdownMinutes(minutes: Int) = prefs.edit().putInt("countdown_minutes", minutes).apply()
 
+    // First-run browse tip (Phase D)
+    fun getBrowseTipDismissed(): Boolean = prefs.getBoolean("browse_tip_dismissed", false)
+    fun setBrowseTipDismissed(dismissed: Boolean) =
+        prefs.edit().putBoolean("browse_tip_dismissed", dismissed).apply()
+
+    // Widget status card (Phase D): last time every placed widget was refreshed
+    fun getLastWidgetRefresh(): Long = prefs.getLong("last_widget_refresh_ms", 0L)
+    fun setLastWidgetRefresh(ms: Long) = prefs.edit().putLong("last_widget_refresh_ms", ms).apply()
+
     private fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
     companion object {

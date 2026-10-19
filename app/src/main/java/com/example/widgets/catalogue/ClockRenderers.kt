@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
+import com.example.core.render.RenderKit
 import com.example.widgets.base.WidgetSpec
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -18,6 +19,10 @@ object ClockRenderers {
      *   (see WidgetRenderEngine); layout is still computed so the date sits in the same place.
      */
     fun renderDigitalClock(spec: WidgetSpec, canvas: Canvas, showSeconds: Boolean = false, timeZoneId: String? = null, liveTime: Boolean = false) {
+        if (spec.sizeBucket == SizeBucket.L && !showSeconds) {
+            renderDigitalClockLarge(spec, canvas, timeZoneId, liveTime)
+            return
+        }
         val cal = Calendar.getInstance()
         if (!timeZoneId.isNullOrBlank()) {
             cal.timeZone = TimeZone.getTimeZone(timeZoneId)
@@ -119,6 +124,60 @@ object ClockRenderers {
             val dateX = (spec.widthPx - dateWidth) / 2f
             DotMatrixRenderer.drawFittedLabel(canvas, dateStr, dateX.coerceAtLeast(padding), startY + textHeight + (18f * spec.density), maxAllowedW, paintDate)
         }
+    }
+
+    /**
+     * 4×4 hero clock: time across the upper half, full date below and a minute-progress dot run
+     * pinned to the bottom so the layout fills the whole canvas.
+     */
+    private fun renderDigitalClockLarge(spec: WidgetSpec, canvas: Canvas, timeZoneId: String?, liveTime: Boolean) {
+        val kit = RenderKit(spec, canvas)
+        val cal = Calendar.getInstance()
+        if (!timeZoneId.isNullOrBlank()) cal.timeZone = TimeZone.getTimeZone(timeZoneId)
+
+        val timeStr = String.format(
+            Locale.US, "%02d:%02d",
+            cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)
+        )
+        val zoneLabel = if (!timeZoneId.isNullOrBlank()) {
+            timeZoneId.substringAfterLast('/').replace('_', ' ').uppercase()
+        } else "TIME"
+
+        kit.background()
+        kit.header(zoneLabel)
+
+        if (!liveTime) {
+            kit.dotTextCentered(
+                text = timeStr,
+                centerY = kit.height * 0.37f,
+                maxHeight = kit.height * 0.30f,
+                preferredGap = kit.height * 0.052f,
+                accentIndices = RenderKit.colonIndices(timeStr)
+            )
+        }
+
+        val dateStr = SimpleDateFormat("EEEE, dd MMMM", Locale.US).apply {
+            if (!timeZoneId.isNullOrBlank()) timeZone = TimeZone.getTimeZone(timeZoneId)
+        }.format(cal.time).uppercase()
+        kit.labelCentered(dateStr, kit.height * 0.60f, kit.textPaint(kit.onColor, 7f))
+
+        val minutes = cal.get(Calendar.MINUTE)
+        val totalDots = 30
+        DotMatrixRenderer.drawDotRun(
+            canvas = kit.canvas,
+            current = minutes,
+            max = 60,
+            totalDots = totalDots,
+            startX = kit.pad,
+            startY = kit.height * 0.80f,
+            dotRadius = kit.height * 0.013f,
+            dotGap = kit.maxW / (totalDots - 1),
+            onColor = kit.onColor,
+            offColor = kit.offColor,
+            accentColor = kit.accentColor,
+            useAccentOnActive = true
+        )
+        kit.labelCentered("$minutes / 60 MIN", kit.height * 0.92f, kit.textPaint(kit.greyColor, 5f))
     }
 
     fun renderAnalogRing(spec: WidgetSpec, canvas: Canvas) {

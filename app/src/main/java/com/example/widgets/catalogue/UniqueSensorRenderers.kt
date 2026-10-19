@@ -8,6 +8,7 @@ import android.graphics.RectF
 import android.os.Environment
 import android.os.StatFs
 import com.example.core.astro.Astronomy
+import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.RenderKit
 import com.example.data.activity.StepRepository
@@ -28,9 +29,79 @@ object UniqueSensorRenderers {
         if (cal.timeZone.inDaylightTime(cal.time)) daylight else standard
 
     /**
+     * 4×4 treatment shared by the percentage stats: hero number, centred readout, progress run.
+     * The compact layouts keep the number top-left; this one fills the taller canvas.
+     */
+    private fun renderLargeStat(
+        spec: WidgetSpec,
+        canvas: Canvas,
+        header: String,
+        value: String,
+        detail: String,
+        footnote: String,
+        barCurrent: Int,
+        barMax: Int,
+        barDots: Int,
+        accentIndices: Set<Int>
+    ) {
+        val kit = RenderKit(spec, canvas)
+        kit.background()
+        kit.header(header)
+        kit.dotTextCentered(
+            text = value,
+            centerY = kit.height * 0.38f,
+            maxHeight = kit.height * 0.30f,
+            preferredGap = kit.height * 0.050f,
+            accentIndices = accentIndices
+        )
+        kit.labelCentered(detail, kit.height * 0.58f, kit.textPaint(kit.onColor, 8f))
+        kit.labelCentered(footnote, kit.height * 0.68f, kit.textPaint(kit.greyColor, 5.5f))
+        DotMatrixRenderer.drawDotRun(
+            canvas = kit.canvas,
+            current = barCurrent,
+            max = barMax,
+            totalDots = barDots,
+            startX = kit.pad,
+            startY = kit.height * 0.82f,
+            dotRadius = kit.height * 0.013f,
+            dotGap = kit.maxW / (barDots - 1),
+            onColor = kit.onColor,
+            offColor = kit.offColor,
+            accentColor = kit.accentColor,
+            useAccentOnActive = true
+        )
+    }
+
+    /**
      * 2. Memory & RAM Usage Matrix
      */
     fun renderRamMeter(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        if (spec.sizeBucket == SizeBucket.L) {
+            var totalGb = 8.0f
+            var usedGb = 5.4f
+            try {
+                val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                val memInfo = ActivityManager.MemoryInfo()
+                actManager?.getMemoryInfo(memInfo)
+                totalGb = (memInfo.totalMem / (1024f * 1024f * 1024f))
+                usedGb = ((memInfo.totalMem - memInfo.availMem) / (1024f * 1024f * 1024f))
+            } catch (_: Exception) {
+            }
+            val pct = ((usedGb / totalGb) * 100).toInt().coerceIn(10, 95)
+            val pctStr = "$pct%"
+            renderLargeStat(
+                spec, canvas,
+                header = "SYSTEM RAM VITALS",
+                value = pctStr,
+                detail = String.format(Locale.US, "%.1f / %.1f GB", usedGb, totalGb),
+                footnote = "MEMORY IN USE",
+                barCurrent = pct,
+                barMax = 100,
+                barDots = 24,
+                accentIndices = setOf(pctStr.length - 1)
+            )
+            return
+        }
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
         val accentColor = spec.accent.hex
@@ -206,6 +277,22 @@ object UniqueSensorRenderers {
         val yearPct = ((dayOfYear.toFloat() / totalDays) * 100).toInt()
         val year = cal.get(Calendar.YEAR)
 
+        if (spec.sizeBucket == SizeBucket.L) {
+            val pctStr = "$yearPct%"
+            renderLargeStat(
+                spec, canvas,
+                header = "YEAR $year PROGRESS",
+                value = pctStr,
+                detail = "DAY $dayOfYear / $totalDays",
+                footnote = "$year IN MOTION",
+                barCurrent = dayOfYear,
+                barMax = totalDays,
+                barDots = 25,
+                accentIndices = setOf(pctStr.length - 1)
+            )
+            return
+        }
+
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
         val accentColor = spec.accent.hex
@@ -283,6 +370,33 @@ object UniqueSensorRenderers {
      * 6. Storage Capacity Breakdown
      */
     fun renderStorageBar(spec: WidgetSpec, canvas: Canvas) {
+        if (spec.sizeBucket == SizeBucket.L) {
+            var totalGb = 0
+            var freeGb = 0
+            try {
+                val path = Environment.getDataDirectory()
+                val stat = StatFs(path.path)
+                val blockSize = stat.blockSizeLong
+                totalGb = ((stat.blockCountLong * blockSize) / (1024L * 1024L * 1024L)).toInt()
+                freeGb = ((stat.availableBlocksLong * blockSize) / (1024L * 1024L * 1024L)).toInt()
+            } catch (_: Exception) {
+            }
+            val usedGb = (totalGb - freeGb).coerceAtLeast(0)
+            val pct = if (totalGb > 0) ((usedGb.toFloat() / totalGb) * 100).toInt().coerceIn(0, 100) else 0
+            val pctStr = "$pct%"
+            renderLargeStat(
+                spec, canvas,
+                header = "STORAGE BREAKDOWN",
+                value = pctStr,
+                detail = "$usedGb / $totalGb GB USED",
+                footnote = "$freeGb GB FREE",
+                barCurrent = usedGb,
+                barMax = totalGb.coerceAtLeast(1),
+                barDots = 24,
+                accentIndices = setOf(pctStr.length - 1)
+            )
+            return
+        }
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
         val accentColor = spec.accent.hex

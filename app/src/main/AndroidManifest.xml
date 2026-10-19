@@ -57,10 +57,21 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.config.WidgetConfigureActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication"
+            android:excludeFromRecents="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <!-- Widget Providers: MUST be exported="true" for Launcher to load widgets -->
         <receiver
             android:name=".widgets.base.DotWidgetProviderS"
-            android:label="Dot Widget (2x2)"
+            android:label="Dot Widgets • Small"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -72,7 +83,7 @@
 
         <receiver
             android:name=".widgets.base.DotWidgetProviderM"
-            android:label="Dot Widget (4x2)"
+            android:label="Dot Widgets • Wide"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -84,7 +95,7 @@
 
         <receiver
             android:name=".widgets.base.DotWidgetProviderL"
-            android:label="Dot Widget (4x4)"
+            android:label="Dot Widgets • Large"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

@@ -25,12 +25,16 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +49,7 @@ import com.example.data.prefs.PreferencesManager
 import com.example.data.setups.SetupBundle
 import com.example.data.setups.SetupRepository
 import com.example.data.wallpapers.WallpaperManagerHelper
+import com.example.ui.components.TagPill
 import com.example.widgets.base.WidgetRegistry
 import kotlinx.coroutines.launch
 
@@ -69,6 +74,7 @@ fun SetupsScreen(
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Matching wallpaper + widget combination + accent in one tap.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -110,6 +116,8 @@ fun SetupCard(
     onApply: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isApplying by remember { mutableStateOf(false) }
+
     val wallpaperThumbnail = remember(setup.wallpaperIndex) {
         val wpItem = WallpaperManagerHelper.WALLPAPERS.getOrElse(setup.wallpaperIndex) {
             WallpaperManagerHelper.WALLPAPERS.first()
@@ -145,19 +153,10 @@ fun SetupCard(
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .border(1.dp, setup.accent.color, RoundedCornerShape(6.dp))
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
-            ) {
-                Text(
-                    text = setup.accent.displayName.uppercase(),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = setup.accent.color
-                )
-            }
+            TagPill(
+                text = setup.accent.displayName,
+                accentColor = setup.accent.color
+            )
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -224,7 +223,13 @@ fun SetupCard(
                 }
 
                 Button(
-                    onClick = onApply,
+                    onClick = {
+                        if (!isApplying) {
+                            isApplying = true
+                            onApply()
+                            isApplying = false
+                        }
+                    },
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = setup.accent.color,
@@ -235,9 +240,13 @@ fun SetupCard(
                         .height(42.dp)
                         .testTag("apply_setup_${setup.id}")
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("APPLY SETUP", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    if (isApplying) {
+                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                    } else {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("APPLY SETUP", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

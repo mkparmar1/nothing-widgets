@@ -2,6 +2,7 @@ package com.example.widgets.catalogue
 
 import android.content.Context
 import android.graphics.Canvas
+import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.RenderKit
 import com.example.data.battery.BatteryHelper
@@ -123,6 +124,11 @@ object LiveDataRenderers {
             others?.take(slots - 1)?.forEach { add(Triple(it.name.uppercase(), it.level, false)) }
         }
 
+        if (spec.sizeBucket == SizeBucket.L) {
+            renderDeviceBatteriesLarge(spec, canvas, kit, items, slots)
+            return
+        }
+
         val slotW = kit.maxW / slots
         val cy = kit.height * 0.52f
         val radius = minOf(slotW * 0.36f, kit.height * 0.22f)
@@ -152,6 +158,53 @@ object LiveDataRenderers {
             val hint = if (others == null) "ALLOW NEARBY DEVICES IN THE APP" else "NO BLUETOOTH DEVICES CONNECTED"
             val x = kit.pad + slotW + 8f * d
             DotMatrixRenderer.drawFittedLabel(canvas, hint, x, cy + 4f * d, kit.width - kit.pad - x, kit.textPaint(kit.greyColor, 10f, 13f))
+        }
+    }
+
+    /** 4×4 device battery: rings laid out in two columns (2×2 for quad, one row for combo). */
+    private fun renderDeviceBatteriesLarge(
+        spec: WidgetSpec,
+        canvas: Canvas,
+        kit: RenderKit,
+        items: List<Triple<String, Int?, Boolean>>,
+        slots: Int
+    ) {
+        val d = kit.d
+        val cols = 2
+        val rows = if (slots >= 4) 2 else 1
+        val cellW = kit.maxW / cols
+        val areaTop = kit.pad + 26f * d
+        val cellH = (kit.height - areaTop - kit.pad) / rows
+        val radius = minOf(cellW * 0.30f, cellH * 0.30f)
+
+        items.forEachIndexed { i, (name, level, charging) ->
+            val col = i % cols
+            val row = i / cols
+            val cx = kit.pad + col * cellW + cellW / 2f
+            val cy = areaTop + row * cellH + cellH * 0.40f
+            DotMatrixRenderer.drawDotRing(
+                canvas = canvas,
+                centerX = cx,
+                centerY = cy,
+                radius = radius,
+                totalDots = 20,
+                filledDots = level?.let { it * 20 / 100 } ?: 0,
+                dotRadius = radius * 0.12f,
+                onColor = kit.onColor,
+                offColor = kit.offColor,
+                accentColor = if (charging) kit.accentColor else kit.onColor
+            )
+            val pct = level?.let { "$it%" } ?: "--"
+            val paintPct = kit.textPaint(if (charging) kit.accentColor else kit.onColor, 12f, 18f)
+            canvas.drawText(pct, cx - paintPct.measureText(pct) / 2f, cy + paintPct.textSize / 3f, paintPct)
+            val paintName = kit.textPaint(kit.greyColor, 8f, 12f)
+            DotMatrixRenderer.drawFittedLabel(canvas, name, cx - cellW * 0.45f, cy + radius + 16f * d, cellW * 0.9f, paintName)
+        }
+
+        if (items.size == 1) {
+            val hint = "ALLOW NEARBY DEVICES IN THE APP"
+            val cx = kit.pad + cellW + cellW / 2f
+            DotMatrixRenderer.drawFittedLabel(canvas, hint, cx - cellW * 0.45f, areaTop + cellH * 0.40f + 6f * d, cellW * 0.9f, kit.textPaint(kit.greyColor, 9f, 13f))
         }
     }
 }

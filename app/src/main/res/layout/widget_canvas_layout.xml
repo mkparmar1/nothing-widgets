@@ -91,6 +91,24 @@
             android:layout_weight="36" />
     </LinearLayout>
 
+    <!-- Animated Soundwave: the launcher flips through these frames while the widget is visible.
+         Frames are alpha-only bitmaps tinted with setColorFilter. -->
+    <ViewFlipper
+        android:id="@+id/soundwave_flipper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:autoStart="true"
+        android:flipInterval="200"
+        android:visibility="gone">
+
+        <ImageView android:id="@+id/wave_frame_0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/wave_frame_1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/wave_frame_2" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/wave_frame_3" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/wave_frame_4" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+        <ImageView android:id="@+id/wave_frame_5" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:importantForAccessibility="no" />
+    </ViewFlipper>
+
     <!-- Tap regions built at runtime (rows of cells) for widgets with several buttons. -->
     <LinearLayout
         android:id="@+id/dynamic_regions"

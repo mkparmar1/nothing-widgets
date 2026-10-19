@@ -22,6 +22,10 @@ object ClockStyleRenderers {
         kit.header("FLIP CLOCK")
 
         val cal = Calendar.getInstance()
+        if (spec.sizeBucket == SizeBucket.L) {
+            renderFlipClockLarge(spec, canvas, kit, cal)
+            return
+        }
         val digits = String.format(Locale.US, "%02d%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
 
         val colonW = 18f * d
@@ -69,6 +73,51 @@ object ClockStyleRenderers {
             val date = SimpleDateFormat("EEE, dd MMM", Locale.US).format(cal.time).uppercase()
             kit.labelCentered(date, kit.height - kit.pad, kit.textPaint(kit.greyColor, 11f, 15f))
         }
+    }
+
+    /** 4×4 flip clock: hours on the top pair of cards, minutes on the bottom pair. */
+    private fun renderFlipClockLarge(spec: WidgetSpec, canvas: Canvas, kit: RenderKit, cal: Calendar) {
+        val d = kit.d
+        val rows = listOf(
+            String.format(Locale.US, "%02d", cal.get(Calendar.HOUR_OF_DAY)),
+            String.format(Locale.US, "%02d", cal.get(Calendar.MINUTE))
+        )
+
+        val top = kit.pad + 24f * d
+        val bottom = kit.height - kit.pad - 20f * d
+        val rowGap = 10f * d
+        val cardGap = 6f * d
+        val cardH = minOf((bottom - top - rowGap) / 2f, kit.maxW * 0.30f)
+        val cardW = (kit.maxW - cardGap) / 2f
+        val radius = 10f * d
+        val cardPaint = kit.fill(if (spec.isDark) 0xFF161616.toInt() else 0xFFE4E4E4.toInt())
+        val splitPaint = kit.fill(if (spec.isDark) 0xFF000000.toInt() else 0xFFF2F2F2.toInt()).apply { strokeWidth = 2f * d }
+        val startTop = top + ((bottom - top) - (cardH * 2f + rowGap)) / 2f
+
+        rows.forEachIndexed { r, pair ->
+            val y = startTop + r * (cardH + rowGap)
+            pair.forEachIndexed { c, ch ->
+                val x = kit.pad + c * (cardW + cardGap)
+                val rect = RectF(x, y, x + cardW, y + cardH)
+                canvas.drawRoundRect(rect, radius, radius, cardPaint)
+                val gap = DotMatrixRenderer.fitDotGap(1, cardW * 0.5f, cardH * 0.62f, 12f * d)
+                val textW = DotMatrixRenderer.measureTextWidth(1, gap)
+                DotMatrixRenderer.drawText(
+                    canvas = canvas,
+                    text = ch.toString(),
+                    startX = rect.centerX() - textW / 2f,
+                    startY = rect.centerY() - 3 * gap,
+                    dotRadius = gap * 0.38f,
+                    dotGap = gap,
+                    onColor = kit.onColor,
+                    offColor = kit.offColor
+                )
+                canvas.drawLine(rect.left, rect.centerY(), rect.right, rect.centerY(), splitPaint)
+            }
+        }
+
+        val date = SimpleDateFormat("EEE, dd MMM", Locale.US).format(cal.time).uppercase()
+        kit.labelCentered(date, kit.height - kit.pad, kit.textPaint(kit.greyColor, 7f))
     }
 
     /** Time spelled out in words, rounded to the nearest five minutes. */

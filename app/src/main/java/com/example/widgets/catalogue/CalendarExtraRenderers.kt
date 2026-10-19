@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.RenderKit
 import com.example.data.calendar.CalendarRepository
@@ -61,10 +62,36 @@ object CalendarExtraRenderers {
             val titleX = kit.pad + 14f * d + timeW
             DotMatrixRenderer.drawFittedLabel(canvas, event.title.uppercase(), titleX, y, kit.width - kit.pad - titleX, paintTitle)
         }
+        val isLarge = spec.sizeBucket == SizeBucket.L
         if (events.size > shown.size) {
             val more = "+${events.size - shown.size} MORE"
             val paintMore = kit.textPaint(kit.greyColor, 9.5f, 12f)
-            canvas.drawText(more, kit.width - kit.pad - paintMore.measureText(more), kit.height - kit.pad * 0.6f, paintMore)
+            val moreY = if (isLarge) kit.height - kit.pad * 2.6f else kit.height - kit.pad * 0.6f
+            canvas.drawText(more, kit.width - kit.pad - paintMore.measureText(more), moreY, paintMore)
+        }
+
+        // 4×4 adds a full 24-hour strip so the taller canvas still reads as "today".
+        if (isLarge) {
+            val timed = events.filter { !it.allDay }
+            val dayStart = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val nowForStrip = System.currentTimeMillis()
+            val nowHour = ((nowForStrip - dayStart) / 3_600_000L).toInt()
+            val cols = 24
+            val gap = kit.maxW / (cols - 1)
+            val y = kit.height - kit.pad * 0.9f
+            for (h in 0 until cols) {
+                val x = kit.pad + h * gap
+                val hourStart = dayStart + h * 3_600_000L
+                val busy = timed.any { it.beginMs < hourStart + 3_600_000L && it.endMs > hourStart }
+                val paint = when {
+                    h == nowHour -> kit.fill(kit.accentColor)
+                    busy -> kit.fill(kit.onColor)
+                    else -> kit.fill(kit.offColor)
+                }
+                canvas.drawCircle(x, y, if (busy || h == nowHour) gap * 0.42f else gap * 0.26f, paint)
+            }
         }
     }
 

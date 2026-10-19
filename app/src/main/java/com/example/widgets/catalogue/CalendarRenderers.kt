@@ -2,6 +2,7 @@ package com.example.widgets.catalogue
 
 import android.graphics.Canvas
 import android.graphics.Paint
+import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
 import com.example.widgets.base.WidgetSpec
 import java.text.SimpleDateFormat
@@ -129,8 +130,15 @@ object CalendarRenderers {
         val paintOn = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = onColor }
         val paintOff = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = offColor }
         val paintAccent = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accentColor }
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        val paintNumOn = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = onColor
+            textSize = (10f * spec.density).coerceIn(12f, 20f)
+            isFakeBoldText = true
+        }
+        val paintNumAccent = Paint(paintNumOn).apply { color = 0xFF0A0A0A.toInt() }
 
-        // Draw day dots
+        // Draw day dots (compact) or day numbers (4×4)
         for (day in 1..35) {
             val cellIndex = day - 1
             val dayNumber = cellIndex - firstDayOfWeek + 1
@@ -141,14 +149,25 @@ object CalendarRenderers {
             val cy = gridStartY + (14f * spec.density) + (row * rowGap)
 
             if (dayNumber in 1..maxDays) {
-                if (dayNumber == currentDay) {
-                    canvas.drawCircle(cx, cy, 5.0f * spec.density, paintAccent)
-                } else if (dayNumber < currentDay) {
-                    canvas.drawCircle(cx, cy, 3.2f * spec.density, paintOn)
+                if (isLarge) {
+                    val label = dayNumber.toString()
+                    val tw = paintNumOn.measureText(label)
+                    if (dayNumber == currentDay) {
+                        canvas.drawCircle(cx, cy, paintNumOn.textSize * 0.68f, paintAccent)
+                        canvas.drawText(label, cx - tw / 2f, cy + paintNumOn.textSize / 3f, paintNumAccent)
+                    } else {
+                        canvas.drawText(label, cx - tw / 2f, cy + paintNumOn.textSize / 3f, paintNumOn)
+                    }
                 } else {
-                    canvas.drawCircle(cx, cy, 2.2f * spec.density, paintOff)
+                    if (dayNumber == currentDay) {
+                        canvas.drawCircle(cx, cy, 5.0f * spec.density, paintAccent)
+                    } else if (dayNumber < currentDay) {
+                        canvas.drawCircle(cx, cy, 3.2f * spec.density, paintOn)
+                    } else {
+                        canvas.drawCircle(cx, cy, 2.2f * spec.density, paintOff)
+                    }
                 }
-            } else {
+            } else if (!isLarge) {
                 canvas.drawCircle(cx, cy, 1.4f * spec.density, paintOff)
             }
         }

@@ -221,6 +221,9 @@ object WeatherRenderers {
                     val paintLow = kit.textPaint(kit.greyColor, 10f, 13f)
                     val low = "${day.lowC}°"
                     canvas.drawText(low, cx - paintLow.measureText(low) / 2f, labelY + 74f * d, paintLow)
+                    val paintRain = kit.textPaint(kit.accentColor, 9f, 12f)
+                    val rain = "${day.precipitationPct}%"
+                    canvas.drawText(rain, cx - paintRain.measureText(rain) / 2f, labelY + 90f * d, paintRain)
                 }
             }
         }

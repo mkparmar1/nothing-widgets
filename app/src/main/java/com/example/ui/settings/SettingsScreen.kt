@@ -20,9 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -45,12 +45,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.bitmap.BitmapCache
-import com.example.core.theme.AccentOption
-import com.example.data.db.AppDatabase
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.AccentSelectorRow
 import com.example.ui.permissions.PermissionList
 import com.example.ui.permissions.allPermissionsGranted
+import com.example.widgets.base.WidgetAlarmScheduler
 import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.launch
 
@@ -76,8 +75,9 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "Global accent repainting, battery discipline & system audit.",
+                text = "Global accent repainting and live widget status.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF8A8A8A)
             )
@@ -88,14 +88,14 @@ fun SettingsScreen(
 
         if (!allPermissionsGranted(context)) {
             Text(
-                text = "DATA ACCESS",
+                text = "DATA ACCESS & PERMISSIONS",
                 style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFF8A8A8A)
             )
             PermissionList(accent = globalAccent, showGranted = false)
         }
 
-        // --- 1. GLOBAL ACCENT REPAINT CARD (§6) ---
+        // --- 1. GLOBAL ACCENT REPAINT CARD ---
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -158,7 +158,11 @@ fun SettingsScreen(
             }
         }
 
-        // --- 2. BATTERY & CORRECTNESS AUDIT (§4.1 & §4.3) ---
+        // --- 2. WIDGET STATUS ---
+        val widgetCount = remember { WidgetRenderEngine.placedWidgetCount(context) }
+        val exactAlarms = remember { WidgetAlarmScheduler.canScheduleExactAlarms(context) }
+        val lastRefresh = prefs.getLastWidgetRefresh()
+        val nextRefresh = if (widgetCount == 0) "Paused — no widgets" else "In 1 min"
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -173,20 +177,66 @@ fun SettingsScreen(
                 ) {
                     Icon(Icons.Default.BatteryChargingFull, contentDescription = null, tint = globalAccent.color)
                     Text(
-                        text = "BATTERY & CORRECTNESS AUDIT",
+                        text = "WIDGET STATUS",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                AuditRow("Zero background drain with 0 widgets", "Verified 0% wakeups")
-                AuditRow("Live sticky battery broadcast", "No polling or loop")
-                AuditRow("Weather stale-guard (>90 min)", "Shows '—' not wrong temp")
-                AuditRow("Transaction size safety", "< 1.5MB RemoteViews cap")
-                AuditRow("No foreground services", "Compliant")
+                AuditRow("Widgets placed", "$widgetCount")
+                AuditRow("Last refresh", formatRelative(lastRefresh))
+                AuditRow("Next refresh", nextRefresh)
+                AuditRow("Exact alarms", if (exactAlarms) "On" else "Off")
             }
         }
+
+        // --- 3. APP INFORMATION & CREDITS ---
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
+        ) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = globalAccent.color)
+                    Text(
+                        text = "DOT WIDGETS v1.0",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Crafted with Nothing OS dot-matrix aesthetics, Jetpack Compose, and Open-Meteo weather APIs.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF8A8A8A)
+                )
+                Text(
+                    text = "Typography: Space Grotesk (OFL) & JetBrains Mono (OFL).",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(0xFF8A8A8A)
+                )
+            }
+        }
+    }
+}
+
+private fun formatRelative(ms: Long): String {
+    if (ms <= 0L) return "Never"
+    val diff = System.currentTimeMillis() - ms
+    return when {
+        diff < 60_000 -> "Just now"
+        diff < 3_600_000 -> "${diff / 60_000} min ago"
+        diff < 86_400_000 -> "${diff / 3_600_000} h ago"
+        else -> "${diff / 86_400_000} d ago"
     }
 }
 

@@ -57,10 +57,9 @@ private const val ONBOARDING_PREFS = "dot_widgets_onboarding"
 
 /**
  * The permissions screen shows on first launch, and again while exact alarms (needed by every
- * clock) are off. Everything else can be granted later from Settings.
+ * clock) are off. Everything else can be granted later from Settings or in a widget's setup.
  */
 fun shouldShowPermissions(context: Context): Boolean {
-    if (allPermissionsGranted(context)) return false
     val seen = context.getSharedPreferences(ONBOARDING_PREFS, Context.MODE_PRIVATE).getBoolean("seen", false)
     return !seen || !AppPermission.ExactAlarms.isGranted(context)
 }
@@ -104,11 +103,16 @@ fun PermissionsScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Each permission powers specific widgets with your real data. Allow the ones you want — you can change them any time in Settings.",
+                text = "Dot Widgets needs one permission to keep clock widgets ticking on the minute. Weather, calendar and other data are asked for only when you choose a widget that uses them.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF8A8A8A)
             )
-            PermissionList(accent = accent, showGranted = true, onAllGranted = onDone)
+            PermissionList(
+                accent = accent,
+                showGranted = true,
+                permissions = listOf(AppPermission.ExactAlarms),
+                onAllGranted = onDone
+            )
             TextButton(
                 onClick = onDone,
                 modifier = Modifier
@@ -126,7 +130,12 @@ fun PermissionsScreen(
  * page and are re-checked when the user comes back.
  */
 @Composable
-fun PermissionList(accent: AccentOption, showGranted: Boolean, onAllGranted: () -> Unit = {}) {
+fun PermissionList(
+    accent: AccentOption,
+    showGranted: Boolean,
+    permissions: List<AppPermission> = AppPermission.ALL,
+    onAllGranted: () -> Unit = {}
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // Bumped whenever something may have changed, to re-read every isGranted().
@@ -142,7 +151,7 @@ fun PermissionList(accent: AccentOption, showGranted: Boolean, onAllGranted: () 
         onPauseOrDispose { }
     }
 
-    val states = remember(version) { AppPermission.ALL.associateWith { it.isGranted(context) } }
+    val states = remember(version, permissions) { permissions.associateWith { it.isGranted(context) } }
 
     // React to permissions that changed since the last check.
     LaunchedEffect(states) {
@@ -161,7 +170,7 @@ fun PermissionList(accent: AccentOption, showGranted: Boolean, onAllGranted: () 
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        AppPermission.ALL.filter { showGranted || states[it] != true }.forEach { permission ->
+        permissions.filter { showGranted || states[it] != true }.forEach { permission ->
             PermissionRow(
                 permission = permission,
                 granted = states[permission] == true,

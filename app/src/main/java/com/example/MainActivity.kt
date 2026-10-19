@@ -1,16 +1,13 @@
 package com.example
 
-import android.content.Context
 import android.os.Bundle
+import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +15,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -28,13 +24,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material.icons.filled.Widgets
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -57,21 +50,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.core.theme.AccentOption
+import androidx.lifecycle.lifecycleScope
 import com.example.data.battery.BatteryHelper
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.browse.BrowserScreen
-import com.example.ui.components.AccentSelectorRow
+import com.example.ui.permissions.AppPermission
 import com.example.ui.permissions.PermissionsScreen
 import com.example.ui.permissions.markPermissionsSeen
 import com.example.ui.permissions.shouldShowPermissions
-import com.example.ui.setups.SetupsScreen
 import com.example.ui.settings.SettingsScreen
+import com.example.ui.setups.SetupsScreen
 import com.example.ui.theme.DotWidgetsTheme
 import com.example.ui.wallpapers.WallpapersScreen
 import com.example.ui.weather.WeatherDetailSheet
-import com.example.widgets.base.WidgetDefinition
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -80,6 +73,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val openWeatherDetail = intent.getBooleanExtra("open_weather_detail", false)
+        intent.getStringExtra("open_permission")?.let(::openPermission)
 
         com.example.widgets.base.WidgetAlarmScheduler.scheduleNextMinuteTick(this)
         lifecycleScope.launch(Dispatchers.IO) {
@@ -119,6 +113,23 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.getStringExtra("open_permission")?.let(::openPermission)
+    }
+
+    /** A tapped "needs access" widget lands directly on the permission that widget is missing. */
+    private fun openPermission(id: String) {
+        val permission = AppPermission.ALL.firstOrNull { it.id == id } ?: return
+        when (permission) {
+            is AppPermission.Runtime -> ActivityCompat.requestPermissions(this, permission.permissions, 1001)
+            is AppPermission.SettingsPage -> permission.intent(this)?.let {
+                runCatching { startActivity(it) }
+            }
+        }
+    }
 }
 
 @Composable
@@ -130,8 +141,6 @@ fun DotWidgetsApp(
     val currentAccent by prefs.accent.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    var showAccentPopup by remember { mutableStateOf(false) }
-
     val battery = remember { BatteryHelper.getBatteryStatus(context) }
 
     Scaffold(
@@ -148,7 +157,7 @@ fun DotWidgetsApp(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Brand title with accent dot
+                    // Minimal Brand title with accent dot
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = "DOT WIDGETS",
@@ -165,64 +174,26 @@ fun DotWidgetsApp(
                         )
                     }
 
-                    // Status and Accent controls
+                    // Live Battery Chip
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Live Battery Chip
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(6.dp))
-                                .background(MaterialTheme.colorScheme.surface)
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(if (battery.isCharging) currentAccent.color else Color(0xFFB8E000))
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "${battery.level}%",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        // Accent Quick Trigger
-                        IconButton(
-                            onClick = { showAccentPopup = !showAccentPopup },
-                            modifier = Modifier.testTag("quick_accent_button")
-                        ) {
-                            Icon(
-                                Icons.Default.Palette,
-                                contentDescription = "Accent",
-                                tint = currentAccent.color
-                            )
-                        }
-                    }
-                }
-
-                if (showAccentPopup) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(6.dp))
+                            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(6.dp))
                             .background(MaterialTheme.colorScheme.surface)
-                            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(12.dp))
-                            .padding(12.dp)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
-                        AccentSelectorRow(
-                            selected = currentAccent,
-                            onSelect = {
-                                prefs.setGlobalAccent(it)
-                                showAccentPopup = false
-                            }
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(if (battery.isCharging) currentAccent.color else Color(0xFFB8E000))
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "${battery.level}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }
@@ -244,7 +215,7 @@ fun DotWidgetsApp(
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = currentAccent.color,
                         selectedTextColor = currentAccent.color,
-                        indicatorColor = Color(0x1AE02B2B)
+                        indicatorColor = currentAccent.color.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.testTag("nav_widgets")
                 )
@@ -256,7 +227,7 @@ fun DotWidgetsApp(
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = currentAccent.color,
                         selectedTextColor = currentAccent.color,
-                        indicatorColor = Color(0x1AE02B2B)
+                        indicatorColor = currentAccent.color.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.testTag("nav_setups")
                 )
@@ -268,7 +239,7 @@ fun DotWidgetsApp(
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = currentAccent.color,
                         selectedTextColor = currentAccent.color,
-                        indicatorColor = Color(0x1AE02B2B)
+                        indicatorColor = currentAccent.color.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.testTag("nav_wallpapers")
                 )
@@ -280,7 +251,7 @@ fun DotWidgetsApp(
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = currentAccent.color,
                         selectedTextColor = currentAccent.color,
-                        indicatorColor = Color(0x1AE02B2B)
+                        indicatorColor = currentAccent.color.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.testTag("nav_settings")
                 )

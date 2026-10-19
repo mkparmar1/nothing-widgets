@@ -34,31 +34,35 @@ class WidgetRenderSnapshotTest {
         val failures = mutableListOf<String>()
         val byCategory = linkedMapOf<String, MutableList<Pair<String, Bitmap>>>()
 
-        for (definition in WidgetRegistry.getAll()) {
-            for (size in definition.sizes) {
-                val dims = SizeResolver.resolveDimensions(context, size)
-                val spec = WidgetSpec(
-                    widthPx = dims.widthPx,
-                    heightPx = dims.heightPx,
-                    density = dims.density,
-                    sizeBucket = size,
-                    accent = AccentOption.RED,
-                    bgMode = BackgroundMode.SOLID,
-                    themeMode = ThemeMode.FORCE_DARK,
-                    isDark = true,
-                    cornerRadiusDp = 20,
-                    showLabel = true,
-                    tapAction = definition.defaultTap
-                )
-                val bitmap = Bitmap.createBitmap(dims.widthPx, dims.heightPx, Bitmap.Config.ARGB_8888)
-                try {
-                    definition.render(context, spec, Canvas(bitmap))
-                    File(outDir, "${definition.id}_${size.name}.png").outputStream().use {
-                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        for (isDark in listOf(true, false)) {
+            val themeKey = if (isDark) "dark" else "light"
+            for (definition in WidgetRegistry.getAll()) {
+                for (size in definition.sizes) {
+                    val dims = SizeResolver.resolveDimensions(context, size)
+                    val spec = WidgetSpec(
+                        widthPx = dims.widthPx,
+                        heightPx = dims.heightPx,
+                        density = dims.density,
+                        sizeBucket = size,
+                        accent = AccentOption.RED,
+                        bgMode = BackgroundMode.SOLID,
+                        themeMode = if (isDark) ThemeMode.FORCE_DARK else ThemeMode.FORCE_LIGHT,
+                        isDark = isDark,
+                        cornerRadiusDp = 20,
+                        showLabel = true,
+                        tapAction = definition.defaultTap
+                    )
+                    val bitmap = Bitmap.createBitmap(dims.widthPx, dims.heightPx, Bitmap.Config.ARGB_8888)
+                    try {
+                        definition.render(context, spec, Canvas(bitmap))
+                        File(outDir, "${definition.id}_${size.name}_$themeKey.png").outputStream().use {
+                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                        }
+                        byCategory.getOrPut("${definition.category.name}_$themeKey") { mutableListOf() } +=
+                            "${definition.id} [$size]" to bitmap
+                    } catch (e: Throwable) {
+                        failures += "${definition.id} [$size] $themeKey: $e"
                     }
-                    byCategory.getOrPut(definition.category.name) { mutableListOf() } += "${definition.id} [$size]" to bitmap
-                } catch (e: Throwable) {
-                    failures += "${definition.id} [$size]: $e"
                 }
             }
         }

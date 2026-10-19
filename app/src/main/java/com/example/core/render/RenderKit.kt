@@ -12,13 +12,17 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
     val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
     val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
     val accentColor = spec.accent.hex
-    val greyColor = 0xFF8A8A8A.toInt()
+    // Grey captions need more contrast on a light background to stay legible.
+    val greyColor = if (spec.isDark) 0xFF8A8A8A.toInt() else 0xFF6A6A6A.toInt()
 
     val pad = spec.widthPx * 0.08f
     val maxW = spec.widthPx - (2 * pad)
     val width = spec.widthPx.toFloat()
     val height = spec.heightPx.toFloat()
     val d = spec.density
+
+    /** 1 u = 1% of the widget's short side. Text sized in u scales with the widget. */
+    val u = minOf(width, height) / 100f
 
     fun background() {
         DotMatrixRenderer.drawBackground(
@@ -42,6 +46,13 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
         this.color = color
         textSize = (sizeDp * d).coerceAtMost(maxPx)
         isFakeBoldText = bold
+    }
+
+    /** Text sized in [u]; scales evenly with the widget instead of being capped in px. */
+    fun textPaint(color: Int, sizeU: Float) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color
+        textSize = sizeU * u
+        isFakeBoldText = true
     }
 
     fun fill(color: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }

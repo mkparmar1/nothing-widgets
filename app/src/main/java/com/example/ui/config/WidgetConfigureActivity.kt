@@ -1,0 +1,270 @@
+package com.example.ui.config
+
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProviderInfo
+import android.content.Intent
+import android.os.Bundle
+import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
+import com.example.core.bitmap.SizeBucket
+import com.example.core.bitmap.SizeResolver
+import com.example.core.theme.AccentOption
+import com.example.core.theme.BackgroundMode
+import com.example.core.theme.ThemeMode
+import com.example.data.db.AppDatabase
+import com.example.data.db.WidgetInstance
+import com.example.data.prefs.PreferencesManager
+import com.example.ui.components.WidgetBitmapPreview
+import com.example.ui.theme.DotWidgetsTheme
+import com.example.widgets.base.WidgetDefinition
+import com.example.widgets.base.WidgetRegistry
+import com.example.widgets.base.WidgetRenderEngine
+import com.example.widgets.base.WidgetSpec
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class WidgetConfigureActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val appWidgetId = intent.getIntExtra(
+            AppWidgetManager.EXTRA_APPWIDGET_ID,
+            AppWidgetManager.INVALID_APPWIDGET_ID
+        )
+        val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        setResult(RESULT_CANCELED, result)
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            finish()
+            return
+        }
+
+        val providerInfo = AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId)
+        val size = providerInfo?.let(::sizeForProvider)
+        if (providerInfo == null || size == null) {
+            Log.e(TAG, "Cannot resolve provider size for app widget $appWidgetId")
+            finish()
+            return
+        }
+
+        lifecycleScope.launch {
+            val existing = withContext(Dispatchers.IO) {
+                AppDatabase.getInstance(applicationContext).widgetInstanceDao().getById(appWidgetId)
+            }
+            val editInstance = existing?.takeIf { WidgetSetupState.isConfigured(it) }
+            val initialDefinition = editInstance
+                ?.let { WidgetRegistry.getById(it.widgetTypeId) }
+                ?.takeIf { size in it.sizes }
+            showConfiguration(appWidgetId, size, editInstance, initialDefinition)
+        }
+    }
+
+    private fun showConfiguration(
+        appWidgetId: Int,
+        size: SizeBucket,
+        editInstance: WidgetInstance?,
+        initialDefinition: WidgetDefinition?
+    ) {
+        val preferences = PreferencesManager.getInstance(this)
+        val initialState = if (editInstance != null && initialDefinition != null) {
+            WidgetSetupState.fromInstance(editInstance, initialDefinition, preferences, size)
+        } else {
+            null
+        }
+        val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+
+        setContent {
+            DotWidgetsTheme(accentOption = initialState?.accent ?: preferences.getSavedAccent()) {
+                var definition by remember {
+                    mutableStateOf(initialDefinition)
+                }
+                var setupState by remember {
+                    mutableStateOf(initialState)
+                }
+                var isSaving by remember { mutableStateOf(false) }
+                var saveError by remember { mutableStateOf<String?>(null) }
+
+                if (definition == null) {
+                    WidgetDesignPicker(
+                        size = size,
+                        onSelect = { selected ->
+                            definition = selected
+                            setupState = WidgetSetupState.defaults(selected, preferences, size)
+                            saveError = null
+                        }
+                    )
+                } else {
+                    val selectedDefinition = definition!!
+                    WidgetSetupContent(
+                        definition = selectedDefinition,
+                        initial = setupState ?: WidgetSetupState.defaults(selectedDefinition, preferences, size),
+                        lockedSize = size,
+                        saveLabel = if (initialDefinition == null) "ADD WIDGET" else "SAVE CHANGES",
+                        saveError = saveError,
+                        onStateChange = { setupState = it },
+                        onSave = { state ->
+                            if (!isSaving && com.example.data.billing.Entitlements.hasFullAccess(applicationContext)) {
+                                isSaving = true
+                                saveError = null
+                                lifecycleScope.launch {
+                                    try {
+                                        val instance = WidgetInstance(
+                                            appWidgetId = appWidgetId,
+                                            widgetTypeId = selectedDefinition.id,
+                                            schemaVersion = 1,
+                                            configJson = state.toConfigJson(
+                                                selectedDefinition.id,
+                                                editInstance?.configJson.takeIf { initialDefinition != null }
+                                            )
+                                        )
+                                        withContext(Dispatchers.IO) {
+                                            AppDatabase.getInstance(applicationContext)
+                                                .widgetInstanceDao()
+                                                .insertOrUpdate(instance)
+                                        }
+                                        val views = WidgetRenderEngine.buildRemoteViews(
+                                            applicationContext,
+                                            appWidgetId,
+                                            instance
+                                        )
+                                        AppWidgetManager.getInstance(this@WidgetConfigureActivity)
+                                            .updateAppWidget(appWidgetId, views)
+                                        setResult(RESULT_OK, result)
+                                        finish()
+                                    } catch (e: Exception) {
+                                        Log.e(TAG, "Failed to save configuration for widget $appWidgetId", e)
+                                        saveError = "Couldn't save this widget. ${e.localizedMessage ?: "Please try again."}"
+                                        isSaving = false
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    private fun sizeForProvider(info: AppWidgetProviderInfo): SizeBucket? =
+        when (info.provider.className.substringAfterLast('.')) {
+            "DotWidgetProviderS" -> SizeBucket.S
+            "DotWidgetProviderM" -> SizeBucket.M
+            "DotWidgetProviderL" -> SizeBucket.L
+            else -> null
+        }
+
+    companion object {
+        private const val TAG = "WidgetConfigureActivity"
+    }
+}
+
+@Composable
+private fun WidgetDesignPicker(
+    size: SizeBucket,
+    onSelect: (WidgetDefinition) -> Unit
+) {
+    val context = LocalContext.current
+    val preferences = remember { PreferencesManager.getInstance(context) }
+    val definitionsByCategory = remember(size) {
+        WidgetRegistry.getAll()
+            .filter { size in it.sizes }
+            .groupBy { it.category }
+            .toList()
+    }
+    val accent = preferences.getSavedAccent()
+    val dark = androidx.compose.foundation.isSystemInDarkTheme()
+
+    Column(Modifier.fillMaxSize()) {
+        Text(
+            text = "CHOOSE A ${size.label.uppercase()} WIDGET",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+        )
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 160.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            definitionsByCategory.forEach { (category, definitions) ->
+                item(span = { GridItemSpan(maxLineSpan) }, key = "category_${category.name}") {
+                    Text(
+                        text = category.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)
+                    )
+                }
+                items(definitions, key = { it.id }) { definition ->
+                    val dimensions = remember(size) { SizeResolver.resolveDimensions(context, size) }
+                    val spec = remember(definition.id, accent, dark, dimensions) {
+                        WidgetSpec(
+                            widthPx = dimensions.widthPx,
+                            heightPx = dimensions.heightPx,
+                            density = dimensions.density,
+                            sizeBucket = size,
+                            accent = accent,
+                            bgMode = preferences.getSavedBgMode(),
+                            themeMode = ThemeMode.AUTO,
+                            isDark = dark,
+                            cornerRadiusDp = 16,
+                            showLabel = true,
+                            tapAction = definition.defaultTap
+                        )
+                    }
+                    Card(
+                        onClick = { onSelect(definition) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(Modifier.padding(10.dp)) {
+                            WidgetBitmapPreview(
+                                definition = definition,
+                                spec = spec,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text(
+                                text = definition.title,
+                                style = MaterialTheme.typography.titleSmall,
+                                maxLines = 1,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                            Text(
+                                text = size.cells,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

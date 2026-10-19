@@ -17,7 +17,12 @@ data class WidgetSpec(
     val cornerRadiusDp: Int,
     val showLabel: Boolean,
     val tapAction: TapAction,
-    val configJson: String = "{}"
+    val configJson: String = "{}",
+    /**
+     * True on the home screen, where live overlays (animated soundwave, ticking clocks/timers) are
+     * drawn on top of the bitmap; false in in-app previews, which must draw everything themselves.
+     */
+    val liveOverlays: Boolean = false
 )
 
 enum class TapAction(val displayName: String) {

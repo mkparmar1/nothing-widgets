@@ -28,6 +28,7 @@ import com.example.core.theme.ThemeMode
 import com.example.data.db.AppDatabase
 import com.example.data.db.WidgetInstance
 import com.example.data.prefs.PreferencesManager
+import com.example.widgets.catalogue.MediaRenderers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -96,7 +97,9 @@ object WidgetRenderEngine {
         val minH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 140)
         val sizeBucket = SizeBucket.resolve(minW, minH)
 
-        val dims = SizeResolver.resolveDimensions(context, sizeBucket, minW, minH)
+        // The animated Soundwave sends extra frames in the same update, so its main image is smaller.
+        val budget = if (instance.widgetTypeId == SOUNDWAVE_WIDGET_ID) MediaRenderers.SOUNDWAVE_MAIN_BUDGET else 1_000_000L
+        val dims = SizeResolver.resolveFromOptions(context, options, sizeBucket, budget)
 
         // Read global defaults or instance override
         val prefs = PreferencesManager.getInstance(context)
@@ -139,18 +142,26 @@ object WidgetRenderEngine {
             cornerRadiusDp = cornerRadius,
             showLabel = showLabel,
             tapAction = tapAction,
-            configJson = instance.configJson
+            configJson = instance.configJson,
+            liveOverlays = true
         )
 
         val definition = WidgetRegistry.getById(instance.widgetTypeId)
             ?: WidgetRegistry.getAll().first()
 
-        val bitmap = renderBitmap(context, definition, spec, appWidgetId)
+        val missingPermission = definition.requiredPermission?.takeIf { !it.isGranted(context) }
+        val bitmap = if (missingPermission != null) {
+            renderPermissionMessage(definition, spec, missingPermission)
+        } else {
+            renderBitmap(context, definition, spec, appWidgetId)
+        }
 
         val views = RemoteViews(context.packageName, R.layout.widget_canvas_layout)
         views.setImageViewBitmap(R.id.widget_image_view, bitmap)
+        views.setContentDescription(R.id.widget_image_view, definition.describe(context))
         applyLiveClock(views, definition.id, spec)
         applyLiveTimer(context, views, definition.id, spec)
+        applySoundwave(context, views, definition.id, spec)
 
         val regions = WidgetTapTargets.regions(context, appWidgetId, definition.id, sizeBucket)
         if (regions == null) views.setViewVisibility(R.id.dynamic_regions, View.GONE)
@@ -195,7 +206,72 @@ object WidgetRenderEngine {
             views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
         }
 
+        // A missing permission replaces the design with a tappable prompt.
+        if (missingPermission != null) {
+            views.setViewVisibility(R.id.multi_region_container, View.GONE)
+            val permissionIntent = createPermissionPendingIntent(context, appWidgetId, missingPermission.id)
+            views.setOnClickPendingIntent(R.id.widget_image_view, permissionIntent)
+            views.setOnClickPendingIntent(R.id.widget_root, permissionIntent)
+        }
+
         views
+    }
+
+    private fun renderPermissionMessage(
+        definition: WidgetDefinition,
+        spec: WidgetSpec,
+        permission: com.example.ui.permissions.AppPermission
+    ): Bitmap {
+        val bitmap = Bitmap.createBitmap(
+            spec.widthPx.coerceAtLeast(100),
+            spec.heightPx.coerceAtLeast(100),
+            Bitmap.Config.ARGB_8888
+        )
+        com.example.core.render.RenderKit.message(
+            spec,
+            Canvas(bitmap),
+            definition.title.uppercase(),
+            "${permission.title.uppercase()} ACCESS NEEDED"
+        )
+        return bitmap
+    }
+
+    private fun createPermissionPendingIntent(
+        context: Context,
+        appWidgetId: Int,
+        permissionId: String
+    ): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("open_permission", permissionId)
+        }
+        return PendingIntent.getActivity(
+            context,
+            appWidgetId * 37 + 7,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    private const val SOUNDWAVE_WIDGET_ID = "sensor.visualizer.eq"
+    private val WAVE_FRAME_IDS = intArrayOf(
+        R.id.wave_frame_0, R.id.wave_frame_1, R.id.wave_frame_2,
+        R.id.wave_frame_3, R.id.wave_frame_4, R.id.wave_frame_5
+    )
+
+    /** Animated bars for a playing Soundwave; hidden otherwise (the bitmap shows a static wave). */
+    private fun applySoundwave(context: Context, views: RemoteViews, widgetTypeId: String, spec: WidgetSpec) {
+        val frames = if (widgetTypeId == SOUNDWAVE_WIDGET_ID) MediaRenderers.soundwaveFrames(context, spec) else null
+        if (frames == null) {
+            views.setViewVisibility(R.id.soundwave_flipper, View.GONE)
+            return
+        }
+        val tint = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
+        frames.forEachIndexed { i, frame ->
+            views.setImageViewBitmap(WAVE_FRAME_IDS[i], frame)
+            views.setInt(WAVE_FRAME_IDS[i], "setColorFilter", tint)
+        }
+        views.setViewVisibility(R.id.soundwave_flipper, View.VISIBLE)
     }
 
     /** Widgets whose time is shown by the live TextClock overlay instead of the bitmap. */
@@ -371,6 +447,21 @@ object WidgetRenderEngine {
             } catch (e: Exception) {
                 android.util.Log.e("WidgetRenderEngine", "Failed to update widget ${instance.appWidgetId}", e)
             }
+        }
+
+        PreferencesManager.getInstance(context).setLastWidgetRefresh(System.currentTimeMillis())
+    }
+
+    /** Number of Dot Widgets currently placed on the home screen. */
+    fun placedWidgetCount(context: Context): Int {
+        val manager = AppWidgetManager.getInstance(context)
+        val providers = listOf(
+            android.content.ComponentName(context, DotWidgetProviderS::class.java),
+            android.content.ComponentName(context, DotWidgetProviderM::class.java),
+            android.content.ComponentName(context, DotWidgetProviderL::class.java)
+        )
+        return providers.sumOf { provider ->
+            try { manager.getAppWidgetIds(provider).size } catch (_: Exception) { 0 }
         }
     }
 }

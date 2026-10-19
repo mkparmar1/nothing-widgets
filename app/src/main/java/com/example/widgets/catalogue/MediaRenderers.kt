@@ -13,6 +13,8 @@ import com.example.data.media.NowPlaying
 import com.example.ui.permissions.AppPermission
 import com.example.widgets.base.WidgetSpec
 import java.util.Locale
+import kotlin.math.roundToInt
+import kotlin.math.sin
 
 /** Now-playing widgets driven by the active media session. */
 object MediaRenderers {
@@ -71,34 +73,83 @@ object MediaRenderers {
         drawSkipIcon(kit, thirds[2], cy, r * 0.7f, forward = true)
     }
 
+    /** Main-bitmap budget for the Soundwave, leaving room for its animation frames in the same update. */
+    const val SOUNDWAVE_MAIN_BUDGET = 650_000L
+    const val SOUNDWAVE_FRAMES = 6
+    private const val WAVE_BARS = 16
+    private const val WAVE_DOTS = 7
+
     /**
-     * Decorative soundwave for the track that's playing: bar heights are derived from the track
-     * title (so each song has its own shape) and flatten when paused.
+     * Soundwave for the track that's playing. Each song gets its own wave shape (seeded from the
+     * title). On the home screen the bars are animated by a ViewFlipper overlay (see
+     * [soundwaveFrames]); the bitmap then only carries the header and title.
      */
     fun renderSoundwave(context: Context, spec: WidgetSpec, canvas: Canvas) {
         val np = nowPlayingOrMessage(context, spec, canvas) ?: return
         val kit = RenderKit(spec, canvas)
-        val d = kit.d
         kit.background()
         kit.header(if (np.isPlaying) "SOUNDWAVE" else "SOUNDWAVE • PAUSED", if (np.isPlaying) kit.accentColor else kit.greyColor)
 
-        val bars = 16
-        val dotsPerBar = 7
-        val colGap = kit.maxW / (bars - 1)
-        val bottom = kit.height - kit.pad - 26f * d
-        val rowGap = (bottom - (kit.pad + 26f * d)) / dotsPerBar
-        // Same title -> same random sequence -> same wave shape every redraw.
-        val rnd = java.util.Random(np.title.hashCode().toLong())
-        val heights = List(bars) { 1 + rnd.nextInt(dotsPerBar) }
-        for (b in 0 until bars) {
-            val h = if (np.isPlaying) heights[b] else 1
-            for (k in 0 until dotsPerBar) {
-                val on = k < h
-                val color = if (!on) kit.offColor else if (k == h - 1 && np.isPlaying) kit.accentColor else kit.onColor
-                canvas.drawCircle(kit.pad + b * colGap, bottom - k * rowGap, if (on) 2.8f * d else 2.0f * d, kit.fill(color))
-            }
+        val animated = spec.liveOverlays && np.isPlaying
+        if (!animated) {
+            val heights = if (np.isPlaying) waveShape(np.title) else List(WAVE_BARS) { 1 }
+            drawWave(kit, canvas, heights, accentTips = np.isPlaying)
         }
         DotMatrixRenderer.drawFittedLabel(canvas, "${np.title.uppercase()} • ${np.artist.uppercase()}", kit.pad, kit.height - kit.pad, kit.maxW, kit.textPaint(kit.onColor, 10.5f, 14f))
+    }
+
+    /**
+     * Animation frames for a playing Soundwave: alpha-only bitmaps at half resolution (tinted by
+     * the ImageView), small enough that all frames plus the main bitmap fit in one widget update.
+     * Returns null when nothing is playing, so the static wave is shown instead.
+     */
+    fun soundwaveFrames(context: Context, spec: WidgetSpec): List<Bitmap>? {
+        if (!AppPermission.MediaAccess.isGranted(context)) return null
+        val np = MediaRepository.nowPlaying(context)?.takeIf { it.isPlaying } ?: return null
+        val base = waveShape(np.title)
+        val w = (spec.widthPx / 2).coerceAtLeast(1)
+        val h = (spec.heightPx / 2).coerceAtLeast(1)
+        return List(SOUNDWAVE_FRAMES) { f ->
+            val phase = 2 * Math.PI * f / SOUNDWAVE_FRAMES
+            // Each bar pulses between ~40% and 100% of its height, out of step with its neighbours.
+            val heights = base.mapIndexed { b, top ->
+                val pulse = 0.7 + 0.3 * sin(phase + b * 0.9)
+                (1 + ((top - 1) * pulse).roundToInt()).coerceIn(1, WAVE_DOTS)
+            }
+            Bitmap.createBitmap(w, h, Bitmap.Config.ALPHA_8).also { bmp ->
+                val c = Canvas(bmp)
+                c.scale(0.5f, 0.5f)
+                drawWave(RenderKit(spec, c), c, heights, accentTips = false, solid = true)
+            }
+        }
+    }
+
+    private fun waveShape(title: String): List<Int> {
+        val rnd = java.util.Random(title.hashCode().toLong())
+        return List(WAVE_BARS) { 2 + rnd.nextInt(WAVE_DOTS - 1) }
+    }
+
+    /** 16 dot columns; [solid] draws only lit dots (for alpha-only animation frames). */
+    private fun drawWave(kit: RenderKit, canvas: Canvas, heights: List<Int>, accentTips: Boolean, solid: Boolean = false) {
+        val d = kit.d
+        val colGap = kit.maxW / (WAVE_BARS - 1)
+        val bottom = kit.height - kit.pad - 26f * d
+        val rowGap = (bottom - (kit.pad + 26f * d)) / WAVE_DOTS
+        val onPaint = kit.fill(if (solid) Color.BLACK else kit.onColor)
+        val offPaint = kit.fill(kit.offColor)
+        val tipPaint = kit.fill(kit.accentColor)
+        heights.forEachIndexed { b, h ->
+            for (k in 0 until WAVE_DOTS) {
+                val on = k < h
+                if (!on && solid) continue
+                val paint = when {
+                    !on -> offPaint
+                    accentTips && k == h - 1 -> tipPaint
+                    else -> onPaint
+                }
+                canvas.drawCircle(kit.pad + b * colGap, bottom - k * rowGap, if (on) 2.8f * d else 2.0f * d, paint)
+            }
+        }
     }
 
     private fun nowPlayingOrMessage(context: Context, spec: WidgetSpec, canvas: Canvas): NowPlaying? {
