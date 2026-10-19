@@ -11,7 +11,15 @@ data class WidgetSpec(
     val density: Float,
     val sizeBucket: SizeBucket,
     val accent: AccentOption,
+    /**
+     * The accent actually drawn. Equal to [AccentOption.hex] for fixed colours, or the resolved
+     * wallpaper colour when [accent] is [AccentOption.DYNAMIC]. Renderers must use this, never
+     * `accent.hex`, so Material You works everywhere.
+     */
+    val accentColor: Int = accent.hex,
     val bgMode: BackgroundMode,
+    /** Background fill opacity, 0 = see-through, 1 = fully opaque. Ignored when [bgMode] is TRANSPARENT. */
+    val bgAlpha: Float = 1f,
     val themeMode: ThemeMode,
     val isDark: Boolean,
     val cornerRadiusDp: Int,

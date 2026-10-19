@@ -24,7 +24,10 @@ enum class AccentOption(val displayName: String, val color: Color, val hex: Int)
     AMBER("Amber", AccentAmber, 0xFFF2A516.toInt()),
     LIME("Lime", AccentLime, 0xFFB8E000.toInt()),
     CYAN("Cyan", AccentCyan, 0xFF00C2D1.toInt()),
-    PURE("White", AccentPure, 0xFFFFFFFF.toInt());
+    PURE("White", AccentPure, 0xFFFFFFFF.toInt()),
+
+    /** Material You: follows the wallpaper. [color]/[hex] are the red fallback used where a static colour is required. */
+    DYNAMIC("Wallpaper", AccentRed, 0xFFE02B2B.toInt());
 
     companion object {
         fun fromName(name: String?): AccentOption {

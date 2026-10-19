@@ -24,9 +24,13 @@ import com.example.core.bitmap.SizeBucket
 import com.example.core.bitmap.SizeResolver
 import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
+import com.example.core.theme.MaterialYouPalette
 import com.example.core.theme.ThemeMode
 import com.example.data.db.AppDatabase
 import com.example.data.db.WidgetInstance
+import com.example.core.render.DotMatrixRenderer
+import com.example.core.time.ClockOptions
+import com.example.core.time.TimeFormat
 import com.example.data.prefs.PreferencesManager
 import com.example.widgets.catalogue.MediaRenderers
 import kotlinx.coroutines.Dispatchers
@@ -57,7 +61,7 @@ object WidgetRenderEngine {
                 valueHash = spec.configJson.hashCode() + (System.currentTimeMillis() / 60000).toInt(),
                 size = spec.sizeBucket,
                 isDark = spec.isDark,
-                accent = spec.accent.name
+                accent = spec.accentColor.toString()
             )
         }
 
@@ -74,7 +78,9 @@ object WidgetRenderEngine {
         val canvas = Canvas(bitmap)
 
         try {
-            definition.render(context, spec, canvas)
+            DotMatrixRenderer.withDotStyle(ClockOptions.dotStyle(spec.configJson)) {
+                definition.render(context, spec, canvas)
+            }
         } catch (e: Exception) {
             android.util.Log.e("WidgetRenderEngine", "Render failed for ${definition.id}", e)
             com.example.widgets.catalogue.ClockRenderers.renderDigitalClock(spec, canvas)
@@ -105,9 +111,15 @@ object WidgetRenderEngine {
         val prefs = PreferencesManager.getInstance(context)
         val accentStr = instance.getAccent(prefs.getSavedAccent().name)
         val accent = AccentOption.fromName(accentStr)
+        val accentColor = if (accent == AccentOption.DYNAMIC) {
+            MaterialYouPalette.resolve(context)
+        } else {
+            accent.hex
+        }
 
         val bgModeStr = instance.getBackground(prefs.getSavedBgMode().name)
         val bgMode = BackgroundMode.fromName(bgModeStr)
+        val bgAlpha = instance.getBgAlphaPercent(100) / 100f
 
         val themeModeStr = instance.getThemeMode(prefs.getSavedThemeMode().name)
         val themeMode = ThemeMode.fromName(themeModeStr)
@@ -136,7 +148,9 @@ object WidgetRenderEngine {
             density = dims.density,
             sizeBucket = sizeBucket,
             accent = accent,
+            accentColor = accentColor,
             bgMode = bgMode,
+            bgAlpha = bgAlpha,
             themeMode = themeMode,
             isDark = isDark,
             cornerRadiusDp = cornerRadius,
@@ -275,22 +289,38 @@ object WidgetRenderEngine {
     }
 
     /** Widgets whose time is shown by the live TextClock overlay instead of the bitmap. */
-    private val LIVE_SECONDS_WIDGET_IDS = setOf("clock.seconds.live")
+    /** Digital clocks that can show seconds, with their time zone (null = phone's) and default format. */
+    private val LIVE_CLOCK_WIDGETS = mapOf(
+        "clock.seconds.live" to (null to TimeFormat.H24_SECONDS),
+        "clock.dotdigital.s" to (null to TimeFormat.H24),
+        "clock.dotdigital.m" to (null to TimeFormat.H24),
+        "clock.dotdigital.l" to (null to TimeFormat.H24),
+        "clock.world.london" to ("Europe/London" to TimeFormat.H24),
+        "clock.world.tokyo" to ("Asia/Tokyo" to TimeFormat.H24),
+        "clock.world.nyc" to ("America/New_York" to TimeFormat.H24)
+    )
 
+    /**
+     * Clocks set to show seconds: a TextClock ticked by the launcher draws the time in the chosen
+     * 12/24-hour format and time zone (the bitmap leaves the digits out).
+     */
     private fun applyLiveClock(views: RemoteViews, widgetTypeId: String, spec: WidgetSpec) {
-        if (widgetTypeId !in LIVE_SECONDS_WIDGET_IDS) {
+        val (zone, defaultTime) = LIVE_CLOCK_WIDGETS[widgetTypeId] ?: (null to TimeFormat.H24)
+        val time = ClockOptions.from(spec.configJson, defaultTime).time
+        if (widgetTypeId !in LIVE_CLOCK_WIDGETS || !time.hasSeconds) {
             views.setViewVisibility(R.id.live_clock_container, View.GONE)
             return
         }
         views.setViewVisibility(R.id.live_clock_container, View.VISIBLE)
         views.setTextColor(R.id.live_clock, if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt())
+        views.setString(R.id.live_clock, "setTimeZone", zone)
 
         // Colour the colons with the accent, matching the dot-matrix clocks. TextClock keeps
         // spans on literal characters of its format.
-        val format = SpannableString("HH:mm:ss")
+        val format = SpannableString(time.pattern)
         format.forEachIndexed { i, c ->
             if (c == ':') {
-                format.setSpan(ForegroundColorSpan(spec.accent.hex), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                format.setSpan(ForegroundColorSpan(spec.accentColor), i, i + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
         }
         views.setCharSequence(R.id.live_clock, "setFormat24Hour", format)

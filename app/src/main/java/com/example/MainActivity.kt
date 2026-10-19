@@ -1,11 +1,15 @@
 package com.example
 
-import android.os.Bundle
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -51,6 +55,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.example.core.theme.AccentOption
+import com.example.core.theme.MaterialYouPalette
 import com.example.data.battery.BatteryHelper
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.browse.BrowserScreen
@@ -120,6 +126,30 @@ class MainActivity : ComponentActivity() {
         intent.getStringExtra("open_permission")?.let(::openPermission)
     }
 
+    /** Redraw placed widgets promptly when the wallpaper (and thus the Material You accent) changes. */
+    private val wallpaperReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                com.example.widgets.base.WidgetRenderEngine.updateAllPlacedWidgets(this@MainActivity)
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ContextCompat.registerReceiver(
+            this,
+            wallpaperReceiver,
+            IntentFilter(Intent.ACTION_WALLPAPER_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        runCatching { unregisterReceiver(wallpaperReceiver) }
+    }
+
     /** A tapped "needs access" widget lands directly on the permission that widget is missing. */
     private fun openPermission(id: String) {
         val permission = AppPermission.ALL.firstOrNull { it.id == id } ?: return
@@ -139,6 +169,9 @@ fun DotWidgetsApp(
     val context = LocalContext.current
     val prefs = remember { PreferencesManager.getInstance(context) }
     val currentAccent by prefs.accent.collectAsState()
+    val accentColor = remember(currentAccent) {
+        if (currentAccent == AccentOption.DYNAMIC) Color(MaterialYouPalette.resolve(context)) else currentAccent.color
+    }
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val battery = remember { BatteryHelper.getBatteryStatus(context) }
@@ -170,7 +203,7 @@ fun DotWidgetsApp(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(currentAccent.color)
+                                .background(accentColor)
                         )
                     }
 
@@ -187,7 +220,7 @@ fun DotWidgetsApp(
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(if (battery.isCharging) currentAccent.color else Color(0xFFB8E000))
+                                .background(if (battery.isCharging) accentColor else Color(0xFFB8E000))
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
@@ -213,9 +246,9 @@ fun DotWidgetsApp(
                     icon = { Icon(Icons.Default.Widgets, contentDescription = "Widgets") },
                     label = { Text("WIDGETS", style = MaterialTheme.typography.labelSmall) },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = currentAccent.color,
-                        selectedTextColor = currentAccent.color,
-                        indicatorColor = currentAccent.color.copy(alpha = 0.15f)
+                        selectedIconColor = accentColor,
+                        selectedTextColor = accentColor,
+                        indicatorColor = accentColor.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.testTag("nav_widgets")
                 )
@@ -225,9 +258,9 @@ fun DotWidgetsApp(
                     icon = { Icon(Icons.Default.AutoAwesome, contentDescription = "Setups") },
                     label = { Text("SETUPS", style = MaterialTheme.typography.labelSmall) },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = currentAccent.color,
-                        selectedTextColor = currentAccent.color,
-                        indicatorColor = currentAccent.color.copy(alpha = 0.15f)
+                        selectedIconColor = accentColor,
+                        selectedTextColor = accentColor,
+                        indicatorColor = accentColor.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.testTag("nav_setups")
                 )
@@ -237,9 +270,9 @@ fun DotWidgetsApp(
                     icon = { Icon(Icons.Default.Wallpaper, contentDescription = "Wallpapers") },
                     label = { Text("WALLPAPERS", style = MaterialTheme.typography.labelSmall) },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = currentAccent.color,
-                        selectedTextColor = currentAccent.color,
-                        indicatorColor = currentAccent.color.copy(alpha = 0.15f)
+                        selectedIconColor = accentColor,
+                        selectedTextColor = accentColor,
+                        indicatorColor = accentColor.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.testTag("nav_wallpapers")
                 )
@@ -249,9 +282,9 @@ fun DotWidgetsApp(
                     icon = { Icon(Icons.Default.Tune, contentDescription = "Settings") },
                     label = { Text("SETTINGS", style = MaterialTheme.typography.labelSmall) },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = currentAccent.color,
-                        selectedTextColor = currentAccent.color,
-                        indicatorColor = currentAccent.color.copy(alpha = 0.15f)
+                        selectedIconColor = accentColor,
+                        selectedTextColor = accentColor,
+                        indicatorColor = accentColor.copy(alpha = 0.15f)
                     ),
                     modifier = Modifier.testTag("nav_settings")
                 )

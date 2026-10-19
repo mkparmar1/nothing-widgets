@@ -5,8 +5,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import com.example.core.theme.AccentOption
+import com.example.core.theme.MaterialYouPalette
 
 private val DarkColorScheme = darkColorScheme(
     primary = AccentRed,
@@ -46,9 +49,17 @@ fun DotWidgetsTheme(
     accentOption: AccentOption = AccentOption.RED,
     content: @Composable () -> Unit
 ) {
+    val context = LocalContext.current
+    val accent = remember(accentOption, darkTheme) {
+        if (accentOption == AccentOption.DYNAMIC) {
+            Color(MaterialYouPalette.resolve(context))
+        } else {
+            accentOption.color
+        }
+    }
     val baseScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val colorScheme = baseScheme.copy(
-        primary = accentOption.color
+        primary = accent
     )
 
     MaterialTheme(

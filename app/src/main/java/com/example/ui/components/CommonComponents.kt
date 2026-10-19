@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -55,7 +56,7 @@ fun AccentSelectorRow(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(option.color)
+                    .then(if (option == AccentOption.DYNAMIC) rainbowModifier() else Modifier.background(option.color))
                     .border(
                         width = if (isSelected) 3.dp else 1.dp,
                         color = if (isSelected) MaterialTheme.colorScheme.onBackground else Color.Transparent,
@@ -77,6 +78,16 @@ fun AccentSelectorRow(
         }
     }
 }
+
+/** Swatch for the "Wallpaper" accent: a rainbow wheel hinting it follows the wallpaper. */
+private fun rainbowModifier(): Modifier = Modifier.background(
+    Brush.sweepGradient(
+        listOf(
+            Color(0xFFE02B2B), Color(0xFFF2A516), Color(0xFFB8E000),
+            Color(0xFF00C2D1), Color(0xFF7C4DFF), Color(0xFFE02B2B)
+        )
+    )
+)
 
 @Composable
 fun SizeBadge(

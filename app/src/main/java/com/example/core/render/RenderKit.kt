@@ -11,7 +11,7 @@ import com.example.widgets.base.WidgetSpec
 class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
     val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
     val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-    val accentColor = spec.accent.hex
+    val accentColor = spec.accentColor
     // Grey captions need more contrast on a light background to stay legible.
     val greyColor = if (spec.isDark) 0xFF8A8A8A.toInt() else 0xFF6A6A6A.toInt()
 
@@ -32,7 +32,8 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
             cornerRadius = spec.cornerRadiusDp * d,
             bgMode = spec.bgMode,
             isDark = spec.isDark,
-            accentColor = accentColor
+            accentColor = accentColor,
+            bgAlpha = spec.bgAlpha
         )
     }
 

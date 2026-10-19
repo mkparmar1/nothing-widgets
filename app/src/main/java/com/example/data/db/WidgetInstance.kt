@@ -51,6 +51,9 @@ data class WidgetInstance(
         }
     }
 
+    /** Background fill opacity as a percentage (0..100); 100 = fully opaque. */
+    fun getBgAlphaPercent(defaultVal: Int = 100): Int = getInt("bg_alpha", defaultVal).coerceIn(0, 100)
+
     fun getTapAction(defaultVal: String = "DEFAULT"): String {
         return try {
             JSONObject(configJson).optString("tap_action", defaultVal)

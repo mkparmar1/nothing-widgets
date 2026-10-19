@@ -7,7 +7,7 @@ import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.RenderKit
 import com.example.widgets.base.WidgetSpec
-import java.text.SimpleDateFormat
+import com.example.core.time.ClockOptions
 import java.util.Calendar
 import java.util.Locale
 
@@ -26,7 +26,7 @@ object ClockStyleRenderers {
             renderFlipClockLarge(spec, canvas, kit, cal)
             return
         }
-        val digits = String.format(Locale.US, "%02d%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+        val digits = String.format(Locale.US, "%02d%02d", hour(spec, cal), cal.get(Calendar.MINUTE))
 
         val colonW = 18f * d
         val cardGap = 6f * d
@@ -70,8 +70,7 @@ object ClockStyleRenderers {
         }
 
         if (spec.sizeBucket != SizeBucket.S) {
-            val date = SimpleDateFormat("EEE, dd MMM", Locale.US).format(cal.time).uppercase()
-            kit.labelCentered(date, kit.height - kit.pad, kit.textPaint(kit.greyColor, 11f, 15f))
+            dateLine(spec, cal)?.let { kit.labelCentered(it, kit.height - kit.pad, kit.textPaint(kit.greyColor, 11f, 15f)) }
         }
     }
 
@@ -79,7 +78,7 @@ object ClockStyleRenderers {
     private fun renderFlipClockLarge(spec: WidgetSpec, canvas: Canvas, kit: RenderKit, cal: Calendar) {
         val d = kit.d
         val rows = listOf(
-            String.format(Locale.US, "%02d", cal.get(Calendar.HOUR_OF_DAY)),
+            String.format(Locale.US, "%02d", hour(spec, cal)),
             String.format(Locale.US, "%02d", cal.get(Calendar.MINUTE))
         )
 
@@ -116,8 +115,7 @@ object ClockStyleRenderers {
             }
         }
 
-        val date = SimpleDateFormat("EEE, dd MMM", Locale.US).format(cal.time).uppercase()
-        kit.labelCentered(date, kit.height - kit.pad, kit.textPaint(kit.greyColor, 7f))
+        dateLine(spec, cal)?.let { kit.labelCentered(it, kit.height - kit.pad, kit.textPaint(kit.greyColor, 7f)) }
     }
 
     /** Time spelled out in words, rounded to the nearest five minutes. */
@@ -159,7 +157,7 @@ object ClockStyleRenderers {
         kit.header("TIME")
 
         val cal = Calendar.getInstance()
-        val time = String.format(Locale.US, "%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE))
+        val time = String.format(Locale.US, "%02d:%02d", hour(spec, cal), cal.get(Calendar.MINUTE))
 
         val pillH = kit.height * 0.34f
         val pill = RectF(kit.pad, (kit.height - pillH) / 2f, kit.width - kit.pad, (kit.height + pillH) / 2f)
@@ -171,8 +169,18 @@ object ClockStyleRenderers {
         })
         kit.dotTextCentered(time, pill.centerY(), pillH * 0.55f, 6f * d, pill.width() - pillH * 0.6f, RenderKit.colonIndices(time))
 
-        val day = SimpleDateFormat("EEE dd", Locale.US).format(cal.time).uppercase()
-        kit.labelCentered(day, kit.height - kit.pad, kit.textPaint(kit.greyColor, 10f, 13f))
+        dateLine(spec, cal)?.let { kit.labelCentered(it, kit.height - kit.pad, kit.textPaint(kit.greyColor, 10f, 13f)) }
+    }
+
+    /** Hour in the widget's 12/24-hour setting. */
+    private fun hour(spec: WidgetSpec, cal: Calendar): Int =
+        if (ClockOptions.from(spec.configJson).time.is24h) cal.get(Calendar.HOUR_OF_DAY)
+        else cal.get(Calendar.HOUR).let { if (it == 0) 12 else it }
+
+    /** Date in the widget's chosen format, with AM/PM in front for 12-hour clocks; null when hidden. */
+    private fun dateLine(spec: WidgetSpec, cal: Calendar): String? {
+        val opts = ClockOptions.from(spec.configJson)
+        return listOfNotNull(opts.time.amPm(cal), opts.date.format(cal)).joinToString(" • ").ifEmpty { null }
     }
 
     private val HOUR_WORDS = listOf("TWELVE", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN")

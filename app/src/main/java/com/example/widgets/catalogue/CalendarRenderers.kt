@@ -19,7 +19,7 @@ object CalendarRenderers {
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         val pad = spec.widthPx * 0.08f
         val maxW = spec.widthPx - (2 * pad)
@@ -85,7 +85,7 @@ object CalendarRenderers {
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         val pad = spec.widthPx * 0.08f
         val maxW = spec.widthPx - (2 * pad)
@@ -179,7 +179,7 @@ object CalendarRenderers {
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         val pad = spec.widthPx * 0.08f
         val maxW = spec.widthPx - (2 * pad)

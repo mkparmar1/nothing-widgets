@@ -73,7 +73,7 @@ fun WidgetBitmapPreview(
             )
         } else {
             CircularProgressIndicator(
-                color = spec.accent.color,
+                color = Color(spec.accentColor),
                 strokeWidth = 2.dp,
                 modifier = Modifier.align(Alignment.Center)
             )

@@ -6,8 +6,10 @@ import android.graphics.Paint
 import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.RenderKit
+import com.example.core.time.ClockOptions
+import com.example.core.time.DateFormat
+import com.example.core.time.TimeFormat
 import com.example.widgets.base.WidgetSpec
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
@@ -15,40 +17,31 @@ import java.util.TimeZone
 object ClockRenderers {
 
     /**
-     * @param liveTime when true the digits are left out because a live TextClock is drawn on top
-     *   (see WidgetRenderEngine); layout is still computed so the date sits in the same place.
+     * Digital dot clock using the widget's time and date format (see [ClockOptions]).
+     * With seconds on the home screen, the digits are left out because a live TextClock is drawn
+     * on top (see WidgetRenderEngine); the layout is still computed so the date stays in place.
      */
-    fun renderDigitalClock(spec: WidgetSpec, canvas: Canvas, showSeconds: Boolean = false, timeZoneId: String? = null, liveTime: Boolean = false) {
-        if (spec.sizeBucket == SizeBucket.L && !showSeconds) {
-            renderDigitalClockLarge(spec, canvas, timeZoneId, liveTime)
+    fun renderDigitalClock(spec: WidgetSpec, canvas: Canvas, defaultTime: TimeFormat = TimeFormat.H24, timeZoneId: String? = null) {
+        // Small clocks have always been time-only; they show a date only if the user picks one.
+        val defaultDate = if (spec.sizeBucket == SizeBucket.S) DateFormat.NONE else DateFormat.WEEKDAY_DAY_MONTH
+        val opts = ClockOptions.from(spec.configJson, defaultTime, defaultDate)
+        if (spec.sizeBucket == SizeBucket.L && !opts.time.hasSeconds) {
+            renderDigitalClockLarge(spec, canvas, timeZoneId, opts)
             return
         }
         val cal = Calendar.getInstance()
-        if (!timeZoneId.isNullOrBlank()) {
-            cal.timeZone = TimeZone.getTimeZone(timeZoneId)
-        }
-        val is24h = true
-        val hours = if (is24h) cal.get(Calendar.HOUR_OF_DAY) else {
-            val h = cal.get(Calendar.HOUR)
-            if (h == 0) 12 else h
-        }
-        val minutes = cal.get(Calendar.MINUTE)
-        val seconds = cal.get(Calendar.SECOND)
-
-        val timeStr = if (showSeconds) {
-            String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            String.format(Locale.US, "%02d:%02d", hours, minutes)
-        }
+        if (!timeZoneId.isNullOrBlank()) cal.timeZone = TimeZone.getTimeZone(timeZoneId)
+        val timeStr = opts.time.format(cal)
+        val amPm = opts.time.amPm(cal)
+        val liveTime = spec.liveOverlays && opts.time.hasSeconds
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         val padding = spec.widthPx * 0.08f
         val maxAllowedW = spec.widthPx - (2 * padding)
 
-        // Draw background
         DotMatrixRenderer.drawBackground(
             canvas = canvas,
             width = spec.widthPx.toFloat(),
@@ -59,8 +52,8 @@ object ClockRenderers {
             accentColor = accentColor
         )
 
-        // Draw top label if enabled
-        if (spec.showLabel) {
+        // Top label; 12-hour clocks show AM/PM here
+        if (spec.showLabel || amPm != null) {
             val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = 0xFF8A8A8A.toInt()
                 textSize = (11f * spec.density).coerceAtMost(14f)
@@ -69,30 +62,35 @@ object ClockRenderers {
             val zoneLabel = if (!timeZoneId.isNullOrBlank()) {
                 timeZoneId.substringAfterLast("/").replace("_", " ").uppercase()
             } else "TIME"
-            DotMatrixRenderer.drawFittedLabel(canvas, zoneLabel, padding, padding + 12f * spec.density, maxAllowedW * 0.75f, paintLabel)
+            val label = listOfNotNull(zoneLabel.takeIf { spec.showLabel }, amPm).joinToString(" • ")
+            DotMatrixRenderer.drawFittedLabel(canvas, label, padding, padding + 12f * spec.density, maxAllowedW * 0.75f, paintLabel)
         }
 
-        // Calculate dot dimensions dynamically so text never clips or overflows
-        val maxAllowedH = spec.heightPx * (if (spec.sizeBucket == SizeBucket.S) 0.52f else 0.40f)
+        // Small widgets make room for the date only when one is shown
+        val dateStr = opts.date.format(cal)
+        val smallWithDate = spec.sizeBucket == SizeBucket.S && dateStr != null
+        val maxAllowedH = spec.heightPx * when {
+            smallWithDate -> 0.40f
+            spec.sizeBucket == SizeBucket.S -> 0.52f
+            else -> 0.40f
+        }
         val preferredGap = when (spec.sizeBucket) {
             SizeBucket.S -> 8.5f * spec.density
             SizeBucket.M -> 12.0f * spec.density
             SizeBucket.L -> 15.0f * spec.density
         }
         val dotGap = DotMatrixRenderer.fitDotGap(timeStr.length, maxAllowedW, maxAllowedH, preferredGap)
-        val dotRadius = dotGap * 0.38f
-
         val textWidth = DotMatrixRenderer.measureTextWidth(timeStr.length, dotGap)
         val textHeight = 7 * dotGap
 
         val startX = (spec.widthPx - textWidth) / 2f
         // Centre sits low enough on M/L that the digits clear the top label.
-        val centerY = if (spec.sizeBucket != SizeBucket.S) spec.heightPx * 0.47f else spec.heightPx * 0.52f
+        val centerY = when {
+            smallWithDate -> spec.heightPx * 0.46f
+            spec.sizeBucket != SizeBucket.S -> spec.heightPx * 0.47f
+            else -> spec.heightPx * 0.52f
+        }
         val startY = centerY - (textHeight / 2f) + (if (spec.showLabel) 6f * spec.density else 0f)
-
-        // Accent colon ':' indices
-        val colonIndices = mutableSetOf<Int>()
-        timeStr.forEachIndexed { i, c -> if (c == ':') colonIndices.add(i) }
 
         if (!liveTime) {
             DotMatrixRenderer.drawText(
@@ -100,66 +98,55 @@ object ClockRenderers {
                 text = timeStr,
                 startX = startX,
                 startY = startY,
-                dotRadius = dotRadius,
+                dotRadius = dotGap * 0.38f,
                 dotGap = dotGap,
                 onColor = onColor,
                 offColor = offColor,
-                accentIndices = colonIndices,
+                accentIndices = RenderKit.colonIndices(timeStr),
                 accentColor = accentColor
             )
         }
 
-        // On M and L sizes, also display date below
-        if (spec.sizeBucket != SizeBucket.S) {
-            val dateFormat = SimpleDateFormat("EEE, dd MMM", Locale.US).apply {
-                if (!timeZoneId.isNullOrBlank()) timeZone = TimeZone.getTimeZone(timeZoneId)
-            }
-            val dateStr = dateFormat.format(cal.time).uppercase()
+        if (dateStr != null) {
             val paintDate = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = 0xFF8A8A8A.toInt()
-                textSize = (12f * spec.density).coerceAtMost(16f)
+                textSize = ((if (spec.sizeBucket == SizeBucket.S) 10f else 12f) * spec.density).coerceAtMost(16f)
                 isFakeBoldText = true
             }
-            val dateWidth = paintDate.measureText(dateStr)
-            val dateX = (spec.widthPx - dateWidth) / 2f
-            DotMatrixRenderer.drawFittedLabel(canvas, dateStr, dateX.coerceAtLeast(padding), startY + textHeight + (18f * spec.density), maxAllowedW, paintDate)
+            val dateX = (spec.widthPx - paintDate.measureText(dateStr)) / 2f
+            val dateY = if (smallWithDate) spec.heightPx - padding else startY + textHeight + (18f * spec.density)
+            DotMatrixRenderer.drawFittedLabel(canvas, dateStr, dateX.coerceAtLeast(padding), dateY, maxAllowedW, paintDate)
         }
     }
 
     /**
-     * 4×4 hero clock: time across the upper half, full date below and a minute-progress dot run
+     * 4×4 hero clock: time across the upper half, the date below and a minute-progress dot run
      * pinned to the bottom so the layout fills the whole canvas.
      */
-    private fun renderDigitalClockLarge(spec: WidgetSpec, canvas: Canvas, timeZoneId: String?, liveTime: Boolean) {
+    private fun renderDigitalClockLarge(spec: WidgetSpec, canvas: Canvas, timeZoneId: String?, opts: ClockOptions) {
         val kit = RenderKit(spec, canvas)
         val cal = Calendar.getInstance()
         if (!timeZoneId.isNullOrBlank()) cal.timeZone = TimeZone.getTimeZone(timeZoneId)
 
-        val timeStr = String.format(
-            Locale.US, "%02d:%02d",
-            cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE)
-        )
+        val timeStr = opts.time.format(cal)
         val zoneLabel = if (!timeZoneId.isNullOrBlank()) {
             timeZoneId.substringAfterLast('/').replace('_', ' ').uppercase()
         } else "TIME"
 
         kit.background()
-        kit.header(zoneLabel)
+        kit.header(listOfNotNull(zoneLabel, opts.time.amPm(cal)).joinToString(" • "))
 
-        if (!liveTime) {
-            kit.dotTextCentered(
-                text = timeStr,
-                centerY = kit.height * 0.37f,
-                maxHeight = kit.height * 0.30f,
-                preferredGap = kit.height * 0.052f,
-                accentIndices = RenderKit.colonIndices(timeStr)
-            )
-        }
+        kit.dotTextCentered(
+            text = timeStr,
+            centerY = kit.height * 0.37f,
+            maxHeight = kit.height * 0.30f,
+            preferredGap = kit.height * 0.052f,
+            accentIndices = RenderKit.colonIndices(timeStr)
+        )
 
-        val dateStr = SimpleDateFormat("EEEE, dd MMMM", Locale.US).apply {
-            if (!timeZoneId.isNullOrBlank()) timeZone = TimeZone.getTimeZone(timeZoneId)
-        }.format(cal.time).uppercase()
-        kit.labelCentered(dateStr, kit.height * 0.60f, kit.textPaint(kit.onColor, 7f))
+        // The large layout defaults to the long date; any other chosen format is respected.
+        val dateStr = if (opts.date == DateFormat.WEEKDAY_DAY_MONTH) DateFormat.FULL.format(cal) else opts.date.format(cal)
+        dateStr?.let { kit.labelCentered(it, kit.height * 0.60f, kit.textPaint(kit.onColor, 7f)) }
 
         val minutes = cal.get(Calendar.MINUTE)
         val totalDots = 30
@@ -187,7 +174,7 @@ object ClockRenderers {
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         val padding = spec.widthPx * 0.08f
 
@@ -232,12 +219,14 @@ object ClockRenderers {
 
     fun renderStackedTime(spec: WidgetSpec, canvas: Canvas) {
         val cal = Calendar.getInstance()
-        val hStr = String.format(Locale.US, "%02d", cal.get(Calendar.HOUR_OF_DAY))
+        val is24h = ClockOptions.from(spec.configJson).time.is24h
+        val hour = if (is24h) cal.get(Calendar.HOUR_OF_DAY) else cal.get(Calendar.HOUR).let { if (it == 0) 12 else it }
+        val hStr = String.format(Locale.US, "%02d", hour)
         val mStr = String.format(Locale.US, "%02d", cal.get(Calendar.MINUTE))
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         val padding = spec.widthPx * 0.08f
         val maxAllowedW = spec.widthPx - (2 * padding)
@@ -311,7 +300,7 @@ object ClockRenderers {
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         val padding = spec.widthPx * 0.08f
         val maxW = spec.widthPx - (2 * padding)
@@ -371,7 +360,7 @@ object ClockRenderers {
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         val padding = spec.widthPx * 0.08f
         val maxW = spec.widthPx - (2 * padding)

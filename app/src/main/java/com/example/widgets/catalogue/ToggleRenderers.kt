@@ -11,7 +11,7 @@ object ToggleRenderers {
     fun renderSingleToggle(spec: WidgetSpec, canvas: Canvas, name: String, isActive: Boolean, iconSymbol: String) {
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         DotMatrixRenderer.drawBackground(
             canvas = canvas,
@@ -63,7 +63,7 @@ object ToggleRenderers {
     fun render2x2Grid(spec: WidgetSpec, canvas: Canvas, wifiOn: Boolean = true, btOn: Boolean = true, torchOn: Boolean = false, dndOn: Boolean = false) {
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accent.hex
+        val accentColor = spec.accentColor
 
         DotMatrixRenderer.drawBackground(
             canvas = canvas,

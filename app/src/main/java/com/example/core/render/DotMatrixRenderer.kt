@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import com.example.core.theme.BackgroundMode
+import com.example.core.time.DotStyle
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -12,6 +13,35 @@ import kotlin.math.sin
  * High-performance Canvas renderer for monochrome dot-matrix visuals.
  */
 object DotMatrixRenderer {
+
+    /**
+     * Dot style for the widget currently being drawn. Set per render with [withDotStyle]; a
+     * ThreadLocal because several widgets can render at once on different threads.
+     */
+    private val dotStyle = ThreadLocal.withInitial { DotStyle.ROUND }
+
+    fun <T> withDotStyle(style: DotStyle, block: () -> T): T {
+        val previous = dotStyle.get()
+        dotStyle.set(style)
+        try {
+            return block()
+        } finally {
+            dotStyle.set(previous)
+        }
+    }
+
+    /** Draws one lit or unlit dot in the current [DotStyle]. */
+    private fun dot(canvas: Canvas, cx: Float, cy: Float, radius: Float, paint: Paint, lit: Boolean) {
+        when (dotStyle.get()) {
+            DotStyle.MINIMAL -> if (lit) canvas.drawCircle(cx, cy, radius, paint)
+            DotStyle.SQUARE -> {
+                val half = radius * 0.92f
+                canvas.drawRect(cx - half, cy - half, cx + half, cy + half, paint)
+            }
+            DotStyle.BOLD -> canvas.drawCircle(cx, cy, if (lit) radius * 1.22f else radius, paint)
+            else -> canvas.drawCircle(cx, cy, radius, paint)
+        }
+    }
 
     private val paintOn = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL
@@ -65,9 +95,9 @@ object DotMatrixRenderer {
 
                     if (isOn) {
                         paintOn.color = if (isAccent) accentColor else onColor
-                        canvas.drawCircle(cx, cy, dotRadius, paintOn)
+                        dot(canvas, cx, cy, dotRadius, paintOn, lit = true)
                     } else {
-                        canvas.drawCircle(cx, cy, dotRadius * 0.85f, paintOff)
+                        dot(canvas, cx, cy, dotRadius * 0.85f, paintOff, lit = false)
                     }
                 }
             }
@@ -156,7 +186,7 @@ object DotMatrixRenderer {
                 paintOff
             }
 
-            canvas.drawCircle(cx, startY, if (isFilled) dotRadius else dotRadius * 0.8f, paint)
+            dot(canvas, cx, startY, if (isFilled) dotRadius else dotRadius * 0.8f, paint, isFilled)
         }
     }
 
@@ -195,7 +225,7 @@ object DotMatrixRenderer {
                 paintOff
             }
 
-            canvas.drawCircle(cx, cy, if (isFilled) dotRadius else dotRadius * 0.8f, paint)
+            dot(canvas, cx, cy, if (isFilled) dotRadius else dotRadius * 0.8f, paint, isFilled)
         }
     }
 
@@ -305,9 +335,9 @@ object DotMatrixRenderer {
 
                 if (bit == 1) {
                     paintOn.color = if (weatherCode in 0..1 || (r == 0 && c == 6)) accentColor else onColor
-                    canvas.drawCircle(cx, cy, dotRadius, paintOn)
+                    dot(canvas, cx, cy, dotRadius, paintOn, lit = true)
                 } else {
-                    canvas.drawCircle(cx, cy, dotRadius * 0.7f, paintOff)
+                    dot(canvas, cx, cy, dotRadius * 0.7f, paintOff, lit = false)
                 }
             }
         }
@@ -324,15 +354,25 @@ object DotMatrixRenderer {
         bgMode: BackgroundMode,
         isDark: Boolean,
         accentColor: Int,
+        /** Fill opacity, 0 = see-through, 1 = fully opaque. Ignored when [bgMode] is TRANSPARENT. */
+        bgAlpha: Float = 1f,
         showAccentDot: Boolean = true
     ) {
         val rect = RectF(1.5f, 1.5f, width - 1.5f, height - 1.5f)
+        val alpha = bgAlpha.coerceIn(0f, 1f)
 
         // Fill
         val bgColor = when (bgMode) {
-            BackgroundMode.SOLID -> if (isDark) 0xFF000000.toInt() else 0xFFF2F2F2.toInt()
+            BackgroundMode.SOLID -> {
+                val a = (alpha * 255).toInt()
+                if (isDark) Color.argb(a, 0, 0, 0) else Color.argb(a, 242, 242, 242)
+            }
             BackgroundMode.TRANSPARENT -> Color.TRANSPARENT
-            BackgroundMode.SCRIM -> if (isDark) Color.argb(120, 10, 10, 10) else Color.argb(140, 240, 240, 240)
+            BackgroundMode.SCRIM -> {
+                val base = if (isDark) 120 else 140
+                val a = (base * alpha).toInt()
+                if (isDark) Color.argb(a, 10, 10, 10) else Color.argb(a, 240, 240, 240)
+            }
         }
 
         if (bgColor != Color.TRANSPARENT) {
