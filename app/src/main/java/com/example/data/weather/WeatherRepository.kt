@@ -36,6 +36,7 @@ data class WeatherData(
     val feelsLikeC: Int = temperatureC,
     val uvIndex: Double = 0.0,
     val daily: List<DailyForecast> = emptyList(),
+    val hourly: List<HourlyForecast> = emptyList(),
     val isStale: Boolean = false,
     val fetchedAt: Long = System.currentTimeMillis()
 )
@@ -47,6 +48,16 @@ data class DailyForecast(
     val highC: Int,
     val lowC: Int,
     val precipitationPct: Int
+)
+
+data class HourlyForecast(
+    /** yyyy-MM-ddTHH:mm in the city's local time. */
+    val time: String,
+    val temperatureC: Int,
+    val weatherCode: Int,
+    val precipitationPct: Int,
+    /** True if Open-Meteo marks this hour as daytime. */
+    val isDay: Boolean = true
 )
 
 /** A named location weather can be fetched for. */
@@ -238,6 +249,7 @@ object WeatherRepository {
                 "https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}" +
                     "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,uv_index" +
                     "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
+                    "&hourly=temperature_2m,weather_code,precipitation_probability,is_day" +
                     "&forecast_days=5&timezone=auto"
             )
             if (response != null) {
@@ -264,6 +276,24 @@ object WeatherRepository {
                     }
                 }
 
+                val hours = mutableListOf<HourlyForecast>()
+                json.optJSONObject("hourly")?.let { hourly ->
+                    val times = hourly.optJSONArray("time")
+                    val temps = hourly.optJSONArray("temperature_2m")
+                    val hourCodes = hourly.optJSONArray("weather_code")
+                    val hourRain = hourly.optJSONArray("precipitation_probability")
+                    val isDay = hourly.optJSONArray("is_day")
+                    for (i in 0 until (times?.length() ?: 0)) {
+                        hours += HourlyForecast(
+                            time = times!!.optString(i),
+                            temperatureC = temps?.optDouble(i, temp.toDouble())?.toInt() ?: temp,
+                            weatherCode = hourCodes?.optInt(i, code) ?: code,
+                            precipitationPct = hourRain?.optInt(i, 0) ?: 0,
+                            isDay = (isDay?.optInt(i, 1) ?: 1) == 1
+                        )
+                    }
+                }
+
                 val data = WeatherData(
                     cityName = place.name,
                     temperatureC = temp,
@@ -276,6 +306,7 @@ object WeatherRepository {
                     feelsLikeC = current.optDouble("apparent_temperature", temp.toDouble()).toInt(),
                     uvIndex = current.optDouble("uv_index", 0.0),
                     daily = days,
+                    hourly = hours,
                     isStale = false,
                     fetchedAt = now
                 )

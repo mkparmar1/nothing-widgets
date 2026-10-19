@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.DoNotDisturbOn
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.content.ContextCompat
@@ -80,6 +81,12 @@ sealed class AppPermission(
         Icons.Default.CalendarMonth, arrayOf(Manifest.permission.READ_CALENDAR)
     )
 
+    object Contacts : Runtime(
+        "contacts", "Contacts",
+        "Lets the favourite-contact widgets show a contact's name and photo.",
+        Icons.Default.Person, arrayOf(Manifest.permission.READ_CONTACTS)
+    )
+
     object Activity : Runtime(
         "activity", "Physical activity",
         "Counts your steps for the step counter and activity rings.",
@@ -132,7 +139,7 @@ sealed class AppPermission(
 
     companion object {
         val ALL: List<AppPermission> by lazy {
-            listOf(ExactAlarms, DndAccess, Location, Calendar, Activity, MediaAccess, UsageAccess, NearbyDevices)
+            listOf(ExactAlarms, DndAccess, Location, Contacts, Calendar, Activity, MediaAccess, UsageAccess, NearbyDevices)
                 .filter { it.isApplicable() }
         }
 

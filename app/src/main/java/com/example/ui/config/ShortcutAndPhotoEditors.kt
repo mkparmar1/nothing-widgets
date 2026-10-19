@@ -1,5 +1,6 @@
 package com.example.ui.config
 
+import android.Manifest
 import android.content.Intent
 import android.provider.ContactsContract
 import android.widget.Toast
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.example.core.theme.AccentOption
+import com.example.data.contacts.ContactRepository
 import com.example.data.photos.PhotoStore
 import com.example.data.shortcuts.Shortcut
 import com.example.data.shortcuts.ShortcutStore
@@ -64,6 +66,13 @@ fun ShortcutEditor(widgetId: String, accent: AccentOption, onChanged: () -> Unit
         ShortcutStore.set(context, widgetId, index, shortcut)
         slots = ShortcutStore.get(context, widgetId)
         onChanged()
+    }
+
+    var showContactPicker by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) showContactPicker = true
+        else Toast.makeText(context, "Contacts access is off — using the system picker", Toast.LENGTH_SHORT).show()
     }
 
     val contactPicker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -101,8 +110,11 @@ fun ShortcutEditor(widgetId: String, accent: AccentOption, onChanged: () -> Unit
                     actionText = if (config.kind == Shortcut.Kind.APP) "PICK APP" else "PICK CONTACT",
                     onPick = {
                         pickingSlot = i
-                        if (config.kind == Shortcut.Kind.APP) showAppPicker = true
-                        else contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI))
+                        when {
+                            config.kind == Shortcut.Kind.APP -> showAppPicker = true
+                            ContactRepository.hasPermission(context) -> showContactPicker = true
+                            else -> permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                        }
                     },
                     onClear = { save(i, null) }
                 )
@@ -134,6 +146,61 @@ fun ShortcutEditor(widgetId: String, accent: AccentOption, onChanged: () -> Unit
             onDismiss = { showAppPicker = false }
         )
     }
+
+    if (showContactPicker) {
+        ContactPickerDialog(
+            onPick = { name, number ->
+                save(pickingSlot, Shortcut(config.kind, name, number))
+                showContactPicker = false
+            },
+            onDismiss = { showContactPicker = false },
+            onSystemPicker = {
+                showContactPicker = false
+                contactPicker.launch(Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI))
+            }
+        )
+    }
+}
+
+/** In-app contact list (nicer than the system picker); falls back to the system picker on request. */
+@Composable
+private fun ContactPickerDialog(
+    onPick: (String, String) -> Unit,
+    onDismiss: () -> Unit,
+    onSystemPicker: () -> Unit
+) {
+    val context = LocalContext.current
+    val contacts = remember { ContactRepository.contacts(context) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } },
+        title = { Text("Pick a contact") },
+        text = {
+            if (contacts.isEmpty()) {
+                Column {
+                    Text("No contacts found.", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(onClick = onSystemPicker) { Text("USE SYSTEM PICKER") }
+                }
+            } else {
+                LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                    items(contacts, key = { "${it.name}|${it.number}" }) { contact ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onPick(contact.name, contact.number) }
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Text(contact.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                            Text(contact.number, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
+                        }
+                    }
+                }
+            }
+        }
+    )
 }
 
 @Composable

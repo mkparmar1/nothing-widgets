@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.AlarmClock
 import android.os.SystemClock
+import android.app.SearchManager
 import android.provider.CalendarContract
 import android.text.SpannableString
 import android.text.Spanned
@@ -378,6 +379,12 @@ object WidgetRenderEngine {
             }
             TapAction.OPEN_BATTERY -> {
                 Intent(Intent.ACTION_POWER_USAGE_SUMMARY).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            }
+            TapAction.OPEN_SEARCH -> {
+                Intent(Intent.ACTION_WEB_SEARCH).apply {
+                    putExtra(SearchManager.QUERY, "")
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
             }

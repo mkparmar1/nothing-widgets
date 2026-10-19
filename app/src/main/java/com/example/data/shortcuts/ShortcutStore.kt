@@ -39,6 +39,7 @@ object ShortcutStore {
         "shortcut.direct.sms" to Slots(1, Shortcut.Kind.MESSAGE),
         "shortcut.apps.4" to Slots(4, Shortcut.Kind.APP),
         "shortcut.apps.6" to Slots(6, Shortcut.Kind.APP),
+        "utility.folder.grid" to Slots(8, Shortcut.Kind.APP),
         "shortcut.web.favorite" to Slots(1, Shortcut.Kind.WEB)
     )
 

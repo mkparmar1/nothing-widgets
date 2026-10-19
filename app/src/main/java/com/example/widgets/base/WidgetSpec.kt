@@ -40,6 +40,7 @@ enum class TapAction(val displayName: String) {
     OPEN_BATTERY("Battery Settings"),
     OPEN_WEATHER("In-App Weather Forecast"),
     OPEN_MAIN("Open Dot Widgets App"),
+    OPEN_SEARCH("Web Search"),
     NONE("Do Nothing")
 }
 

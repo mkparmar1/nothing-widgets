@@ -361,6 +361,75 @@ object WeatherRenderers {
         kit.labelCentered(risk, kit.height - kit.pad - 2f * d, kit.textPaint(if (uv >= 6) kit.accentColor else kit.greyColor, 10f, 13f))
     }
 
+    /**
+     * Next hours from Open-Meteo's hourly series: one column per hour with the time, a dot weather
+     * icon and the temperature. Columns shown depend on the size (4 for M, 6 for L).
+     */
+    fun renderHourlyForecast(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
+
+        val data = WeatherRepository.getWeatherInstant(context)
+        val place = WeatherRepository.currentPlace(context)
+        kit.header("NEXT HOURS • ${data.cityName.uppercase()}", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor, 0.95f)
+
+        val columns = if (spec.sizeBucket == SizeBucket.L) 6 else 4
+        val hours = upcomingHours(data.hourly, place.timezone, columns)
+        if (hours.isEmpty()) {
+            kit.dotTextCentered("--", kit.height * 0.55f, kit.height * 0.30f, 10f * d)
+            return
+        }
+
+        val timeLabel = SimpleDateFormat("HH:mm", Locale.US).apply { timeZone = TimeZone.getTimeZone(place.timezone) }
+        val parse = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US).apply { timeZone = TimeZone.getTimeZone(place.timezone) }
+        val colW = kit.maxW / hours.size
+        val labelY = kit.pad + (30f * d)
+
+        hours.forEachIndexed { i, hour ->
+            val cx = kit.pad + (i * colW) + (colW / 2f)
+            val label = if (i == 0) "NOW" else runCatching { timeLabel.format(parse.parse(hour.time)!!) }.getOrDefault("--")
+            val paintTime = kit.textPaint(if (i == 0) kit.accentColor else kit.greyColor, if (columns > 4) 9f else 10f, 13f)
+            canvas.drawText(label, cx - paintTime.measureText(label) / 2f, labelY, paintTime)
+
+            DotMatrixRenderer.drawWeatherIcon(
+                canvas = canvas,
+                weatherCode = hour.weatherCode,
+                centerX = cx,
+                centerY = labelY + (26f * d),
+                dotGap = 3.4f * d,
+                dotRadius = 1.25f * d,
+                onColor = kit.onColor,
+                offColor = kit.offColor,
+                accentColor = kit.accentColor
+            )
+
+            val paintTemp = kit.textPaint(kit.onColor, if (columns > 4) 11f else 12f, 15f)
+            val temp = "${hour.temperatureC}°"
+            canvas.drawText(temp, cx - paintTemp.measureText(temp) / 2f, labelY + (56f * d), paintTemp)
+
+            if (spec.sizeBucket == SizeBucket.L) {
+                val paintRain = kit.textPaint(kit.accentColor, 9f, 12f)
+                val rain = "${hour.precipitationPct}%"
+                canvas.drawText(rain, cx - paintRain.measureText(rain) / 2f, labelY + (72f * d), paintRain)
+            }
+        }
+    }
+
+    /** The next [count] hourly entries from now (in the city's time zone), falling back to the head. */
+    private fun upcomingHours(
+        all: List<com.example.data.weather.HourlyForecast>,
+        timezone: String,
+        count: Int
+    ): List<com.example.data.weather.HourlyForecast> {
+        if (all.isEmpty()) return emptyList()
+        val zone = TimeZone.getTimeZone(timezone)
+        val parse = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US).apply { timeZone = zone }
+        val now = SimpleDateFormat("yyyy-MM-dd'T'HH:00", Locale.US).apply { timeZone = zone }.format(Calendar.getInstance(zone).time)
+        val fromNow = all.dropWhile { it.time < now }
+        return (if (fromNow.isEmpty()) all else fromNow).take(count)
+    }
+
     private fun formatMinutes(min: Int) = String.format(Locale.US, "%02d:%02d", min / 60, min % 60)
 
     private fun formatDuration(min: Int) = if (min >= 60) "${min / 60}H ${min % 60}M" else "${min}M"

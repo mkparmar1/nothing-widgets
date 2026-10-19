@@ -26,6 +26,7 @@ object ShortcutRenderers {
             count == 2 -> 1 to 2
             count == 4 && size == SizeBucket.L -> 2 to 2
             count == 4 -> 1 to 4
+            count == 8 -> 2 to 4
             else -> 2 to 3
         }
     }
@@ -41,6 +42,7 @@ object ShortcutRenderers {
                 "shortcut.direct.dial" -> "SPEED DIAL"
                 "shortcut.direct.sms" -> "MESSAGE"
                 "shortcut.web.favorite" -> "BOOKMARK"
+                "utility.folder.grid" -> "FOLDER"
                 else -> if (kind == Shortcut.Kind.APP) "APPS" else "FAVORITES"
             }
         )

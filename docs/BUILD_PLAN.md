@@ -213,6 +213,13 @@ variant so the picker reflects the new capability.
 
 ## Phase 1 — Tier 1 popular widgets: finish + fill gaps  *(P0 · M–L)*
 
+> **Status: ✅ implemented.** 1.1 Compass (`sensor.compass.heading`), 1.2 Hourly forecast
+> (`weather.hourly.strip`, Open-Meteo hourly added to `WeatherRepository`), 1.3 real Contacts
+> (`ContactRepository` + in-app `ContactPickerDialog`, `READ_CONTACTS` permission), 1.4 Search bar
+> (`prod.search.bar`, `TapAction.OPEN_SEARCH`) and Folder (`utility.folder.grid`, reusing the existing
+> app-dock tap-region machinery so per-slot launch works without a separate activity) are in.
+> Compass uses a fixed cadence refresh with no wakelock, per the open-decision recommendation.
+
 ### Why this phase
 These are the widgets ~80% of users place. A missing Compass or hourly forecast is an instant
 "uninstall, try NewThing" moment. We close **every** table-stakes gap here.

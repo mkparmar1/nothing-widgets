@@ -18,6 +18,7 @@ import com.example.widgets.catalogue.ProductivityRenderers
 import com.example.widgets.catalogue.ShortcutRenderers
 import com.example.widgets.catalogue.ToggleRenderers
 import com.example.widgets.catalogue.UniqueSensorRenderers
+import com.example.widgets.catalogue.UtilityRenderers
 import com.example.widgets.catalogue.WeatherRenderers
 import com.example.ui.permissions.AppPermission
 
@@ -67,6 +68,7 @@ object WidgetRegistry {
         // --- 4. WEATHER (10 widgets) ---
         register(createDef("weather.current.temp", Category.WEATHER, "Current Temperature", "Real-time temp with dot icon and stale guard", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv) })
         register(createDef("weather.5day.strip", Category.WEATHER, "5-Day Forecast Strip", "5-day outlook with daily high/low dots", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderForecast5Day(c, s, cv) })
+        register(createDef("weather.hourly.strip", Category.WEATHER, "Hourly Forecast Strip", "Next hours with temperature, icon and rain chance", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderHourlyForecast(c, s, cv) })
         register(createDef("weather.sunrise.arc", Category.WEATHER, "Sun Tracker Arc", "Sunrise and sunset dot arc tracking daylight", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, requiredPermission = AppPermission.Location) { c, s, cv -> WeatherRenderers.renderSunriseSunsetArc(c, s, cv) })
         register(createDef("weather.city.london", Category.WEATHER, "London Weather", "City preset weather for London", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, "London") })
         register(createDef("weather.city.nyc", Category.WEATHER, "New York Weather", "City preset weather for New York", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, "New York") })
@@ -86,6 +88,7 @@ object WidgetRegistry {
         register(createDef("sensor.fitness.rings", Category.SYSTEM, "Concentric Activity Rings", "Dual dot rings for Steps and Active Calories", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, requiredPermission = AppPermission.Activity) { c, s, cv -> UniqueSensorRenderers.renderFitnessActivityRings(c, s, cv) })
         register(createDef("sensor.stopwatch.chrono", Category.SYSTEM, "Dot Chronometer", "Precision split chronometer with lap tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> UniqueSensorRenderers.renderChronographStopwatch(c, s, cv) })
         register(createDef("sensor.glyph.lights", Category.SYSTEM, "Glyph Battery", "Nothing-style segmented glyph ring showing battery level", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> DeviceInfoRenderers.renderGlyphBattery(c, s, cv) })
+        register(createDef("sensor.compass.heading", Category.SYSTEM, "Compass", "Dot ring with cardinal marks and a needle at the last sampled heading", setOf(SizeBucket.S, SizeBucket.M, SizeBucket.L), TapAction.DEFAULT) { c, s, cv -> UniqueSensorRenderers.renderCompass(c, s, cv) })
         register(createDef("sensor.crypto.ticker", Category.SYSTEM, "Crypto Market Ticker", "BTC real-time price with 16-dot trend sparkline", setOf(SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> LiveDataRenderers.renderCrypto(c, s, cv) })
         register(createDef("sensor.battery.quad", Category.SYSTEM, "Ecosystem Quad Dock", "4-up battery matrix for Phone, Ear(2), Watch, CMF", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY, requiredPermission = AppPermission.NearbyDevices) { c, s, cv -> LiveDataRenderers.renderDeviceBatteries(c, s, cv, 4) })
 
@@ -102,13 +105,14 @@ object WidgetRegistry {
         register(createDef("toggle.airplane", Category.TOGGLES, "Airplane Mode", "Radio connectivity lock", setOf(SizeBucket.S), TapAction.DEFAULT) { c, s, cv -> ToggleRenderers.renderSingleToggle(s, cv, "AIRPLANE", DeviceToggles.isAirplaneModeOn(c), "A") })
 
         // --- 6. CONTACTS & SHORTCUTS (8 widgets) ---
-        register(createDef("contact.favorite.single", Category.CONTACTS, "Favorite Contact", "One-tap direct contact card", setOf(SizeBucket.S), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "contact.favorite.single") })
-        register(createDef("contact.duo", Category.CONTACTS, "Duo Contacts", "Two favorite contacts speed dial", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "contact.duo") })
-        register(createDef("contact.quad", Category.CONTACTS, "4-Up Contact Grid", "Quick reach 4-contact dock", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "contact.quad") })
+        register(createDef("contact.favorite.single", Category.CONTACTS, "Favorite Contact", "One-tap direct contact card", setOf(SizeBucket.S), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Contacts) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "contact.favorite.single") })
+        register(createDef("contact.duo", Category.CONTACTS, "Duo Contacts", "Two favorite contacts speed dial", setOf(SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Contacts) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "contact.duo") })
+        register(createDef("contact.quad", Category.CONTACTS, "4-Up Contact Grid", "Quick reach 4-contact dock", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Contacts) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "contact.quad") })
         register(createDef("shortcut.direct.dial", Category.CONTACTS, "Emergency Speed Dial", "Direct phone dialer trigger", setOf(SizeBucket.S), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "shortcut.direct.dial") })
         register(createDef("shortcut.direct.sms", Category.CONTACTS, "Instant Message", "One-tap message compose", setOf(SizeBucket.S), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "shortcut.direct.sms") })
         register(createDef("shortcut.apps.4", Category.CONTACTS, "4-App Dot Tray", "Minimalist app launch matrix", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "shortcut.apps.4") })
         register(createDef("shortcut.apps.6", Category.CONTACTS, "6-App Quick Dock", "High efficiency app dock", setOf(SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "shortcut.apps.6") })
+        register(createDef("utility.folder.grid", Category.CONTACTS, "App Folder", "Eight pinned apps in one folder tile", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "utility.folder.grid") })
         register(createDef("shortcut.web.favorite", Category.CONTACTS, "Web Bookmark", "Direct browser link shortcut", setOf(SizeBucket.S), TapAction.OPEN_MAIN) { c, s, cv -> ShortcutRenderers.render(c, s, cv, "shortcut.web.favorite") })
 
         // --- 7. MEDIA (4 widgets) ---
@@ -118,6 +122,7 @@ object WidgetRegistry {
         register(createDef("media.volume.dots", Category.MEDIA, "Volume Level Dots", "15-dot master audio level indicator", setOf(SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> DeviceInfoRenderers.renderVolumeLevels(c, s, cv) })
 
         // --- 8. PRODUCTIVITY (8 widgets) ---
+        register(createDef("prod.search.bar", Category.PRODUCTIVITY, "Search Bar", "Tap-to-search pill that opens web search", setOf(SizeBucket.M), TapAction.OPEN_SEARCH) { c, s, cv -> UtilityRenderers.renderSearchBar(c, s, cv) })
         register(createDef("prod.notes.pin", Category.PRODUCTIVITY, "Notes Pin", "Pinned quick memo and thoughts", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderNotesPin(c, s, cv) })
         register(createDef("prod.todo.3", Category.PRODUCTIVITY, "To-Do Checklist (3)", "Daily task checklist with checkmarks", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderTodoList(c, s, cv, 3) })
         register(createDef("prod.todo.5", Category.PRODUCTIVITY, "To-Do Checklist (5)", "Extended 5-item daily checklist", setOf(SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderTodoList(c, s, cv, 5) })
@@ -219,6 +224,11 @@ object WidgetDescription {
                     if (now.isPlaying) "Now playing ${now.title} by ${now.artist}"
                     else "Paused: ${now.title} by ${now.artist}"
                 } else "Nothing playing"
+            }
+            id == "sensor.compass.heading" -> {
+                val heading = com.example.data.sensor.CompassRepository.headingDegrees(context)
+                if (heading == null) "Compass"
+                else "Compass heading ${heading} degrees ${com.example.data.sensor.CompassRepository.cardinal(heading)}"
             }
             id == "sensor.stopwatch.chrono" -> "Stopwatch"
             id == "prod.focus.timer" -> "Focus timer"

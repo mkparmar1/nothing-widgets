@@ -10,8 +10,10 @@ import android.os.StatFs
 import com.example.core.astro.Astronomy
 import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
+import com.example.core.render.GlyphTable
 import com.example.core.render.RenderKit
 import com.example.data.activity.StepRepository
+import com.example.data.sensor.CompassRepository
 import com.example.data.battery.BatteryHelper
 import com.example.widgets.base.WidgetSpec
 import java.util.Calendar
@@ -627,6 +629,79 @@ object UniqueSensorRenderers {
         DotMatrixRenderer.drawFittedLabel(canvas, "$steps STEPS", rightX, cy - (16f * spec.density), rightW, paintSteps)
         DotMatrixRenderer.drawFittedLabel(canvas, "$calBurned KCAL", rightX, cy + (4f * spec.density), rightW, paintCals)
         DotMatrixRenderer.drawFittedLabel(canvas, "RINGS: ${((filledOuter + filledInner) / 40f * 100).toInt()}%", rightX, cy + (22f * spec.density), rightW, paintSub)
+    }
+
+    /**
+     * 10. Compass
+     *
+     * A dot ring with the cardinal marks and a needle that points to the sampled heading. Because
+     * widgets redraw roughly once a minute, the needle shows the last reading rather than tracking
+     * the phone live; a short hint line makes that clear.
+     */
+    fun renderCompass(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        if (!CompassRepository.hasSensor(context)) {
+            RenderKit.message(spec, canvas, "COMPASS", "NO MAGNETIC SENSOR ON THIS DEVICE")
+            return
+        }
+        val heading = CompassRepository.headingDegrees(context)
+        if (heading == null) {
+            RenderKit.message(spec, canvas, "COMPASS", "HOLD FLAT TO READ THE COMPASS")
+            return
+        }
+
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
+
+        val cardinal = CompassRepository.cardinal(heading)
+        kit.header("COMPASS • ${cardinal}", kit.accentColor, 0.9f)
+
+        val cx = kit.width * 0.5f
+        val cy = kit.height * 0.56f
+        val radius = minOf(kit.width * 0.34f, kit.height * 0.40f)
+
+        // Fixed dial: 24-dot ring plus the cardinal marks at N/E/S/W.
+        DotMatrixRenderer.drawDotRing(
+            canvas = canvas,
+            centerX = cx,
+            centerY = cy,
+            radius = radius,
+            totalDots = 24,
+            filledDots = 24,
+            dotRadius = radius * 0.045f,
+            onColor = kit.offColor,
+            offColor = kit.offColor,
+            accentColor = kit.accentColor
+        )
+        val marks = listOf(0 to "N", 90 to "E", 180 to "S", 270 to "W")
+        marks.forEach { (deg, label) ->
+            val rad = Math.toRadians((deg - 90).toDouble())
+            val mx = cx + (radius * 1.22f * cos(rad)).toFloat()
+            val my = cy + (radius * 1.22f * sin(rad)).toFloat()
+            val paint = kit.textPaint(if (label == "N") kit.accentColor else kit.greyColor, 9f, 13f)
+            canvas.drawText(label, mx - paint.measureText(label) / 2f, my + paint.textSize * 0.35f, paint)
+        }
+
+        // Needle: a bold run of dots from the centre toward the current heading, red-tipped at the
+        // north end so the direction reads even at a glance.
+        val headingRad = Math.toRadians((heading.toFloat() - 90f).toDouble())
+        val nx = cx + (radius * 0.72f * cos(headingRad)).toFloat()
+        val ny = cy + (radius * 0.72f * sin(headingRad)).toFloat()
+        val needlePaint = kit.fill(kit.onColor)
+        val steps = 7
+        for (i in 1..steps) {
+            val t = i / steps.toFloat()
+            canvas.drawCircle(cx + (nx - cx) * t, cy + (ny - cy) * t, radius * 0.055f, needlePaint)
+        }
+        canvas.drawCircle(nx, ny, radius * 0.085f, kit.fill(kit.accentColor))
+        canvas.drawCircle(cx, cy, radius * 0.06f, kit.fill(kit.onColor))
+
+        // Heading readout under the dial.
+        val headingStr = "${heading}° $cardinal"
+        kit.labelCentered(headingStr, cy + radius * 1.55f, kit.textPaint(kit.onColor, 11f, 15f))
+        if (spec.sizeBucket != SizeBucket.S) {
+            kit.labelCentered("SNAPSHOT AT LAST REFRESH", cy + radius * 1.55f + 16f * d, kit.textPaint(kit.greyColor, 8f, 11f))
+        }
     }
 
     /**
