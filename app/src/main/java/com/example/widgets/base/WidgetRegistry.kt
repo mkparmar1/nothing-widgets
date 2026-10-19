@@ -13,6 +13,7 @@ import com.example.widgets.catalogue.DeviceInfoRenderers
 import com.example.widgets.catalogue.ExclusiveRenderers
 import com.example.widgets.catalogue.FinanceRenderers
 import com.example.widgets.catalogue.HealthRenderers
+import com.example.widgets.catalogue.LearnRenderers
 import com.example.widgets.catalogue.LiveDataRenderers
 import com.example.widgets.catalogue.MediaAndFunRenderers
 import com.example.widgets.catalogue.MediaRenderers
@@ -353,6 +354,48 @@ object WidgetRegistry {
             com.example.core.config.WidgetOption.Text("label", "Label", default = "WATCH HIGHLIGHTS"),
             com.example.core.config.WidgetOption.Text("url", "URL", default = "")
         )) { c, s, cv -> SportsRenderers.renderHighlightsLink(c, s, cv) })
+
+        // --- 15. LEARNING & FOCUS (10 widgets) ---
+        register(createDef("learn.pomodoro.ring", Category.LEARNING, "Pomodoro Ring", "Focus-timer remaining time in a dot ring", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Slider("work_min", "Work preset", min = 15, max = 60, step = 5, default = 25, unit = "min"),
+            com.example.core.config.WidgetOption.Slider("break_min", "Break preset", min = 3, max = 15, step = 1, default = 5, unit = "min")
+        )) { c, s, cv -> LearnRenderers.renderPomodoroRing(c, s, cv) })
+        register(createDef("learn.study.sessions", Category.LEARNING, "Study Sessions", "Sessions completed today against a target", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("target", "Daily target", min = 1, max = 12, step = 1, default = 3, unit = "sessions"),
+            com.example.core.config.WidgetOption.Toggle("show_bar", "Show progress bar", default = true)
+        )) { c, s, cv -> LearnRenderers.renderStudySessions(c, s, cv) })
+        register(createDef("learn.flashcard.daily", Category.LEARNING, "Word of the Day", "A new vocabulary word every day", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Choice.of("language", "Language", listOf("en", "es", "fr"), "en"),
+            com.example.core.config.WidgetOption.Toggle("show_meaning", "Show meaning", default = true)
+        )) { c, s, cv -> LearnRenderers.renderWordOfDay(c, s, cv) })
+        register(createDef("learn.reading.goal", Category.LEARNING, "Reading Goal", "Pages (or minutes) read today", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal", "Daily goal", min = 5, max = 200, step = 5, default = 20, unit = ""),
+            com.example.core.config.WidgetOption.Choice.of("unit", "Unit", listOf("pages", "mins"), "pages")
+        )) { c, s, cv -> LearnRenderers.renderReadingGoal(c, s, cv) })
+        register(createDef("learn.streak.days", Category.LEARNING, "Learning Streak", "Consecutive learning days", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("min_streak", "Goal streak", min = 3, max = 100, step = 1, default = 7, unit = "days"),
+            com.example.core.config.WidgetOption.Toggle("show_goal", "Show goal", default = true)
+        )) { c, s, cv -> LearnRenderers.renderLearningStreak(c, s, cv) })
+        register(createDef("learn.quiz.daily", Category.LEARNING, "Daily Quiz", "A daily quiz question from the bundled list", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Choice.of("category", "Category", listOf("SCIENCE", "HISTORY", "GEOGRAPHY", "MATH"), "SCIENCE"),
+            com.example.core.config.WidgetOption.Toggle("show_options", "Show answer options", default = true)
+        )) { c, s, cv -> LearnRenderers.renderDailyQuiz(c, s, cv) })
+        register(createDef("learn.focus.total", Category.LEARNING, "Total Focus Time", "Accumulated focus time", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Choice.of("period", "Period", listOf("today", "week", "all"), "today"),
+            com.example.core.config.WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> LearnRenderers.renderFocusTotal(c, s, cv) })
+        register(createDef("learn.course.progress", Category.LEARNING, "Course Progress", "Modules completed in a course", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Text("course", "Course name", default = "COURSE"),
+            com.example.core.config.WidgetOption.Slider("modules", "Total modules", min = 1, max = 60, step = 1, default = 12, unit = "modules")
+        )) { c, s, cv -> LearnRenderers.renderCourseProgress(c, s, cv) })
+        register(createDef("learn.notes.last", Category.LEARNING, "Last Note Snippet", "The most recent note text", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Toggle("show_title", "Show title", default = true),
+            com.example.core.config.WidgetOption.Toggle("show_body", "Show body", default = true)
+        )) { c, s, cv -> LearnRenderers.renderLastNote(c, s, cv) })
+        register(createDef("learn.timer.exam", Category.LEARNING, "Exam Countdown", "Days until an exam", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Text("exam", "Exam name", default = "EXAM"),
+            com.example.core.config.WidgetOption.Toggle("show_date", "Show date", default = false)
+        )) { c, s, cv -> LearnRenderers.renderExamCountdown(c, s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {
@@ -459,6 +502,7 @@ object WidgetDescription {
             id.startsWith("health.") -> "Health"
             id.startsWith("home.") -> "Smart home"
             id.startsWith("sports.") -> "Sports"
+            id.startsWith("learn.") -> "Learning"
             id == "sensor.stopwatch.chrono" -> "Stopwatch"
             id == "prod.focus.timer" -> "Focus timer"
             id == "prod.countdown.timer" -> "Countdown timer"

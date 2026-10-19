@@ -1,0 +1,39 @@
+{
+  "en": [
+    { "word": "SERENDIPITY", "meaning": "Finding something good without looking for it" },
+    { "word": "EPHEMERAL", "meaning": "Lasting for a very short time" },
+    { "word": "RESILIENT", "meaning": "Able to recover quickly from difficulty" },
+    { "word": "CANDOR", "meaning": "The quality of being open and honest" },
+    { "word": "LUCID", "meaning": "Expressed clearly and easy to understand" },
+    { "word": "TENACIOUS", "meaning": "Keeping a firm hold; persistent" },
+    { "word": "PRAGMATIC", "meaning": "Dealing with things sensibly and realistically" },
+    { "word": "ELOQUENT", "meaning": "Fluent or persuasive in speaking or writing" },
+    { "word": "MUNDANE", "meaning": "Lacking interest or excitement; ordinary" },
+    { "word": "ZENITH", "meaning": "The highest point reached" },
+    { "word": "UBIQUITOUS", "meaning": "Present or found everywhere" },
+    { "word": "MELLOW", "meaning": "Pleasantly smooth and gentle" },
+    { "word": "AUSTERE", "meaning": "Severe or strict in manner or appearance" },
+    { "word": "VIVID", "meaning": "Producing powerful feelings or clear images" },
+    { "word": "PARSIMONIOUS", "meaning": "Very unwilling to spend money or use resources" },
+    { "word": "AMBIGUOUS", "meaning": "Open to more than one interpretation" },
+    { "word": "METICULOUS", "meaning": "Showing great attention to detail" },
+    { "word": "PROLIFIC", "meaning": "Producing much fruit or many works" },
+    { "word": "CANDID", "meaning": "Truthful and straightforward; frank" },
+    { "word": "NOVEL", "meaning": "New or unusual in an interesting way" }
+  ],
+  "es": [
+    { "word": "EFÍMERO", "meaning": "Que dura muy poco tiempo" },
+    { "word": "SERENDIPIA", "meaning": "Hallazgo valioso que ocurre de forma accidental" },
+    { "word": "RESILIENTE", "meaning": "Capaz de recuperarse de la dificultad" },
+    { "word": "LUCIDEZ", "meaning": "Claridad en el pensamiento o la expresión" },
+    { "word": "FRUGAL", "meaning": "Que no desperdicia recursos" },
+    { "word": "ZENIT", "meaning": "El punto más alto" }
+  ],
+  "fr": [
+    { "word": "ÉPHÉMÈRE", "meaning": "Qui dure très peu de temps" },
+    { "word": "SÉRENDIPITÉ", "meaning": "Découverte heureuse et inattendue" },
+    { "word": "RÉSILIENT", "meaning": "Capable de surmonter les difficultés" },
+    { "word": "LUCIDE", "meaning": "Qui comprend clairement" },
+    { "word": "FRUGAL", "meaning": "Qui dépense peu" }
+  ]
+}

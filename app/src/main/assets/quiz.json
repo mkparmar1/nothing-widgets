@@ -1,0 +1,25 @@
+{
+  "categories": {
+    "SCIENCE": [
+      { "q": "What planet is known as the Red Planet?", "options": ["Mars", "Venus", "Jupiter"], "answer": 0 },
+      { "q": "What gas do plants absorb?", "options": ["Oxygen", "Carbon dioxide", "Nitrogen"], "answer": 1 },
+      { "q": "What is the chemical symbol for gold?", "options": ["Go", "Gd", "Au"], "answer": 2 },
+      { "q": "How many bones are in the adult human body?", "options": ["206", "180", "300"], "answer": 0 }
+    ],
+    "HISTORY": [
+      { "q": "In which year did World War II end?", "options": ["1943", "1945", "1950"], "answer": 1 },
+      { "q": "Who built the Great Wall of China?", "options": ["The Ming Dynasty", "The Romans", "The Ottomans"], "answer": 0 },
+      { "q": "Which ancient city hosted the first Olympics?", "options": ["Athens", "Olympia", "Sparta"], "answer": 1 }
+    ],
+    "GEOGRAPHY": [
+      { "q": "What is the longest river in the world?", "options": ["Amazon", "Nile", "Yangtze"], "answer": 1 },
+      { "q": "Which country has the most time zones?", "options": ["Russia", "France", "USA"], "answer": 1 },
+      { "q": "What is the capital of Australia?", "options": ["Sydney", "Melbourne", "Canberra"], "answer": 2 }
+    ],
+    "MATH": [
+      { "q": "What is the value of pi to 2 decimal places?", "options": ["3.14", "3.41", "2.14"], "answer": 0 },
+      { "q": "What is the square root of 144?", "options": ["11", "12", "14"], "answer": 1 },
+      { "q": "How many sides does a hexagon have?", "options": ["5", "6", "8"], "answer": 1 }
+    ]
+  }
+}
