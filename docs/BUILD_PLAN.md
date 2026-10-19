@@ -429,6 +429,12 @@ collage. No extra design tooling needed.
 
 ## Phase 4 — Platform features  *(P1 · L)*
 
+> **Status: ✅ implemented.** 4.1 lock-screen/AOD providers (`DotWidgetProviderLockS/M`, `keyguard`
+> category, `lockSafe` flag + browser badge). 4.2 setup export/import as a compressed `DWSET1:` code
+> (`SetupShareRepository`, share card in the Setups tab, imported configs pre-fill the config screen).
+> 4.3 community feed bundled as `assets/community_setups.json` (`CommunityRepository`, "COMMUNITY
+> PICKS" section). Tests: round-trip, malformed-code rejection, community asset parse, lock-safe set.
+
 ### 4.1 Lock screen / Always-On Display widgets  *(P1 · L)*
 
 **What it is.** Widgets you can place on the Android 14+ lock screen (and AOD where supported).

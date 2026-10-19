@@ -123,7 +123,12 @@ class WidgetConfigureActivity : ComponentActivity() {
                         size = size,
                         onSelect = { selected ->
                             definition = selected
-                            setupState = WidgetSetupState.defaults(selected, preferences, size)
+                            setupState = WidgetSetupState.defaults(
+                                selected,
+                                preferences,
+                                size,
+                                com.example.data.setups.SetupShareRepository.importedConfig(this@WidgetConfigureActivity, selected.id)?.toString()
+                            )
                             saveError = null
                         }
                     )
@@ -131,7 +136,12 @@ class WidgetConfigureActivity : ComponentActivity() {
                     val selectedDefinition = definition!!
                     WidgetSetupContent(
                         definition = selectedDefinition,
-                        initial = setupState ?: WidgetSetupState.defaults(selectedDefinition, preferences, size),
+                        initial = setupState ?: WidgetSetupState.defaults(
+                            selectedDefinition,
+                            preferences,
+                            size,
+                            com.example.data.setups.SetupShareRepository.importedConfig(this@WidgetConfigureActivity, selectedDefinition.id)?.toString()
+                        ),
                         lockedSize = size,
                         saveLabel = if (initialDefinition == null) "ADD WIDGET" else "SAVE CHANGES",
                         saveError = saveError,

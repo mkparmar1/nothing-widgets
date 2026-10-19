@@ -400,6 +400,21 @@ fun MinimalWidgetCard(
             )
         }
 
+        if (definition.lockSafe) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "LOCK SCREEN READY",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFF8A8A8A),
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0x1A8A8A8A))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .testTag("lock_badge_${definition.id}")
+            )
+        }
+
         Spacer(modifier = Modifier.height(12.dp))
 
         // Info Row - Sleek & Minimal without extra buttons

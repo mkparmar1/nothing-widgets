@@ -29,8 +29,8 @@ object WidgetRegistry {
 
     init {
         // --- 1. CLOCK (14 widgets) ---
-        register(createDef("clock.dotdigital.s", Category.CLOCK, "Digital Dot Clock S", "Minimalist dot-matrix digital clock", setOf(SizeBucket.S), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv) })
-        register(createDef("clock.dotdigital.m", Category.CLOCK, "Digital Dot Clock M", "Wide dot-matrix digital clock with date", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv) })
+        register(createDef("clock.dotdigital.s", Category.CLOCK, "Digital Dot Clock S", "Minimalist dot-matrix digital clock", setOf(SizeBucket.S), TapAction.OPEN_CLOCK, lockSafe = true) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv) })
+        register(createDef("clock.dotdigital.m", Category.CLOCK, "Digital Dot Clock M", "Wide dot-matrix digital clock with date", setOf(SizeBucket.M), TapAction.OPEN_CLOCK, lockSafe = true) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv) })
         register(createDef("clock.dotdigital.l", Category.CLOCK, "Digital Dot Clock L", "Hero size dot-matrix digital clock", setOf(SizeBucket.L), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv) })
         register(createDef("clock.analog.ring", Category.CLOCK, "Analog Dot Ring", "Circular dot-matrix analog face with live hands", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderAnalogRing(s, cv) })
         register(createDef("clock.stacked.hhmm", Category.CLOCK, "Stacked HH/MM", "Vertical stacked hours and minutes in dot-matrix", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderStackedTime(s, cv) })
@@ -47,7 +47,7 @@ object WidgetRegistry {
         register(createDef("clock.glyph.ring", Category.CLOCK, "Glyph-Reactive Clock", "Dot time inside a segmented accent ring that lights up while charging", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ExclusiveRenderers.renderGlyphClock(c, s, cv) })
 
         // --- 2. DATE & CALENDAR (10 widgets) ---
-        register(createDef("calendar.day.date", Category.CALENDAR, "Day & Date Card", "Bold day number with weekday tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CALENDAR) { c, s, cv -> CalendarRenderers.renderDayDateCard(s, cv) })
+        register(createDef("calendar.day.date", Category.CALENDAR, "Day & Date Card", "Bold day number with weekday tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CALENDAR, lockSafe = true) { c, s, cv -> CalendarRenderers.renderDayDateCard(s, cv) })
         register(createDef("calendar.month.grid", Category.CALENDAR, "Month Dot Matrix", "Full month calendar matrix with accented day dot", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR) { c, s, cv -> CalendarRenderers.renderMonthGrid(s, cv) })
         register(createDef("calendar.agenda.3", Category.CALENDAR, "Today Agenda (3)", "Upcoming schedule events in high contrast", setOf(SizeBucket.M), TapAction.OPEN_CALENDAR, requiredPermission = AppPermission.Calendar) { c, s, cv -> CalendarExtraRenderers.renderAgenda(c, s, cv, 3) })
         register(createDef("calendar.agenda.5", Category.CALENDAR, "Today Agenda (5)", "Full day agenda timeline", setOf(SizeBucket.L), TapAction.OPEN_CALENDAR, requiredPermission = AppPermission.Calendar) { c, s, cv -> CalendarExtraRenderers.renderAgenda(c, s, cv, 5) })
@@ -60,7 +60,7 @@ object WidgetRegistry {
         register(createDef("calendar.life.dots", Category.CALENDAR, "Life in Dots", "The whole day as 144 minute-dots that fill as time passes", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR) { c, s, cv -> ExclusiveRenderers.renderLifeInDots(c, s, cv) })
 
         // --- 3. BATTERY (8 widgets) ---
-        register(createDef("battery.ring", Category.BATTERY, "Battery Dot Ring", "Circular 24-dot dial with center percentage", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_BATTERY) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
+        register(createDef("battery.ring", Category.BATTERY, "Battery Dot Ring", "Circular 24-dot dial with center percentage", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_BATTERY, lockSafe = true) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
         register(createDef("battery.segmented", Category.BATTERY, "Segmented Battery Bar", "20-dot segmented level with temperature", setOf(SizeBucket.M), TapAction.OPEN_BATTERY) { c, s, cv -> BatteryRenderers.renderSegmentedBar(c, s, cv) })
         register(createDef("battery.combo.devices", Category.BATTERY, "Device Ecosystem Combo", "Phone, Earbuds, and Watch battery gauges", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY, requiredPermission = AppPermission.NearbyDevices) { c, s, cv -> LiveDataRenderers.renderDeviceBatteries(c, s, cv, 3) })
         register(createDef("battery.percentage", Category.BATTERY, "Bold Battery %", "Large dot-matrix capacity readout", setOf(SizeBucket.S), TapAction.OPEN_BATTERY) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
@@ -167,6 +167,7 @@ object WidgetRegistry {
         defaultTap: TapAction,
         requiresNetwork: Boolean = false,
         requiredPermission: AppPermission? = null,
+        lockSafe: Boolean = false,
         renderFn: (Context, WidgetSpec, Canvas) -> Unit
     ): WidgetDefinition {
         return object : WidgetDefinition {
@@ -178,6 +179,7 @@ object WidgetRegistry {
             override val defaultTap = defaultTap
             override val requiresNetwork = requiresNetwork
             override val requiredPermission = requiredPermission
+            override val lockSafe = lockSafe
 
             override fun render(context: Context, spec: WidgetSpec, canvas: Canvas) {
                 renderFn(context, spec, canvas)
@@ -196,6 +198,9 @@ object WidgetRegistry {
     fun getById(id: String): WidgetDefinition? {
         return widgetsList.find { it.id == id }
     }
+
+    /** Widgets suitable for the Android 14+ lock screen / Always-On Display. */
+    fun lockSafeDefs(): List<WidgetDefinition> = widgetsList.filter { it.lockSafe }
 
     fun search(query: String): List<WidgetDefinition> {
         if (query.isBlank()) return widgetsList

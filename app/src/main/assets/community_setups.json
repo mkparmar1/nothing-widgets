@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "tagline": "Setups shared by the r/NothingTech and Nothing Playground community.",
+  "picks": [
+    {
+      "id": "community_glyph_night",
+      "title": "Glyph Night Drive",
+      "author": "@nothing_ops",
+      "tagline": "Blackout phone, red glyph clock and a battery run — pure Nothing.",
+      "accent": "RED",
+      "wallpaperIndex": 0,
+      "widgetIds": ["clock.glyph.ring", "battery.ring", "calendar.day.date"]
+    },
+    {
+      "id": "community_focus_grid",
+      "title": "Deep Focus Grid",
+      "author": "@min_imal",
+      "tagline": "Monochrome toggles and a focus timer for distraction-free days.",
+      "accent": "PURE",
+      "wallpaperIndex": 1,
+      "widgetIds": ["prod.focus.companion", "toggle.grid.2x2", "calendar.week.progress"]
+    },
+    {
+      "id": "community_life_dots",
+      "title": "Life In Dots",
+      "author": "@dotmatrix_daily",
+      "tagline": "The whole day as 144 minute-dots, next to the annual timeline.",
+      "accent": "LIME",
+      "wallpaperIndex": 3,
+      "widgetIds": ["calendar.life.dots", "calendar.year.progress", "clock.dotdigital.l"]
+    },
+    {
+      "id": "community_weather_watch",
+      "title": "Weather Watch",
+      "author": "@forecast_fan",
+      "tagline": "Hourly rain risk, a 5-day strip and the UV index up top.",
+      "accent": "CYAN",
+      "wallpaperIndex": 2,
+      "widgetIds": ["weather.hourly.strip", "weather.5day.strip", "weather.uv.index", "weather.sunrise.arc"]
+    },
+    {
+      "id": "community_travel_deck",
+      "title": "Nomad Deck",
+      "author": "@gate_22",
+      "tagline": "Two cities, live weather and a crypto ticker for the road.",
+      "accent": "AMBER",
+      "wallpaperIndex": 4,
+      "widgetIds": ["clock.world.custom", "weather.current.temp", "sensor.crypto.ticker", "battery.segmented"]
+    },
+    {
+      "id": "community_ultra_clean",
+      "title": "Ultra Clean",
+      "author": "@less_is_more",
+      "tagline": "One clock, one date, nothing else. The Nothing ideal.",
+      "accent": "PURE",
+      "wallpaperIndex": 6,
+      "widgetIds": ["clock.dotdigital.m", "calendar.day.date"]
+    },
+    {
+      "id": "community_productivity_os",
+      "title": "Productivity OS",
+      "author": "@ship_daily",
+      "tagline": "Agenda, to-dos and a weekly screen-time pulse.",
+      "accent": "LIME",
+      "wallpaperIndex": 3,
+      "widgetIds": ["calendar.agenda.3", "prod.todo.3", "battery.screen.week"]
+    },
+    {
+      "id": "community_folder_home",
+      "title": "Folder Home",
+      "author": "@launcher_lab",
+      "tagline": "An 8-app dot folder plus a quick search bar.",
+      "accent": "RED",
+      "wallpaperIndex": 0,
+      "widgetIds": ["utility.folder.grid", "prod.search.bar", "clock.dotdigital.s"]
+    }
+  ]
+}

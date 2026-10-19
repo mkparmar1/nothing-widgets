@@ -23,6 +23,14 @@ interface WidgetDefinition {
     val requiredPermission: AppPermission?
         get() = null
 
+    /**
+     * True when this widget is safe and useful on the Android 14+ lock screen / Always-On Display
+     * (glanceable, no live network or sensor dependency). Only lock-safe widgets are offered by the
+     * keyguard providers; the browser marks them "LOCK SCREEN READY".
+     */
+    val lockSafe: Boolean
+        get() = false
+
     fun render(context: Context, spec: WidgetSpec, canvas: Canvas)
 
     /** TalkBack description for the placed widget. Overridden by the main families. */

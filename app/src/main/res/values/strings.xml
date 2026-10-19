@@ -12,4 +12,6 @@
     <string name="widget_desc_s">Dot Widgets • Small 2×2 — clocks, battery, toggles</string>
     <string name="widget_desc_m">Dot Widgets • Wide 4×2 — weather, calendar, media</string>
     <string name="widget_desc_l">Dot Widgets • Large 4×4 — agenda, photos, month</string>
+    <string name="widget_lock_desc_s">Dot Widgets • Lock screen (small) — clock, date, battery</string>
+    <string name="widget_lock_desc_m">Dot Widgets • Lock screen (wide) — clock, date, battery</string>
 </resources>

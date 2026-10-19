@@ -112,16 +112,27 @@ data class WidgetSetupState(
         fun defaults(
             definition: WidgetDefinition,
             preferences: PreferencesManager,
-            lockedSize: SizeBucket? = null
-        ) = WidgetSetupState(
-            size = lockedSize ?: definition.sizes.first(),
-            accent = preferences.getSavedAccent(),
-            background = preferences.getSavedBgMode(),
-            theme = preferences.getSavedThemeMode(),
-            cornerRadius = 20,
-            showLabel = true,
-            tapAction = definition.defaultTap
-        )
+            lockedSize: SizeBucket? = null,
+            importedConfigJson: String? = null
+        ): WidgetSetupState {
+            val json = runCatching { JSONObject(importedConfigJson ?: "{}") }.getOrElse { JSONObject() }
+            return WidgetSetupState(
+                size = lockedSize ?: definition.sizes.first(),
+                accent = AccentOption.fromName(json.optString("accent", preferences.getSavedAccent().name)),
+                background = BackgroundMode.fromName(json.optString("background", preferences.getSavedBgMode().name)),
+                bgAlpha = (json.optInt("bg_alpha", 100) / 100f).coerceIn(0f, 1f),
+                theme = ThemeMode.fromName(json.optString("theme_mode", preferences.getSavedThemeMode().name)),
+                cornerRadius = json.optInt("corner_radius", 20),
+                showLabel = json.optBoolean("show_label", true),
+                tapAction = runCatching {
+                    TapAction.valueOf(json.optString("tap_action", definition.defaultTap.name))
+                }.getOrDefault(definition.defaultTap),
+                timeFormat = json.optString(ClockOptions.KEY_TIME).takeIf { it.isNotEmpty() }?.let { TimeFormat.fromName(it) },
+                dateFormat = json.optString(ClockOptions.KEY_DATE).takeIf { it.isNotEmpty() }?.let { DateFormat.fromName(it) },
+                dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
+                timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}")
+            )
+        }
 
         fun fromInstance(
             instance: WidgetInstance,

@@ -110,3 +110,11 @@ abstract class BaseDotWidgetProvider(private val defaultWidgetTypeId: String) : 
 class DotWidgetProviderS : BaseDotWidgetProvider("clock.dotdigital.s")
 class DotWidgetProviderM : BaseDotWidgetProvider("clock.dotdigital.m")
 class DotWidgetProviderL : BaseDotWidgetProvider("clock.dotdigital.l")
+
+/**
+ * Lock-screen / Always-On Display providers (Android 14+). They share the normal rendering path but
+ * advertise `keyguard` in their provider info, so the launcher offers them on the lock screen. Their
+ * default widget is a lock-safe clock; the user can reconfigure to any lock-safe widget.
+ */
+class DotWidgetProviderLockS : BaseDotWidgetProvider("clock.dotdigital.s")
+class DotWidgetProviderLockM : BaseDotWidgetProvider("clock.dotdigital.m")
