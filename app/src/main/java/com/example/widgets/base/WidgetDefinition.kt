@@ -3,6 +3,7 @@ package com.example.widgets.base
 import android.content.Context
 import android.graphics.Canvas
 import com.example.core.bitmap.SizeBucket
+import com.example.core.config.WidgetOption
 import com.example.ui.permissions.AppPermission
 
 interface WidgetDefinition {
@@ -14,6 +15,13 @@ interface WidgetDefinition {
     val defaultTap: TapAction
     val requiresNetwork: Boolean
         get() = false
+
+    /**
+     * Advanced options shown in the setup screen's ADVANCED section and resolved into
+     * [WidgetSpec.options]. Empty means the widget has no advanced controls.
+     */
+    val options: List<WidgetOption>
+        get() = emptyList()
 
     /**
      * The single permission this widget needs to show real data. When it isn't granted the setup

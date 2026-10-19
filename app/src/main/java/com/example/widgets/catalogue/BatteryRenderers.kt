@@ -16,7 +16,17 @@ object BatteryRenderers {
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
-        val accentColor = spec.accentColor
+
+        // Advanced options: dot count and a "low battery" colour rule.
+        val totalDots = spec.options.int("ring_dots", 24).coerceIn(12, 36)
+        val warnEnabled = spec.options.boolean("warn_low", true)
+        val accentColor = com.example.core.render.ColorRule.paint(
+            value = level,
+            goal = 100,
+            warnRatio = 0.2f,
+            accentColor = spec.accentColor,
+            enabled = warnEnabled && !isCharging
+        )
 
         val pad = spec.widthPx * 0.08f
         val maxW = spec.widthPx - (2 * pad)
@@ -36,7 +46,6 @@ object BatteryRenderers {
         val maxD = minOf(spec.widthPx - (2 * pad), spec.heightPx - (2 * pad) - (12f * spec.density))
         val radius = (maxD / 2f) * 0.82f
 
-        val totalDots = 24
         val filledDots = ((level / 100f) * totalDots).toInt()
 
         // Circular ring of dots
@@ -142,8 +151,8 @@ object BatteryRenderers {
         val statusMaxW = spec.widthPx - pad - statusStartX
         DotMatrixRenderer.drawFittedLabel(canvas, statusText, statusStartX, startY + (3.5f * dotGap), statusMaxW, paintSub)
 
-        // 20-dot segmented bar across the bottom
-        val totalDots = 20
+        // Segmented bar across the bottom (advanced option: segment count)
+        val totalDots = spec.options.int("segments", 20).coerceIn(10, 30)
         val segGap = maxW / (totalDots - 1)
         val segY = spec.heightPx - pad - (10f * spec.density)
 

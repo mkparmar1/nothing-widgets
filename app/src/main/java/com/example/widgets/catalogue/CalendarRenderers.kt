@@ -34,13 +34,15 @@ object CalendarRenderers {
             accentColor = accentColor
         )
 
-        // Weekday label top left
-        val paintSub = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = accentColor
-            textSize = (11f * spec.density).coerceAtMost(14f)
-            isFakeBoldText = true
+        // Weekday label top left (advanced option can hide it)
+        if (spec.options.boolean("show_weekday", true)) {
+            val paintSub = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = accentColor
+                textSize = (11f * spec.density).coerceAtMost(14f)
+                isFakeBoldText = true
+            }
+            DotMatrixRenderer.drawFittedLabel(canvas, dayOfWeek, pad, pad + 12f * spec.density, maxW * 0.65f, paintSub)
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, dayOfWeek, pad, pad + 12f * spec.density, maxW * 0.65f, paintSub)
 
         // Large dot matrix day number
         val maxAllowedH = spec.heightPx * 0.44f

@@ -47,7 +47,9 @@ object WidgetRegistry {
         register(createDef("clock.glyph.ring", Category.CLOCK, "Glyph-Reactive Clock", "Dot time inside a segmented accent ring that lights up while charging", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ExclusiveRenderers.renderGlyphClock(c, s, cv) })
 
         // --- 2. DATE & CALENDAR (10 widgets) ---
-        register(createDef("calendar.day.date", Category.CALENDAR, "Day & Date Card", "Bold day number with weekday tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CALENDAR, lockSafe = true) { c, s, cv -> CalendarRenderers.renderDayDateCard(s, cv) })
+        register(createDef("calendar.day.date", Category.CALENDAR, "Day & Date Card", "Bold day number with weekday tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CALENDAR, lockSafe = true, options = listOf(
+            com.example.core.config.WidgetOption.Toggle("show_weekday", "Show weekday tag", default = true)
+        )) { c, s, cv -> CalendarRenderers.renderDayDateCard(s, cv) })
         register(createDef("calendar.month.grid", Category.CALENDAR, "Month Dot Matrix", "Full month calendar matrix with accented day dot", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR) { c, s, cv -> CalendarRenderers.renderMonthGrid(s, cv) })
         register(createDef("calendar.agenda.3", Category.CALENDAR, "Today Agenda (3)", "Upcoming schedule events in high contrast", setOf(SizeBucket.M), TapAction.OPEN_CALENDAR, requiredPermission = AppPermission.Calendar) { c, s, cv -> CalendarExtraRenderers.renderAgenda(c, s, cv, 3) })
         register(createDef("calendar.agenda.5", Category.CALENDAR, "Today Agenda (5)", "Full day agenda timeline", setOf(SizeBucket.L), TapAction.OPEN_CALENDAR, requiredPermission = AppPermission.Calendar) { c, s, cv -> CalendarExtraRenderers.renderAgenda(c, s, cv, 5) })
@@ -60,8 +62,13 @@ object WidgetRegistry {
         register(createDef("calendar.life.dots", Category.CALENDAR, "Life in Dots", "The whole day as 144 minute-dots that fill as time passes", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR) { c, s, cv -> ExclusiveRenderers.renderLifeInDots(c, s, cv) })
 
         // --- 3. BATTERY (8 widgets) ---
-        register(createDef("battery.ring", Category.BATTERY, "Battery Dot Ring", "Circular 24-dot dial with center percentage", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_BATTERY, lockSafe = true) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
-        register(createDef("battery.segmented", Category.BATTERY, "Segmented Battery Bar", "20-dot segmented level with temperature", setOf(SizeBucket.M), TapAction.OPEN_BATTERY) { c, s, cv -> BatteryRenderers.renderSegmentedBar(c, s, cv) })
+        register(createDef("battery.ring", Category.BATTERY, "Battery Dot Ring", "Circular 24-dot dial with center percentage", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_BATTERY, lockSafe = true, options = listOf(
+            com.example.core.config.WidgetOption.Slider("ring_dots", "Ring dot count", min = 12, max = 36, step = 4, default = 24, unit = "dots"),
+            com.example.core.config.WidgetOption.ColorRule("warn_low", "Low-battery warning", warnRatio = 0.2f, default = true)
+        )) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
+        register(createDef("battery.segmented", Category.BATTERY, "Segmented Battery Bar", "20-dot segmented level with temperature", setOf(SizeBucket.M), TapAction.OPEN_BATTERY, options = listOf(
+            com.example.core.config.WidgetOption.Slider("segments", "Segment count", min = 10, max = 30, step = 2, default = 20, unit = "dots")
+        )) { c, s, cv -> BatteryRenderers.renderSegmentedBar(c, s, cv) })
         register(createDef("battery.combo.devices", Category.BATTERY, "Device Ecosystem Combo", "Phone, Earbuds, and Watch battery gauges", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY, requiredPermission = AppPermission.NearbyDevices) { c, s, cv -> LiveDataRenderers.renderDeviceBatteries(c, s, cv, 3) })
         register(createDef("battery.percentage", Category.BATTERY, "Bold Battery %", "Large dot-matrix capacity readout", setOf(SizeBucket.S), TapAction.OPEN_BATTERY) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
         register(createDef("battery.charging.active", Category.BATTERY, "Charging Indicator", "Active charging state and voltage readout", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_BATTERY) { c, s, cv -> DeviceInfoRenderers.renderChargingIndicator(c, s, cv) })
@@ -72,7 +79,9 @@ object WidgetRegistry {
         register(createDef("battery.fuel.gauge", Category.BATTERY, "Battery Fuel Gauge", "Horizontal dot gauge with time-to-full or time-left", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY) { c, s, cv -> ExclusiveRenderers.renderBatteryFuelGauge(c, s, cv) })
 
         // --- 4. WEATHER (10 widgets) ---
-        register(createDef("weather.current.temp", Category.WEATHER, "Current Temperature", "Real-time temp with dot icon and stale guard", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv) })
+        register(createDef("weather.current.temp", Category.WEATHER, "Current Temperature", "Real-time temp with dot icon and stale guard", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(
+            com.example.core.config.WidgetOption.Toggle("show_details", "Show high/low line", default = true)
+        )) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv) })
         register(createDef("weather.5day.strip", Category.WEATHER, "5-Day Forecast Strip", "5-day outlook with daily high/low dots", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderForecast5Day(c, s, cv) })
         register(createDef("weather.hourly.strip", Category.WEATHER, "Hourly Forecast Strip", "Next hours with temperature, icon and rain chance", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderHourlyForecast(c, s, cv) })
         register(createDef("weather.sunrise.arc", Category.WEATHER, "Sun Tracker Arc", "Sunrise and sunset dot arc tracking daylight", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, requiredPermission = AppPermission.Location) { c, s, cv -> WeatherRenderers.renderSunriseSunsetArc(c, s, cv) })
@@ -132,8 +141,13 @@ object WidgetRegistry {
         register(createDef("prod.notes.pin", Category.PRODUCTIVITY, "Notes Pin", "Pinned quick memo and thoughts", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderNotesPin(c, s, cv) })
         register(createDef("prod.todo.3", Category.PRODUCTIVITY, "To-Do Checklist (3)", "Daily task checklist with checkmarks", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderTodoList(c, s, cv, 3) })
         register(createDef("prod.todo.5", Category.PRODUCTIVITY, "To-Do Checklist (5)", "Extended 5-item daily checklist", setOf(SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderTodoList(c, s, cv, 5) })
-        register(createDef("prod.step.counter", Category.PRODUCTIVITY, "Daily Step Counter", "Live step metrics with 20-dot progress run", setOf(SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Activity) { c, s, cv -> ProductivityRenderers.renderStepCounter(c, s, cv) })
-        register(createDef("prod.water.tracker", Category.PRODUCTIVITY, "Hydration Tracker", "8-glass daily water intake dots", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderWaterTracker(c, s, cv) })
+        register(createDef("prod.step.counter", Category.PRODUCTIVITY, "Daily Step Counter", "Live step metrics with 20-dot progress run", setOf(SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Activity, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal", "Daily step goal", min = 1000, max = 30000, step = 1000, default = 10000, unit = "steps"),
+            com.example.core.config.WidgetOption.Toggle("show_pct", "Show % of goal", default = true)
+        )) { c, s, cv -> ProductivityRenderers.renderStepCounter(c, s, cv) })
+        register(createDef("prod.water.tracker", Category.PRODUCTIVITY, "Hydration Tracker", "8-glass daily water intake dots", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("glasses_goal", "Daily glasses", min = 4, max = 16, step = 1, default = 8, unit = "glasses")
+        )) { c, s, cv -> ProductivityRenderers.renderWaterTracker(c, s, cv) })
         register(createDef("prod.focus.timer", Category.PRODUCTIVITY, "Focus Timer", "Pomodoro work session tracker", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> ProductivityRenderers.renderFocusTimer(c, s, cv) })
         register(createDef("prod.habit.dots", Category.PRODUCTIVITY, "Habit Matrix Streak", "Weekly habit completion dot grid", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> CalendarExtraRenderers.renderHabitMatrix(c, s, cv) })
         register(createDef("prod.countdown.timer", Category.PRODUCTIVITY, "Countdown Pill", "Target minutes remaining indicator", setOf(SizeBucket.S), TapAction.DEFAULT) { c, s, cv -> ProductivityRenderers.renderCountdownTimer(c, s, cv) })
@@ -168,6 +182,7 @@ object WidgetRegistry {
         requiresNetwork: Boolean = false,
         requiredPermission: AppPermission? = null,
         lockSafe: Boolean = false,
+        options: List<com.example.core.config.WidgetOption> = emptyList(),
         renderFn: (Context, WidgetSpec, Canvas) -> Unit
     ): WidgetDefinition {
         return object : WidgetDefinition {
@@ -180,6 +195,7 @@ object WidgetRegistry {
             override val requiresNetwork = requiresNetwork
             override val requiredPermission = requiredPermission
             override val lockSafe = lockSafe
+            override val options = options
 
             override fun render(context: Context, spec: WidgetSpec, canvas: Canvas) {
                 renderFn(context, spec, canvas)

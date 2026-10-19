@@ -718,8 +718,16 @@ Counting: **64 new-category widgets + 40 deep variants = 104 new**, taking the c
 
 ## Phase 8 — Advanced options system  *(P1 · L)*
 
-> **Status: ⬜ planned.** "Advanced" means the *same* widget can be reshaped without adding another
+> **Status: ✅ done.** "Advanced" means the *same* widget can be reshaped without adding another
 > catalogue entry. Phase 7 widgets ship with these; existing widgets gain them incrementally.
+>
+> **Landed:** `WidgetOption` (Toggle/Choice/Slider/Text/ColorRule) + `WidgetOptions.parse/write` under
+> the `"opt"` config object; `WidgetSpec.options`/`WidgetDefinition.options`; generic `OptionControls`
+> with collapsible ADVANCED section in `WidgetSetupContent`; `ColorRule` + `LayoutVariants` helpers.
+> Six flagship widgets retrofitted (battery.ring, battery.segmented, prod.step.counter,
+> prod.water.tracker, calendar.day.date, weather.current.temp). Tests: `WidgetOptionsTest` (6) cover
+> round-trip, unknown-key preservation, deletion, malformed config, choice schema and `ColorRule`.
+> **Deferred to 8.3.5:** BrowserScreen "Advanced options" filter/badge.
 
 ### 8.0 The option model
 

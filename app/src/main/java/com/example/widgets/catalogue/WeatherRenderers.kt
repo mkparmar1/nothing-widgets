@@ -96,15 +96,17 @@ object WeatherRenderers {
                 accentColor = accentColor
             )
 
-            // High / Low and Condition below with auto-fit and ellipsize
-            val paintSub = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xFF8A8A8A.toInt()
-                textSize = (10f * spec.density).coerceAtMost(13f)
-                isFakeBoldText = true
+            // High / Low and Condition below with auto-fit and ellipsize (advanced option can hide)
+            if (spec.options.boolean("show_details", true)) {
+                val paintSub = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = 0xFF8A8A8A.toInt()
+                    textSize = (10f * spec.density).coerceAtMost(13f)
+                    isFakeBoldText = true
+                }
+                val subText = if (data.fetchedAt == 0L) "WAITING FOR DATA" else "${data.description.uppercase()} • H:${data.highC}° L:${data.lowC}°"
+                val subY = spec.heightPx - pad - (8f * spec.density)
+                DotMatrixRenderer.drawFittedLabel(canvas, subText, pad, subY, maxW, paintSub)
             }
-            val subText = if (data.fetchedAt == 0L) "WAITING FOR DATA" else "${data.description.uppercase()} • H:${data.highC}° L:${data.lowC}°"
-            val subY = spec.heightPx - pad - (8f * spec.density)
-            DotMatrixRenderer.drawFittedLabel(canvas, subText, pad, subY, maxW, paintSub)
 
         } else {
             // M and L Sizes: Wide layout with temperature on left and hero icon on right
@@ -145,15 +147,17 @@ object WeatherRenderers {
                 accentColor = accentColor
             )
 
-            // High / Low and Condition below
-            val paintSub = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = 0xFF8A8A8A.toInt()
-                textSize = (11f * spec.density).coerceAtMost(15f)
-                isFakeBoldText = true
+            // High / Low and Condition below (advanced option can hide the details line)
+            if (spec.options.boolean("show_details", true)) {
+                val paintSub = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = 0xFF8A8A8A.toInt()
+                    textSize = (11f * spec.density).coerceAtMost(15f)
+                    isFakeBoldText = true
+                }
+                val subText = if (data.fetchedAt == 0L) "WAITING FOR WEATHER DATA" else "${data.description.uppercase()} • HIGH ${data.highC}° • LOW ${data.lowC}° • WIND ${data.windKmh}KM/H"
+                val subY = spec.heightPx - pad - (8f * spec.density)
+                DotMatrixRenderer.drawFittedLabel(canvas, subText, pad, subY, maxW, paintSub)
             }
-            val subText = if (data.fetchedAt == 0L) "WAITING FOR WEATHER DATA" else "${data.description.uppercase()} • HIGH ${data.highC}° • LOW ${data.lowC}° • WIND ${data.windKmh}KM/H"
-            val subY = spec.heightPx - pad - (8f * spec.density)
-            DotMatrixRenderer.drawFittedLabel(canvas, subText, pad, subY, maxW, paintSub)
         }
     }
 

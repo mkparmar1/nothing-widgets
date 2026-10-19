@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.core.bitmap.SizeBucket
 import com.example.core.bitmap.SizeResolver
+import com.example.core.config.WidgetOption
+import com.example.core.config.WidgetOptions
 import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.MaterialYouPalette
@@ -88,10 +90,12 @@ data class WidgetSetupState(
     val dateFormat: DateFormat? = null,
     val dotStyle: DotStyle = DotStyle.ROUND,
     /** IANA zone for world-clock widgets, null = phone's zone. */
-    val timeZoneId: String? = null
+    val timeZoneId: String? = null,
+    /** Advanced-option values (Phase 8), stored under the `"opt"` config object. */
+    val optionValues: Map<String, Any> = emptyMap()
 ) {
-    fun toConfigJson(widgetTypeId: String, existingConfigJson: String? = null): String =
-        (runCatching { JSONObject(existingConfigJson ?: "{}") }.getOrElse { JSONObject() }).apply {
+    fun toConfigJson(widgetTypeId: String, existingConfigJson: String? = null): String {
+        val base = (runCatching { JSONObject(existingConfigJson ?: "{}") }.getOrElse { JSONObject() }).apply {
             put("accent", accent.name)
             put("background", background.name)
             put("bg_alpha", (bgAlpha * 100).roundToInt())
@@ -107,6 +111,9 @@ data class WidgetSetupState(
             timeZoneId?.let { put(ClockOptions.KEY_TZ, it) }
             put(ClockOptions.KEY_DOT_STYLE, dotStyle.name)
         }.toString()
+        // Option values live in a nested object so they never collide with core config keys.
+        return com.example.core.config.WidgetOptions.write(base, optionValues)
+    }
 
     companion object {
         fun defaults(
@@ -130,7 +137,8 @@ data class WidgetSetupState(
                 timeFormat = json.optString(ClockOptions.KEY_TIME).takeIf { it.isNotEmpty() }?.let { TimeFormat.fromName(it) },
                 dateFormat = json.optString(ClockOptions.KEY_DATE).takeIf { it.isNotEmpty() }?.let { DateFormat.fromName(it) },
                 dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
-                timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}")
+                timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}"),
+                optionValues = resolveOptions(definition, importedConfigJson)
             )
         }
 
@@ -158,8 +166,34 @@ data class WidgetSetupState(
                 timeFormat = json.optString(ClockOptions.KEY_TIME).takeIf { it.isNotEmpty() }?.let { TimeFormat.fromName(it) },
                 dateFormat = json.optString(ClockOptions.KEY_DATE).takeIf { it.isNotEmpty() }?.let { DateFormat.fromName(it) },
                 dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
-                timeZoneId = ClockOptions.timeZone(instance.configJson)
+                timeZoneId = ClockOptions.timeZone(instance.configJson),
+                optionValues = resolveOptions(definition, instance.configJson)
             )
+        }
+
+        /**
+         * Reads each declared option's current value from [configJson] (falling back to its default),
+         * so the ADVANCED controls always show a value and the renderer always gets one.
+         */
+        fun resolveOptions(
+            definition: WidgetDefinition,
+            configJson: String?
+        ): Map<String, Any> {
+            if (definition.options.isEmpty()) return emptyMap()
+            val parsed = WidgetOptions.parse(configJson ?: "{}")
+            val out = LinkedHashMap<String, Any>()
+            for (option in definition.options) {
+                out[option.key] = when (option) {
+                    is WidgetOption.Toggle -> parsed.boolean(option.key, option.default)
+                    is WidgetOption.Choice -> parsed.string(option.key, option.default)
+                        .takeIf { v -> option.options.any { it.first == v } } ?: option.default
+                    is WidgetOption.Slider -> parsed.int(option.key, option.default)
+                        .coerceIn(option.min, option.max)
+                    is WidgetOption.Text -> parsed.string(option.key, option.default)
+                    is WidgetOption.ColorRule -> parsed.boolean(option.key, option.default)
+                }
+            }
+            return out
         }
 
         fun isConfigured(instance: WidgetInstance): Boolean {
@@ -333,6 +367,11 @@ fun WidgetSetupContent(
             )
         }
         Spacer(Modifier.height(20.dp))
+
+        if (definition.options.isNotEmpty()) {
+            AdvancedOptionsSection(definition = definition, state = state, accent = uiAccent, update = update)
+            Spacer(Modifier.height(20.dp))
+        }
 
         SetupSectionLabel("TAP ACTION")
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

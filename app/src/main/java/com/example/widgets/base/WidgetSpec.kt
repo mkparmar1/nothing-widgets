@@ -1,6 +1,7 @@
 package com.example.widgets.base
 
 import com.example.core.bitmap.SizeBucket
+import com.example.core.config.WidgetOptions
 import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.ThemeMode
@@ -30,7 +31,9 @@ data class WidgetSpec(
      * True on the home screen, where live overlays (animated soundwave, ticking clocks/timers) are
      * drawn on top of the bitmap; false in in-app previews, which must draw everything themselves.
      */
-    val liveOverlays: Boolean = false
+    val liveOverlays: Boolean = false,
+    /** Resolved advanced-option values (from `configJson`'s `"opt"` object). */
+    val options: WidgetOptions = WidgetOptions.parse(configJson)
 )
 
 enum class TapAction(val displayName: String) {

@@ -152,7 +152,9 @@ object ProductivityRenderers {
     fun renderStepCounter(context: Context, spec: WidgetSpec, canvas: Canvas) {
         val steps = StepRepository.todaySteps(context)
             ?: return RenderKit.message(spec, canvas, "DAILY STEPS", "ALLOW ACTIVITY ACCESS IN THE APP")
-        val goal = 10000
+        // Advanced option: the daily step goal.
+        val goal = spec.options.int("goal", 10000).coerceIn(1000, 30000)
+        val showPct = spec.options.boolean("show_pct", true)
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
@@ -208,9 +210,11 @@ object ProductivityRenderers {
             textSize = (11f * spec.density).coerceAtMost(15f)
             isFakeBoldText = true
         }
-        val pctLabel = "$pct% OF GOAL"
-        val pctStartX = (startX + textW + (14f * spec.density)).coerceAtLeast(spec.widthPx * 0.52f)
-        DotMatrixRenderer.drawFittedLabel(canvas, pctLabel, pctStartX, startY + (3.5f * dotGap), spec.widthPx - pad - pctStartX, paintPct)
+        if (showPct) {
+            val pctLabel = "$pct% OF GOAL"
+            val pctStartX = (startX + textW + (14f * spec.density)).coerceAtLeast(spec.widthPx * 0.52f)
+            DotMatrixRenderer.drawFittedLabel(canvas, pctLabel, pctStartX, startY + (3.5f * dotGap), spec.widthPx - pad - pctStartX, paintPct)
+        }
 
         // 20-dot progress run across bottom
         val totalDots = 20
@@ -235,7 +239,8 @@ object ProductivityRenderers {
 
     fun renderWaterTracker(context: Context, spec: WidgetSpec, canvas: Canvas) {
         val glasses = PreferencesManager.getInstance(context).getWaterCount()
-        val total = 8
+        // Advanced option: how many glasses make a full day (common trackers use 8 or 10).
+        val total = spec.options.int("glasses_goal", 8).coerceIn(4, 16)
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
         val offColor = if (spec.isDark) 0x1EFFFFFF.toInt() else 0x1E0A0A0A.toInt()
