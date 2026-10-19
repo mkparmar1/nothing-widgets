@@ -468,7 +468,14 @@ and gives a home for setup-sharing.
 
 ---
 
-## Phase 5 — Monetization  *(P1 · M)*
+## Phase 5 — Monetization  *(P1 · M)* — ⛔ DROPPED (product decision: app is fully free)
+
+> **Status: ❌ dropped.** Dot Widgets ships **entirely free** — every widget, size and theme is
+> unlocked for everyone. No Google Play Billing dependency, no paywall, no free-tier gating. This is
+> an intentional positioning choice: it maximises adoption and review sentiment, and removes the
+> single most common complaint rivals get ("asking money again" / restore bugs). `Entitlements`
+> remains the one seam that Save consults (always returns `true`), so a paid tier could be added
+> later by changing only that implementation. Sections 5.1–5.4 below are retained for reference only.
 
 ### Why this phase
 `data/billing/Entitlements.kt` already gates Save (`hasFullAccess()` returns `true`). We only swap the
@@ -546,11 +553,11 @@ should be live before the launch push (6).
 
 ## 7. Open decisions (confirm before building)
 
-| # | Question | Recommendation |
+| # | Question | Decision |
 |---|---|---|
-| 1 | Pricing model | Offer **both** one-time unlock (~$1.99) and a small subscription; A/B the default |
+| 1 | Pricing model | ✅ **Fully free — no billing.** Every widget/size/theme unlocked; no Play Billing dependency |
 | 2 | Material You default | **Default ON** for Android 12+, user can switch to a fixed accent |
-| 3 | Free tier size | **~15 widgets** (Tier 1 staples + 2–3 exclusives) |
+| 3 | Free tier size | ✅ **N/A** — everything is free (was ~15 widgets under the old freemium plan) |
 | 4 | Lock-screen scope | **Clock + battery + date only** to start |
 | 5 | Compass update cadence | Fixed cadence refresh (document the animation trade-off) — no wakelock |
 
