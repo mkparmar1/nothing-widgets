@@ -20,6 +20,7 @@ import com.example.widgets.catalogue.PhotoRenderers
 import com.example.widgets.catalogue.ProductivityRenderers
 import com.example.widgets.catalogue.ShortcutRenderers
 import com.example.widgets.catalogue.SmartHomeRenderers
+import com.example.widgets.catalogue.SportsRenderers
 import com.example.widgets.catalogue.ToggleRenderers
 import com.example.widgets.catalogue.UniqueSensorRenderers
 import com.example.widgets.catalogue.UtilityRenderers
@@ -310,6 +311,48 @@ object WidgetRegistry {
         register(createDef("home.presence", Category.SMART_HOME, "Presence Tracker", "Who is home right now", setOf(SizeBucket.S), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
             com.example.core.config.WidgetOption.Text("entities", "Person entities", default = "person.alex,person.sam")
         )) { c, s, cv -> SmartHomeRenderers.renderPresence(c, s, cv) })
+
+        // --- 14. SPORTS & LIVE (10 widgets) ---
+        register(createDef("sports.score.live", Category.SPORTS, "Live Score", "Followed team's live or final score", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("team", "Team", default = ""),
+            com.example.core.config.WidgetOption.Text("league", "League", default = "LIVE SCORE")
+        )) { c, s, cv -> SportsRenderers.renderLiveScore(c, s, cv) })
+        register(createDef("sports.fixture.next", Category.SPORTS, "Next Fixture", "Next match with kickoff time", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("team", "Team", default = ""),
+            com.example.core.config.WidgetOption.Toggle("show_time", "Show kickoff time", default = true)
+        )) { c, s, cv -> SportsRenderers.renderNextFixture(c, s, cv) })
+        register(createDef("sports.table.mini", Category.SPORTS, "Mini League Table", "Compact league standings", setOf(SizeBucket.L), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("league", "League", default = "LEAGUE"),
+            com.example.core.config.WidgetOption.Slider("rows", "Rows shown", min = 3, max = 12, step = 1, default = 8, unit = "rows")
+        )) { c, s, cv -> SportsRenderers.renderMiniTable(c, s, cv) })
+        register(createDef("sports.form.guide", Category.SPORTS, "Form Guide", "Recent W/D/L results as dots", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("team", "Team", default = ""),
+            com.example.core.config.WidgetOption.Slider("games", "Games shown", min = 3, max = 10, step = 1, default = 6, unit = "games")
+        )) { c, s, cv -> SportsRenderers.renderFormGuide(c, s, cv) })
+        register(createDef("sports.countdown.match", Category.SPORTS, "Match Countdown", "Days until the next match", setOf(SizeBucket.S), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("team", "Team", default = ""),
+            com.example.core.config.WidgetOption.Toggle("show_opponent", "Show opponent", default = true)
+        )) { c, s, cv -> SportsRenderers.renderMatchCountdown(c, s, cv) })
+        register(createDef("sports.f1.next.race", Category.SPORTS, "Next F1 Race", "Next Grand Prix on the calendar", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Choice.of("series", "Series", listOf("F1", "F2", "MotoGP"), "F1"),
+            com.example.core.config.WidgetOption.Toggle("show_circuit", "Show circuit", default = true)
+        )) { c, s, cv -> SportsRenderers.renderF1NextRace(c, s, cv) })
+        register(createDef("sports.cricket.overs", Category.SPORTS, "Cricket Score", "Runs/wickets with overs context", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("match", "Match id", default = ""),
+            com.example.core.config.WidgetOption.Slider("overs", "Overs", min = 5, max = 50, step = 5, default = 20, unit = "ov")
+        )) { c, s, cv -> SportsRenderers.renderCricketOvers(c, s, cv) })
+        register(createDef("sports.tennis.sets", Category.SPORTS, "Tennis Sets", "Current sets score", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("match", "Match id", default = ""),
+            com.example.core.config.WidgetOption.Choice.of("best_of", "Best of", listOf("3", "5"), "3")
+        )) { c, s, cv -> SportsRenderers.renderTennisSets(c, s, cv) })
+        register(createDef("sports.standings.dot", Category.SPORTS, "Standings Dots", "League table as dot bars", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("league", "League", default = "LEAGUE"),
+            com.example.core.config.WidgetOption.Slider("rows", "Rows shown", min = 3, max = 10, step = 1, default = 6, unit = "rows")
+        )) { c, s, cv -> SportsRenderers.renderStandingsDots(c, s, cv) })
+        register(createDef("sports.highlights.link", Category.SPORTS, "Highlights Link", "Tap to open sports highlights", setOf(SizeBucket.S), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("label", "Label", default = "WATCH HIGHLIGHTS"),
+            com.example.core.config.WidgetOption.Text("url", "URL", default = "")
+        )) { c, s, cv -> SportsRenderers.renderHighlightsLink(c, s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {
@@ -415,6 +458,7 @@ object WidgetDescription {
             }
             id.startsWith("health.") -> "Health"
             id.startsWith("home.") -> "Smart home"
+            id.startsWith("sports.") -> "Sports"
             id == "sensor.stopwatch.chrono" -> "Stopwatch"
             id == "prod.focus.timer" -> "Focus timer"
             id == "prod.countdown.timer" -> "Countdown timer"
