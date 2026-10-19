@@ -385,6 +385,7 @@ object WeatherRenderers {
         val parse = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US).apply { timeZone = TimeZone.getTimeZone(place.timezone) }
         val colW = kit.maxW / hours.size
         val labelY = kit.pad + (30f * d)
+        val maxRain = hours.maxOfOrNull { it.precipitationPct } ?: 0
 
         hours.forEachIndexed { i, hour ->
             val cx = kit.pad + (i * colW) + (colW / 2f)
@@ -414,6 +415,14 @@ object WeatherRenderers {
                 canvas.drawText(rain, cx - paintRain.measureText(rain) / 2f, labelY + (72f * d), paintRain)
             }
         }
+
+        // One-line summary folds rain risk and UV in, so the strip is a complete hourly glance.
+        val uv = data.uvIndex.roundToInt()
+        val summary = buildString {
+            append(if (maxRain >= 50) "RAIN ${maxRain}%" else if (maxRain > 0) "SHOWERS POSSIBLE" else "DRY")
+            append(" • UV $uv")
+        }
+        kit.labelCentered(summary, kit.height - kit.pad, kit.textPaint(if (maxRain >= 50) kit.accentColor else kit.greyColor, 9f, 12f))
     }
 
     /** The next [count] hourly entries from now (in the city's time zone), falling back to the head. */

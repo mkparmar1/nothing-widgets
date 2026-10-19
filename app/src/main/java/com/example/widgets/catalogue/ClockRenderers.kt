@@ -25,12 +25,14 @@ object ClockRenderers {
         // Small clocks have always been time-only; they show a date only if the user picks one.
         val defaultDate = if (spec.sizeBucket == SizeBucket.S) DateFormat.NONE else DateFormat.WEEKDAY_DAY_MONTH
         val opts = ClockOptions.from(spec.configJson, defaultTime, defaultDate)
+        // A world-clock widget can carry its zone in configJson; the fixed world widgets pass one in.
+        val zoneId = timeZoneId ?: ClockOptions.timeZone(spec.configJson)
         if (spec.sizeBucket == SizeBucket.L && !opts.time.hasSeconds) {
-            renderDigitalClockLarge(spec, canvas, timeZoneId, opts)
+            renderDigitalClockLarge(spec, canvas, zoneId, opts)
             return
         }
         val cal = Calendar.getInstance()
-        if (!timeZoneId.isNullOrBlank()) cal.timeZone = TimeZone.getTimeZone(timeZoneId)
+        if (!zoneId.isNullOrBlank()) cal.timeZone = TimeZone.getTimeZone(zoneId)
         val timeStr = opts.time.format(cal)
         val amPm = opts.time.amPm(cal)
         val liveTime = spec.liveOverlays && opts.time.hasSeconds
@@ -59,8 +61,8 @@ object ClockRenderers {
                 textSize = (11f * spec.density).coerceAtMost(14f)
                 isFakeBoldText = true
             }
-            val zoneLabel = if (!timeZoneId.isNullOrBlank()) {
-                timeZoneId.substringAfterLast("/").replace("_", " ").uppercase()
+            val zoneLabel = if (!zoneId.isNullOrBlank()) {
+                zoneId.substringAfterLast("/").replace("_", " ").uppercase()
             } else "TIME"
             val label = listOfNotNull(zoneLabel.takeIf { spec.showLabel }, amPm).joinToString(" • ")
             DotMatrixRenderer.drawFittedLabel(canvas, label, padding, padding + 12f * spec.density, maxAllowedW * 0.75f, paintLabel)

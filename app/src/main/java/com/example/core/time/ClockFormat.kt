@@ -65,6 +65,8 @@ data class ClockOptions(val time: TimeFormat, val date: DateFormat) {
         const val KEY_TIME = "time_format"
         const val KEY_DATE = "date_format"
         const val KEY_DOT_STYLE = "dot_style"
+        /** Optional IANA time zone id for world-clock widgets (e.g. "Asia/Kolkata"). */
+        const val KEY_TZ = "time_zone"
 
         fun from(
             configJson: String,
@@ -80,6 +82,10 @@ data class ClockOptions(val time: TimeFormat, val date: DateFormat) {
 
         fun dotStyle(configJson: String): DotStyle =
             DotStyle.fromName(runCatching { JSONObject(configJson).optString(KEY_DOT_STYLE) }.getOrNull())
+
+        /** IANA time zone stored for a world-clock widget, or null when none is set. */
+        fun timeZone(configJson: String): String? =
+            runCatching { JSONObject(configJson).optString(KEY_TZ) }.getOrNull()?.takeIf { it.isNotBlank() }
     }
 }
 
@@ -88,8 +94,14 @@ object ClockSupport {
     /** Clocks with a live seconds overlay, so they can offer formats with seconds. */
     val SECONDS_CAPABLE = setOf(
         "clock.seconds.live", "clock.dotdigital.s", "clock.dotdigital.m", "clock.dotdigital.l",
-        "clock.world.london", "clock.world.tokyo", "clock.world.nyc"
+        "clock.world.london", "clock.world.tokyo", "clock.world.nyc", "clock.world.custom"
     )
+
+    /** Clocks that offer a time-zone picker in setup. */
+    val TIME_ZONE_PICKERS = setOf("clock.world.custom")
+
+    /** Clocks whose live TextClock overlay needs a zone from configJson. */
+    val LIVE_ZONE_FROM_CONFIG = setOf("clock.world.custom")
 
     /** Clocks that only switch between 12- and 24-hour (no live seconds overlay). */
     private val HOUR_CYCLE_ONLY = setOf("clock.minimal.pill", "clock.flip.style", "clock.stacked.hhmm")

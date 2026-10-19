@@ -323,6 +323,11 @@ Steps, Compass, Photo) and confirm each has **S/M/L (where sensible)**, **light/
 
 ## Phase 2 — Tier 2 staples polish  *(P1 · M)*
 
+> **Status: ✅ implemented.** 2.1 time-zone picker (`clock.world.custom` + `TimeZonePicker` UI, zone
+> stored in configJson). 2.2 agenda/notes already have empty-state CTAs + permission banners. 2.3 weekly
+> screen-time widget (`battery.screen.week`, 7-day chart). 2.4 hourly strip now folds rain risk + UV into
+> one summary line.
+
 ### 2.1 World-clock set + timezone picker  *(P1 · S)*
 **What/why.** We hard-code London/Tokyo/NYC. Add a **time zone picker** in setup (like the contact picker)
 and register a generic `clock.world.custom` so any city works. **How.** Store the zone id in `configJson`;
@@ -342,6 +347,10 @@ Surface rain-chance and UV inside the hourly set rather than as separate widgets
 ---
 
 ## Phase 2b — Quality pass on Tier 1/2 (the "sharp at every size" claim)
+
+> **Status: ✅ implemented.** `WidgetRenderSnapshotTest` gained a `tier 1 and 2 widgets render at real
+> device sizes` test rendering 27 Tier 1/2 widgets at the launcher's real dp sizes (155², 329×155,
+> 329² on the Phone 3a Pro); sheets written to `build/widget-snapshots/real/_sheet_real_*.png`.
 
 **What.** A verification pass that every Tier 1/2 widget renders crisply at real device sizes.
 

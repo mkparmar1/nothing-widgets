@@ -31,6 +31,7 @@ import com.example.data.db.AppDatabase
 import com.example.data.db.WidgetInstance
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.time.ClockOptions
+import com.example.core.time.ClockSupport
 import com.example.core.time.TimeFormat
 import com.example.data.prefs.PreferencesManager
 import com.example.widgets.catalogue.MediaRenderers
@@ -298,7 +299,8 @@ object WidgetRenderEngine {
         "clock.dotdigital.l" to (null to TimeFormat.H24),
         "clock.world.london" to ("Europe/London" to TimeFormat.H24),
         "clock.world.tokyo" to ("Asia/Tokyo" to TimeFormat.H24),
-        "clock.world.nyc" to ("America/New_York" to TimeFormat.H24)
+        "clock.world.nyc" to ("America/New_York" to TimeFormat.H24),
+        "clock.world.custom" to (null to TimeFormat.H24)
     )
 
     /**
@@ -307,6 +309,10 @@ object WidgetRenderEngine {
      */
     private fun applyLiveClock(views: RemoteViews, widgetTypeId: String, spec: WidgetSpec) {
         val (zone, defaultTime) = LIVE_CLOCK_WIDGETS[widgetTypeId] ?: (null to TimeFormat.H24)
+        // A custom world clock keeps its zone in configJson rather than a fixed entry.
+        val resolvedZone = if (widgetTypeId in ClockSupport.LIVE_ZONE_FROM_CONFIG) {
+            ClockOptions.timeZone(spec.configJson) ?: zone
+        } else zone
         val time = ClockOptions.from(spec.configJson, defaultTime).time
         if (widgetTypeId !in LIVE_CLOCK_WIDGETS || !time.hasSeconds) {
             views.setViewVisibility(R.id.live_clock_container, View.GONE)
@@ -314,7 +320,7 @@ object WidgetRenderEngine {
         }
         views.setViewVisibility(R.id.live_clock_container, View.VISIBLE)
         views.setTextColor(R.id.live_clock, if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt())
-        views.setString(R.id.live_clock, "setTimeZone", zone)
+        views.setString(R.id.live_clock, "setTimeZone", resolvedZone)
 
         // Colour the colons with the accent, matching the dot-matrix clocks. TextClock keeps
         // spans on literal characters of its format.

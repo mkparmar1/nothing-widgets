@@ -63,6 +63,51 @@ object LiveDataRenderers {
         }
     }
 
+    /** Dedicated 7-day screen-time chart: taller bars per weekday with a total readout. */
+    fun renderWeeklyScreenTime(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        if (!ScreenTimeRepository.isAvailable(context)) {
+            return RenderKit.message(spec, canvas, "SCREEN TIME", "ALLOW USAGE ACCESS IN THE APP")
+        }
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
+        val stats = ScreenTimeRepository.current(context)
+        val days = stats?.lastSevenDaysMs.orEmpty()
+        kit.header("SCREEN TIME • 7 DAYS")
+
+        if (days.isEmpty()) {
+            kit.labelCentered("NO DATA YET", kit.height * 0.55f, kit.textPaint(kit.greyColor, 11f, 15f))
+            return
+        }
+
+        val totalMs = days.sum()
+        val totalMin = (totalMs / 60_000L).toInt()
+        val avg = totalMin / days.size
+        val summary = "AVG ${avg / 60}H${String.format(Locale.US, "%02d", avg % 60)}M"
+        kit.labelCentered(summary, kit.height * 0.26f, kit.textPaint(kit.onColor, 11f, 15f))
+
+        val labels = listOf("M", "T", "W", "T", "F", "S", "S")
+        val todayDow = (java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7
+        val bottom = kit.height - kit.pad - 14f * d
+        val top = kit.height * 0.34f
+        val maxDots = 9
+        val maxMs = days.maxOrNull()?.coerceAtLeast(1L) ?: 1L
+        val colW = kit.maxW / days.size
+        val dotGap = (bottom - top) / maxDots
+        days.forEachIndexed { i, ms ->
+            val cx = kit.pad + i * colW + colW / 2f
+            val lit = ((ms.toFloat() / maxMs) * maxDots).toInt().coerceIn(if (ms > 0) 1 else 0, maxDots)
+            for (k in 0 until maxDots) {
+                val on = k < lit
+                val color = if (!on) kit.offColor else if (i == days.lastIndex) kit.accentColor else kit.onColor
+                canvas.drawCircle(cx, bottom - k * dotGap, if (on) 3.0f * d else 2.0f * d, kit.fill(color))
+            }
+            val label = labels[i]
+            val p = kit.textPaint(if (i == todayDow) kit.accentColor else kit.greyColor, 8f, 11f)
+            canvas.drawText(label, cx - p.measureText(label) / 2f, bottom + 12f * d, p)
+        }
+    }
+
     fun renderCrypto(context: Context, spec: WidgetSpec, canvas: Canvas) {
         val kit = RenderKit(spec, canvas)
         val d = kit.d

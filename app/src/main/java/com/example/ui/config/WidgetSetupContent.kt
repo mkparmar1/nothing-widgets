@@ -12,14 +12,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -31,6 +35,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -81,7 +86,9 @@ data class WidgetSetupState(
     /** Null = the widget's default format (see [ClockSupport]). */
     val timeFormat: TimeFormat? = null,
     val dateFormat: DateFormat? = null,
-    val dotStyle: DotStyle = DotStyle.ROUND
+    val dotStyle: DotStyle = DotStyle.ROUND,
+    /** IANA zone for world-clock widgets, null = phone's zone. */
+    val timeZoneId: String? = null
 ) {
     fun toConfigJson(widgetTypeId: String, existingConfigJson: String? = null): String =
         (runCatching { JSONObject(existingConfigJson ?: "{}") }.getOrElse { JSONObject() }).apply {
@@ -97,6 +104,7 @@ data class WidgetSetupState(
             put("configured", true)
             timeFormat?.let { put(ClockOptions.KEY_TIME, it.name) }
             dateFormat?.let { put(ClockOptions.KEY_DATE, it.name) }
+            timeZoneId?.let { put(ClockOptions.KEY_TZ, it) }
             put(ClockOptions.KEY_DOT_STYLE, dotStyle.name)
         }.toString()
 
@@ -138,7 +146,8 @@ data class WidgetSetupState(
                 }.getOrDefault(definition.defaultTap),
                 timeFormat = json.optString(ClockOptions.KEY_TIME).takeIf { it.isNotEmpty() }?.let { TimeFormat.fromName(it) },
                 dateFormat = json.optString(ClockOptions.KEY_DATE).takeIf { it.isNotEmpty() }?.let { DateFormat.fromName(it) },
-                dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE))
+                dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
+                timeZoneId = ClockOptions.timeZone(instance.configJson)
             )
         }
 
@@ -456,6 +465,69 @@ private fun ClockFormatSection(widgetId: String, state: WidgetSetupState, update
             }
         }
         Spacer(Modifier.height(20.dp))
+    }
+
+    if (widgetId in ClockSupport.TIME_ZONE_PICKERS) {
+        TimeZonePicker(
+            selectedZone = state.timeZoneId,
+            accentColor = accentColor,
+            onPick = { update(state.copy(timeZoneId = it)) }
+        )
+        Spacer(Modifier.height(20.dp))
+    }
+}
+
+/** Curated list of common IANA zones; enough for a second-city clock without a giant list. */
+private val COMMON_TIME_ZONES = listOf(
+    "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Moscow",
+    "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
+    "America/Sao_Paulo", "Africa/Cairo", "Africa/Lagos", "Asia/Dubai",
+    "Asia/Karachi", "Asia/Kolkata", "Asia/Dhaka", "Asia/Bangkok",
+    "Asia/Shanghai", "Asia/Singapore", "Asia/Tokyo", "Asia/Seoul",
+    "Australia/Sydney", "Pacific/Auckland"
+)
+
+@Composable
+private fun TimeZonePicker(selectedZone: String?, accentColor: Color, onPick: (String?) -> Unit) {
+    var showDialog by remember { mutableStateOf(false) }
+    SetupSectionLabel("TIME ZONE")
+    val label = selectedZone?.substringAfterLast("/")?.replace("_", " ") ?: "Phone's time zone"
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        SetupChip(selectedZone == null, "PHONE", accentColor) { onPick(null) }
+        SetupChip(selectedZone != null, label.uppercase(), accentColor) { showDialog = true }
+    }
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { showDialog = false }) { Text("CANCEL") } },
+            title = { Text("Pick a time zone") },
+            text = {
+                LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
+                    items(COMMON_TIME_ZONES) { zone ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onPick(zone)
+                                    showDialog = false
+                                }
+                                .padding(vertical = 10.dp)
+                        ) {
+                            Text(
+                                zone.substringAfterLast("/").replace("_", " "),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text(zone, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
+                        }
+                    }
+                }
+            }
+        )
     }
 }
 
