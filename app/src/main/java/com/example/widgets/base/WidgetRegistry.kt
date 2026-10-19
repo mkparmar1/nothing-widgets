@@ -14,6 +14,8 @@ import com.example.widgets.catalogue.ExclusiveRenderers
 import com.example.widgets.catalogue.FinanceRenderers
 import com.example.widgets.catalogue.HealthRenderers
 import com.example.widgets.catalogue.LearnRenderers
+import com.example.core.config.WidgetOption
+import com.example.widgets.catalogue.DeepVariantRenderers
 import com.example.widgets.catalogue.LiveDataRenderers
 import com.example.widgets.catalogue.TravelRenderers
 import com.example.widgets.catalogue.MediaAndFunRenderers
@@ -439,6 +441,158 @@ object WidgetRegistry {
             com.example.core.config.WidgetOption.Toggle("show_progress", "Show progress", default = true),
             com.example.core.config.WidgetOption.Toggle("h24", "24-hour clock", default = true)
         )) { c, s, cv -> TravelRenderers.renderDayLength(c, s, cv) })
+
+        // --- 17. DEEP VARIANTS (40) --- depth for the staple families.
+        // Clock (+8)
+        register(createDef("clock.tally.marks", Category.CLOCK, "Hour Tally", "A 24-dot tally of the current hour", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Text("zone", "Zone (optional)", default = ""),
+            WidgetOption.Toggle("show_track", "Show track", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderClockTallyMarks(c, s, cv) })
+        register(createDef("clock.radial.24", Category.CLOCK, "24-Hour Radial", "A 24-dot dial with the hour lit", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Text("zone", "Zone (optional)", default = ""),
+            WidgetOption.Toggle("show_time", "Show time", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderClockRadial24(c, s, cv) })
+        register(createDef("clock.week.arc", Category.CLOCK, "Week Progress", "Day of week plus week-of-year", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_letters", "Show day letters", default = true),
+            WidgetOption.Toggle("monday_first", "Monday first", default = false)
+        )) { c, s, cv -> DeepVariantRenderers.renderClockWeekArc(c, s, cv) })
+        register(createDef("clock.dual.meridiem", Category.CLOCK, "Meridiem Split", "AM/PM with the active half lit", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Text("zone", "Zone (optional)", default = ""),
+            WidgetOption.Toggle("show_dots", "Show indicator", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderClockDualMeridiem(c, s, cv) })
+        register(createDef("clock.iso.dots", Category.CLOCK, "ISO Week Dots", "Week number with a weekday run", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_week_label", "Show week label", default = true),
+            WidgetOption.Toggle("show_run", "Show weekday run", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderClockIsoDots(c, s, cv) })
+        register(createDef("clock.moon.time", Category.CLOCK, "Time & Moon", "The clock with the current moon phase", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Text("zone", "Zone (optional)", default = ""),
+            WidgetOption.Toggle("show_phase_name", "Show phase name", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderClockMoonTime(c, s, cv) })
+        register(createDef("clock.hijri", Category.CLOCK, "Dual Calendar Clock", "Clock with an alternate lunar date", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Text("zone", "Zone (optional)", default = ""),
+            WidgetOption.Toggle("show_gregorian", "Show Gregorian date", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderClockHijri(c, s, cv) })
+        register(createDef("clock.segment.largewaves", Category.CLOCK, "Segmented Clock", "Large segmented digits with a seconds run", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Text("zone", "Zone (optional)", default = ""),
+            WidgetOption.Toggle("show_seconds", "Show seconds run", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderClockSegmentLarge(c, s, cv) })
+        // Weather (+6)
+        register(createDef("weather.wind.compass", Category.WEATHER, "Wind Compass", "Wind speed with a direction tag", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            WidgetOption.Text("direction", "Direction label", default = "N"),
+            WidgetOption.Toggle("show_unit", "Show unit", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderWeatherWindCompass(c, s, cv) })
+        register(createDef("weather.pressure.gauge", Category.WEATHER, "Pressure Gauge", "Sea-level pressure with a scale", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            WidgetOption.Toggle("show_scale", "Show scale", default = true),
+            WidgetOption.Toggle("show_unit", "Show unit", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderWeatherPressureGauge(c, s, cv) })
+        register(createDef("weather.visibility", Category.WEATHER, "Visibility", "Estimated visibility in kilometres", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            WidgetOption.Toggle("show_unit", "Show unit", default = true),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderWeatherVisibility(c, s, cv) })
+        register(createDef("weather.dewpoint", Category.WEATHER, "Dew Point", "Dew point with a comfort band", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            WidgetOption.Toggle("show_band", "Show comfort band", default = true),
+            WidgetOption.Toggle("show_unit", "Show unit", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderWeatherDewpoint(c, s, cv) })
+        register(createDef("weather.aqi.dial", Category.WEATHER, "Air Quality", "An estimated AQI dial and band", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            WidgetOption.Toggle("show_band", "Show band", default = true),
+            WidgetOption.Toggle("show_scale", "Show scale", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderWeatherAqiDial(c, s, cv) })
+        register(createDef("weather.precip.bar", Category.WEATHER, "Precipitation", "Rain chance with an hourly bar run", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            WidgetOption.Toggle("show_bars", "Show hourly bars", default = true),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderWeatherPrecipBar(c, s, cv) })
+        // Battery (+6)
+        register(createDef("battery.temp.gauge", Category.BATTERY, "Battery Temp", "Battery temperature with a gauge", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_status", "Show status", default = true),
+            WidgetOption.Toggle("show_gauge", "Show gauge", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderBatteryTempGauge(c, s, cv) })
+        register(createDef("battery.cycles", Category.BATTERY, "Charge Cycles", "Lifetime charge cycles when reported", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_label", "Show label", default = true),
+            WidgetOption.Toggle("show_when_unknown", "Show placeholder", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderBatteryCycles(c, s, cv) })
+        register(createDef("battery.charge.eta", Category.BATTERY, "Charge ETA", "Estimated time to full", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_level", "Show current level", default = true),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderBatteryChargeEta(c, s, cv) })
+        register(createDef("battery.drain.rate", Category.BATTERY, "Drain Estimate", "Rough time left at light use", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_label", "Show label", default = true),
+            WidgetOption.Toggle("show_rate", "Show rate note", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderBatteryDrainRate(c, s, cv) })
+        register(createDef("battery.health.percent", Category.BATTERY, "Battery Health", "Battery health status", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_state", "Show state", default = true),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderBatteryHealthPercent(c, s, cv) })
+        register(createDef("battery.multi.devices", Category.BATTERY, "Device Battery", "This phone's level and plug type", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_plug", "Show plug type", default = true),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderBatteryMultiDevices(c, s, cv) })
+        // Calendar (+6)
+        register(createDef("calendar.month.heat", Category.CALENDAR, "Month Heatmap", "The month as a dot grid", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("monday_first", "Monday first", default = true),
+            WidgetOption.Toggle("show_past", "Dim past days", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderCalendarMonthHeat(c, s, cv) })
+        register(createDef("calendar.week.numbers", Category.CALENDAR, "Week Number", "Week of year against the total", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_total", "Show total weeks", default = true),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderCalendarWeekNumbers(c, s, cv) })
+        register(createDef("calendar.birthdays", Category.CALENDAR, "Birthday", "Days until the saved birthday/event", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            WidgetOption.Text("name", "Name", default = ""),
+            WidgetOption.Toggle("show_days", "Show days left", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderCalendarBirthdays(c, s, cv) })
+        register(createDef("calendar.moon.month", Category.CALENDAR, "Moon This Month", "Moon illumination across the month", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_scores", "Show phase scores", default = true),
+            WidgetOption.Toggle("show_today", "Show today's phase", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderCalendarMoonMonth(c, s, cv) })
+        register(createDef("calendar.quarter.progress", Category.CALENDAR, "Quarter Progress", "How far through the quarter", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_percent", "Show percent", default = true),
+            WidgetOption.Toggle("show_bar", "Show progress bar", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderCalendarQuarterProgress(c, s, cv) })
+        register(createDef("calendar.countdown.multi", Category.CALENDAR, "Multi Countdown", "Event countdown plus year-end", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            WidgetOption.Toggle("show_year_end", "Show year-end", default = true),
+            WidgetOption.Toggle("show_labels", "Show labels", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderCalendarCountdownMulti(c, s, cv) })
+        // Productivity (+4)
+        register(createDef("prod.habit.month", Category.PRODUCTIVITY, "Habit Month Matrix", "A 35-day habit heatmap", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN, options = listOf(
+            WidgetOption.Toggle("show_count", "Show days logged", default = true),
+            WidgetOption.Toggle("newest_first", "Newest first", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderProdHabitMonthMatrix(c, s, cv) })
+        register(createDef("prod.project.burndown", Category.PRODUCTIVITY, "Task Burndown", "Remaining tasks with a burndown line", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            WidgetOption.Toggle("show_ratio", "Show ratio", default = true),
+            WidgetOption.Toggle("show_line", "Show burndown line", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderProdProjectBurndown(c, s, cv) })
+        register(createDef("prod.meeting.count", Category.PRODUCTIVITY, "Meeting Count", "Meetings on today's calendar", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            WidgetOption.Slider("count", "Meetings", min = 0, max = 12, step = 1, default = 0, unit = "meetings"),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderProdMeetingCount(c, s, cv) })
+        register(createDef("prod.inbox.count", Category.PRODUCTIVITY, "Inbox Count", "Pending to-do items", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            WidgetOption.Toggle("show_label", "Show label", default = true),
+            WidgetOption.Toggle("celebrate_zero", "Celebrate inbox zero", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderProdInboxCount(c, s, cv) })
+        // System / sensor (+6)
+        register(createDef("sensor.cpu.load", Category.SYSTEM, "CPU Cores", "Active CPU cores with a scale", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_scale", "Show scale", default = true),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderSensorCpuLoad(c, s, cv) })
+        register(createDef("sensor.ram.spark", Category.SYSTEM, "RAM Load", "Memory pressure with a sparkline", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_spark", "Show sparkline", default = true),
+            WidgetOption.Toggle("show_detail", "Show used/total", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderSensorRamSpark(c, s, cv) })
+        register(createDef("sensor.net.updown", Category.SYSTEM, "Network Link", "Active connection type", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_state", "Show state", default = true),
+            WidgetOption.Toggle("show_label", "Show label", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderSensorNetUpDown(c, s, cv) })
+        register(createDef("sensor.uptime", Category.SYSTEM, "Device Uptime", "Time since last boot", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_label", "Show label", default = true),
+            WidgetOption.Toggle("show_days", "Prefer days", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderSensorUptime(c, s, cv) })
+        register(createDef("sensor.storage.free", Category.SYSTEM, "Storage Free", "Free internal storage with a bar", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_bar", "Show usage bar", default = true),
+            WidgetOption.Toggle("show_unit", "Show unit", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderSensorStorageFree(c, s, cv) })
+        register(createDef("sensor.net.speedtag", Category.SYSTEM, "Link Speed Tag", "Current link tech (5G/LTE/Wi-Fi)", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            WidgetOption.Toggle("show_label", "Show label", default = true),
+            WidgetOption.Toggle("show_state", "Show state", default = true)
+        )) { c, s, cv -> DeepVariantRenderers.renderSensorNetSpeedTag(c, s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {
