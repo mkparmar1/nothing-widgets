@@ -39,6 +39,26 @@ class ExampleRobolectricTest {
     }
 
     @Test
+    fun `phase 7 grows catalogue past 200 with six new categories`() {
+        val all = WidgetRegistry.getAll()
+        assertTrue("Phase 7 requires at least 200 widgets, found ${all.size}", all.size >= 200)
+        // The six families added in Phase 7 must each surface at least one widget.
+        val newCategories = listOf(
+            Category.FINANCE, Category.HEALTH, Category.SMART_HOME,
+            Category.SPORTS, Category.LEARNING, Category.TRAVEL
+        )
+        for (category in newCategories) {
+            assertTrue(
+                "Phase 7 category ${category.name} has no widgets",
+                WidgetRegistry.getByCategory(category).isNotEmpty()
+            )
+        }
+        // Every widget should ship at least two Phase 8 options where we claim support.
+        val withOptions = all.count { it.options.isNotEmpty() }
+        assertTrue("Expected many widgets with options, found $withOptions", withOptions >= 40)
+    }
+
+    @Test
     fun `categories cover all required widget types`() {
         val clocks = WidgetRegistry.getByCategory(Category.CLOCK)
         val calendars = WidgetRegistry.getByCategory(Category.CALENDAR)

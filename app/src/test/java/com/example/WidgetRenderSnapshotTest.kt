@@ -142,7 +142,11 @@ class WidgetRenderSnapshotTest {
         "clock.world.london", "clock.world.custom", "weather.hourly.strip", "weather.5day.strip",
         "calendar.agenda.3", "battery.screen.on", "battery.screen.week", "prod.notes.pin",
         "prod.todo.3", "contact.favorite.single", "prod.search.bar", "utility.folder.grid",
-        "weather.moon.phase", "weather.uv.index", "weather.sunrise.arc"
+        "weather.moon.phase", "weather.uv.index", "weather.sunrise.arc",
+        // Phase 7 families: one representative per new family at its declared sizes.
+        "finance.crypto.tick", "finance.budget.ring", "health.steps.ring", "health.sleep.last",
+        "home.device.toggle", "home.thermostat", "sports.score.live", "sports.f1.next.race",
+        "learn.pomodoro.ring", "learn.flashcard.daily", "travel.clock.multi", "travel.packing.list"
     )
 
     /** All of a category's renders on one labelled grid, for quick visual review. */

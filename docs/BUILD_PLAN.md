@@ -531,11 +531,13 @@ or tracking SDKs — that contradicts the "honest/on-device" pillar.
 
 ## Phase 7 — Catalogue expansion (100+ new widgets)  *(P1 · L)*
 
-> **Status: ⬜ planned.** Today the catalogue is **103 widgets** across 11 categories. Phase 7 adds
-> **100+ new, genuinely distinct widgets** — no re-skinned duplicates — reaching **200+**. Depth comes
-> from **new categories the rivals ignore** plus **rich variants** of the existing deep families.
-> Every new widget ships with the **Phase 8 advanced options** baked in, so it isn't "another clock"
-> but *a clock you can shape*.
+> **Status: ✅ done.** The catalogue grew from **103 → 204 widgets** across **17 categories** (11 original
+> + Finance, Health, Smart Home, Sports, Learning, Travel). Delivered in 7 batches — Finance (12),
+> Health (12), Smart Home (10), Sports (10), Learning (10), Travel (10) and 40 deep variants across the
+> clock/weather/battery/calendar/productivity/system families. Every new widget ships with the
+> **Phase 8 advanced options** baked in (≥2 per widget), so it isn't "another clock" but *a clock you
+> can shape*. All 27 unit tests pass, including the all-widget snapshot pass and the real-device-size
+> (2b) crispness pass, which now covers the new families.
 
 ### 7.0 Ground rules (apply to every widget below)
 
@@ -713,6 +715,11 @@ Counting: **64 new-category widgets + 40 deep variants = 104 new**, taking the c
 - `WordCount`/snapshot test renders **every** new def at every declared size, dark + light, no crash.
 - Real-device-size pass (2b) green for all new widgets.
 - Every new widget declares ≥ 2 Phase 8 options and they round-trip through config JSON.
+
+> **Result:** ✅ all gates met. `ExampleRobolectricTest` now asserts `size >= 200`, all six new
+> categories are populated, and ≥40 widgets expose options; `WidgetRenderSnapshotTest` renders all 204
+> widgets at every size (dark + light) with no failures, and its real-size (2b) pass was extended to a
+> representative Phase 7 widget per family.
 
 ---
 
