@@ -10,6 +10,7 @@ import com.example.widgets.catalogue.CalendarRenderers
 import com.example.widgets.catalogue.ClockRenderers
 import com.example.widgets.catalogue.ClockStyleRenderers
 import com.example.widgets.catalogue.DeviceInfoRenderers
+import com.example.widgets.catalogue.ExclusiveRenderers
 import com.example.widgets.catalogue.LiveDataRenderers
 import com.example.widgets.catalogue.MediaAndFunRenderers
 import com.example.widgets.catalogue.MediaRenderers
@@ -42,6 +43,7 @@ object WidgetRegistry {
         register(createDef("clock.text.words", Category.CLOCK, "Text Matrix Clock", "Spelled out time representation", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockStyleRenderers.renderWordClock(s, cv) })
         register(createDef("clock.seconds.live", Category.CLOCK, "Precision Seconds", "Live hh:mm:ss second-accurate clock", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv, defaultTime = TimeFormat.H24_SECONDS) })
         register(createDef("clock.minimal.pill", Category.CLOCK, "Capsule Time Pill", "Ultra-condensed dot time badge", setOf(SizeBucket.S), TapAction.OPEN_CLOCK) { c, s, cv -> ClockStyleRenderers.renderCapsulePill(s, cv) })
+        register(createDef("clock.glyph.ring", Category.CLOCK, "Glyph-Reactive Clock", "Dot time inside a segmented accent ring that lights up while charging", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ExclusiveRenderers.renderGlyphClock(c, s, cv) })
 
         // --- 2. DATE & CALENDAR (10 widgets) ---
         register(createDef("calendar.day.date", Category.CALENDAR, "Day & Date Card", "Bold day number with weekday tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CALENDAR) { c, s, cv -> CalendarRenderers.renderDayDateCard(s, cv) })
@@ -54,6 +56,7 @@ object WidgetRegistry {
         register(createDef("calendar.iso.week", Category.CALENDAR, "ISO Week & Julian Day", "Exact calendar metrics and week number", setOf(SizeBucket.S), TapAction.OPEN_CALENDAR) { c, s, cv -> CalendarExtraRenderers.renderIsoWeek(s, cv) })
         register(createDef("calendar.minimal.split", Category.CALENDAR, "Split Calendar Card", "Vertical divided date and month indicator", setOf(SizeBucket.S), TapAction.OPEN_CALENDAR) { c, s, cv -> CalendarExtraRenderers.renderSplitCard(s, cv) })
         register(createDef("calendar.timeline.dots", Category.CALENDAR, "Timeline Dots", "Hourly matrix timeline of daily appointments", setOf(SizeBucket.L), TapAction.OPEN_CALENDAR, requiredPermission = AppPermission.Calendar) { c, s, cv -> CalendarExtraRenderers.renderTimeline(c, s, cv) })
+        register(createDef("calendar.life.dots", Category.CALENDAR, "Life in Dots", "The whole day as 144 minute-dots that fill as time passes", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR) { c, s, cv -> ExclusiveRenderers.renderLifeInDots(c, s, cv) })
 
         // --- 3. BATTERY (8 widgets) ---
         register(createDef("battery.ring", Category.BATTERY, "Battery Dot Ring", "Circular 24-dot dial with center percentage", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_BATTERY) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
@@ -64,6 +67,7 @@ object WidgetRegistry {
         register(createDef("battery.health.temp", Category.BATTERY, "Battery Health & Temp", "Thermal metrics and cell health indicator", setOf(SizeBucket.M), TapAction.OPEN_BATTERY) { c, s, cv -> DeviceInfoRenderers.renderBatteryHealth(c, s, cv) })
         register(createDef("battery.screen.on", Category.BATTERY, "Screen-On Time", "Daily usage runtime & discharge rate", setOf(SizeBucket.M), TapAction.OPEN_BATTERY, requiredPermission = AppPermission.UsageAccess) { c, s, cv -> LiveDataRenderers.renderScreenTime(c, s, cv) })
         register(createDef("battery.minimal.pill", Category.BATTERY, "Mini Battery Pill", "Compact capsule battery status", setOf(SizeBucket.S), TapAction.OPEN_BATTERY) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
+        register(createDef("battery.fuel.gauge", Category.BATTERY, "Battery Fuel Gauge", "Horizontal dot gauge with time-to-full or time-left", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY) { c, s, cv -> ExclusiveRenderers.renderBatteryFuelGauge(c, s, cv) })
 
         // --- 4. WEATHER (10 widgets) ---
         register(createDef("weather.current.temp", Category.WEATHER, "Current Temperature", "Real-time temp with dot icon and stale guard", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv) })
@@ -131,6 +135,8 @@ object WidgetRegistry {
         register(createDef("prod.focus.timer", Category.PRODUCTIVITY, "Focus Timer", "Pomodoro work session tracker", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> ProductivityRenderers.renderFocusTimer(c, s, cv) })
         register(createDef("prod.habit.dots", Category.PRODUCTIVITY, "Habit Matrix Streak", "Weekly habit completion dot grid", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> CalendarExtraRenderers.renderHabitMatrix(c, s, cv) })
         register(createDef("prod.countdown.timer", Category.PRODUCTIVITY, "Countdown Pill", "Target minutes remaining indicator", setOf(SizeBucket.S), TapAction.DEFAULT) { c, s, cv -> ProductivityRenderers.renderCountdownTimer(c, s, cv) })
+        register(createDef("prod.week.dots", Category.PRODUCTIVITY, "Week in Dots", "7-column heatmap of the week's elapsed hours", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR) { c, s, cv -> ExclusiveRenderers.renderWeekInDots(c, s, cv) })
+        register(createDef("prod.focus.companion", Category.PRODUCTIVITY, "Focus Companion", "Focus-timer dot ring with a silent streak row", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> ExclusiveRenderers.renderFocusCompanion(c, s, cv) })
 
         // --- 9. PHOTO (4 widgets) ---
         register(createDef("photo.single.frame", Category.PHOTO, "Dot Border Photo Frame", "Aesthetic minimal framed photo", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT) { c, s, cv -> PhotoRenderers.renderFrame(c, s, cv) })
@@ -143,6 +149,7 @@ object WidgetRegistry {
         register(createDef("fun.quote.daily", Category.FUN, "Daily Quote", "Inspiring minimalist thought in dot font", setOf(SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> MediaAndFunRenderers.renderDailyQuote(s, cv) })
         register(createDef("fun.dice.roll", Category.FUN, "Dice Roll Pair", "Tap to roll a pair of dot-matrix dice", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> MediaAndFunRenderers.renderDiceRoll(c, s, cv) })
         register(createDef("fun.pattern.generator", Category.FUN, "Ambient Dot Matrix", "Procedural geometric dot matrix rhythm", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT) { c, s, cv -> DeviceInfoRenderers.renderAmbientPattern(s, cv) })
+        register(createDef("fun.orbit.ambient", Category.FUN, "Orbit Ambient", "Slow concentric dot rings drifting with the clock", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT) { c, s, cv -> ExclusiveRenderers.renderOrbitAmbient(s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {

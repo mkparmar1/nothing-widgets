@@ -91,7 +91,7 @@ fun WallpapersScreen(
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
-                text = "30 ultra high-contrast dot matrix & geometric designs.",
+                text = "${wallpapers.size} dot-matrix designs, palette-matched to your widgets.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFF8A8A8A)
             )

@@ -73,6 +73,6 @@ class ExampleRobolectricTest {
     @Test
     fun `setups and wallpapers match specifications`() {
         assertTrue(SetupRepository.SETUPS.size >= 8)
-        assertEquals(30, WallpaperManagerHelper.WALLPAPERS.size)
+        assertTrue(WallpaperManagerHelper.WALLPAPERS.size >= 100)
     }
 }

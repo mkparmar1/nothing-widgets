@@ -21,22 +21,35 @@ data class WallpaperItem(
 
 object WallpaperManagerHelper {
 
-    val WALLPAPERS = (0..29).map { index ->
-        val tags = listOf("MONO", "RED", "CYAN", "AMBER", "LIME", "MINIMAL", "GRID", "OLED")
-        val tag = tags[index % tags.size]
-        val accent = when (index % 5) {
-            0 -> 0xFFE02B2B.toInt()
-            1 -> 0xFF00C2D1.toInt()
-            2 -> 0xFFF2A516.toInt()
-            3 -> 0xFFB8E000.toInt()
-            else -> 0xFFFFFFFF.toInt()
+    /** Accent palette wallpapers are generated from; matches the widget [com.example.core.theme.AccentOption] set. */
+    private val PALETTE = listOf(
+        "MONO" to 0xFFFFFFFF.toInt(),
+        "RED" to 0xFFE02B2B.toInt(),
+        "CYAN" to 0xFF00C2D1.toInt(),
+        "AMBER" to 0xFFF2A516.toInt(),
+        "LIME" to 0xFFB8E000.toInt(),
+        "VIOLET" to 0xFF8A5CF6.toInt(),
+        "ROSE" to 0xFFF43F5E.toInt()
+    )
+
+    /** 7 palettes × 16 pattern/darkness combinations = 112 wallpapers, each matched to a widget accent. */
+    val WALLPAPERS = (0 until 112).map { index ->
+        val (tag, accent) = PALETTE[index % PALETTE.size]
+        // Every 8th tile is a light "paper" variant; the rest are dark/OLED.
+        val isPaper = index % 8 == 3
+        val isOled = index % 5 == 4
+        val bg = when {
+            isPaper -> 0xFFF2F2F2.toInt()
+            isOled -> 0xFF000000.toInt()
+            else -> 0xFF0A0A0A.toInt()
         }
-        val isPaper = index == 6 || index == 14 || index == 22
-        val bg = if (isPaper) 0xFFF2F2F2.toInt() else 0xFF0A0A0A.toInt()
+        val variant = index / PALETTE.size
+        val name = if (isPaper) "PAPER $tag #${String.format("%02d", variant + 1)}"
+        else "DOT $tag #${String.format("%02d", variant + 1)}"
 
         WallpaperItem(
             id = index,
-            name = String.format("DOT GRID #%02d", index + 1),
+            name = name,
             tag = tag,
             bgHex = bg,
             accentHex = accent,

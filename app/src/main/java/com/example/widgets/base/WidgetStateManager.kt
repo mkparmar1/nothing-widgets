@@ -231,6 +231,9 @@ object WidgetStateManager {
         return FocusTimerState(false, remainingPaused, totalSeconds)
     }
 
+    /** Consecutive completed focus days shown as a small dot row on the Focus Companion widget. */
+    fun getFocusStreak(context: Context): Int = getPrefs(context).getInt("focus_streak", 0)
+
     private fun toggleTimer(context: Context, prefix: String, totalSeconds: Int): FocusTimerState {
         val current = getTimerState(context, prefix, totalSeconds)
         val prefs = getPrefs(context)

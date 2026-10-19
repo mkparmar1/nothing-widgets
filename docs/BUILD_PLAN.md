@@ -357,6 +357,12 @@ widget that uses < 3 u text or leaves > 20% empty area.
 
 ## Phase 3 — Differentiators: the moat  *(P0 · M–L)*
 
+> **Status: ✅ implemented.** 3.1 "ONLY IN DOT WIDGETS" row + ★EXCLUSIVE card badge in `BrowserScreen`
+> (`FEATURED_EXCLUSIVE`). 3.2 six brand-new exclusive widgets in `ExclusiveRenderers.kt`: Glyph-Reactive
+> Clock, Life in Dots, Battery Fuel Gauge, Week in Dots, Focus Companion, Orbit Ambient. 3.3 wallpapers
+> expanded to **112** palette-matched designs (7 accents × variants). 3.4 marketing sheets are produced by
+> `WidgetRenderSnapshotTest` (`build/widget-snapshots/_sheet_*.png`).
+
 ### Why this phase
 Once we match table stakes, the reason to choose *us over 400-widget rivals* is the widgets only we have.
 This is where we win the marketing line.

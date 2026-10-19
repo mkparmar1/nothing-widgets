@@ -76,6 +76,25 @@ private val RECOMMENDED = listOf(
     "clock.flip.style"
 )
 
+/**
+ * The "only in Dot Widgets" set: designs no competitor ships. Surfaced as a dedicated row and
+ * badged on their cards. Keep this list in sync with the exclusive widgets registered in
+ * [WidgetRegistry].
+ */
+private val FEATURED_EXCLUSIVE = listOf(
+    "clock.glyph.ring",
+    "calendar.life.dots",
+    "battery.fuel.gauge",
+    "prod.week.dots",
+    "prod.focus.companion",
+    "fun.orbit.ambient",
+    "clock.flip.style",
+    "clock.binary",
+    "clock.text.words",
+    "sensor.ram.meter",
+    "sensor.year.progress"
+)
+
 @Composable
 fun BrowserScreen(
     onSelectWidget: (WidgetDefinition) -> Unit,
@@ -206,6 +225,37 @@ fun BrowserScreen(
                 }
 
                 if (showExtras) {
+                    item(key = "exclusive", span = fullWidth) {
+                        Column {
+                            Text(
+                                text = "ONLY IN DOT WIDGETS",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = globalAccent.color,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 2.dp)
+                            )
+                            Text(
+                                text = "Designs no other widget app has",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF8A8A8A),
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                items(FEATURED_EXCLUSIVE.mapNotNull { WidgetRegistry.getById(it) }, key = { "ex_${it.id}" }) { def ->
+                                    Box(modifier = Modifier.width(120.dp)) {
+                                        MinimalWidgetCard(
+                                            definition = def,
+                                            accent = globalAccent,
+                                            onClick = { activeConfigWidget = def },
+                                            exclusive = true,
+                                            modifier = Modifier.testTag("exclusive_${def.id}")
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     item(key = "recommended", span = fullWidth) {
                         Column {
                             Text(
@@ -277,6 +327,7 @@ fun BrowserScreen(
                         definition = widget,
                         accent = globalAccent,
                         onClick = { activeConfigWidget = widget },
+                        exclusive = widget.id in FEATURED_EXCLUSIVE,
                         modifier = Modifier.testTag("widget_card_${widget.id}")
                     )
                 }
@@ -297,6 +348,7 @@ fun MinimalWidgetCard(
     definition: WidgetDefinition,
     accent: AccentOption,
     onClick: () -> Unit,
+    exclusive: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -333,6 +385,20 @@ fun MinimalWidgetCard(
             spec = spec,
             modifier = Modifier.fillMaxWidth()
         )
+
+        if (exclusive) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "★ EXCLUSIVE",
+                style = MaterialTheme.typography.labelSmall,
+                color = accent.color,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(accent.color.copy(alpha = 0.12f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
