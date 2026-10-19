@@ -12,6 +12,7 @@ import com.example.widgets.catalogue.ClockStyleRenderers
 import com.example.widgets.catalogue.DeviceInfoRenderers
 import com.example.widgets.catalogue.ExclusiveRenderers
 import com.example.widgets.catalogue.FinanceRenderers
+import com.example.widgets.catalogue.HealthRenderers
 import com.example.widgets.catalogue.LiveDataRenderers
 import com.example.widgets.catalogue.MediaAndFunRenderers
 import com.example.widgets.catalogue.MediaRenderers
@@ -219,6 +220,56 @@ object WidgetRegistry {
             com.example.core.config.WidgetOption.Slider("payday_dom", "Payday (day of month)", min = 1, max = 28, step = 1, default = 1, unit = ""),
             com.example.core.config.WidgetOption.Toggle("show_month", "Show month name", default = false)
         )) { c, s, cv -> FinanceRenderers.renderPaydayCountdown(c, s, cv) })
+
+        // --- 12. HEALTH & FITNESS (12 widgets) ---
+        register(createDef("health.steps.ring", Category.HEALTH, "Steps Ring", "Today's steps as a dot ring", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Activity, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal", "Daily step goal", min = 1000, max = 30000, step = 1000, default = 10000, unit = "steps"),
+            com.example.core.config.WidgetOption.Choice.of("style", "Style", listOf("ring", "text"), "ring")
+        )) { c, s, cv -> HealthRenderers.renderStepsRing(c, s, cv) })
+        register(createDef("health.steps.week", Category.HEALTH, "7-Day Steps", "This week's step columns", setOf(SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Activity, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal", "Daily step goal", min = 1000, max = 30000, step = 1000, default = 10000, unit = "steps"),
+            com.example.core.config.WidgetOption.Toggle("show_goal", "Show goal line", default = true)
+        )) { c, s, cv -> HealthRenderers.renderStepsWeek(c, s, cv) })
+        register(createDef("health.water.dots", Category.HEALTH, "Hydration Dots", "Glass-by-glass hydration grid", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("glasses_goal", "Daily glasses", min = 4, max = 16, step = 1, default = 8, unit = "glasses"),
+            com.example.core.config.WidgetOption.Choice.of("glass_size", "Glass size", listOf("200ml", "250ml", "330ml"), "250ml")
+        )) { c, s, cv -> HealthRenderers.renderWaterDots(c, s, cv) })
+        register(createDef("health.sleep.last", Category.HEALTH, "Last Night Sleep", "Last night's sleep duration", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal_hours", "Sleep goal", min = 5, max = 10, step = 1, default = 8, unit = "h"),
+            com.example.core.config.WidgetOption.Toggle("show_goal", "Show sleep goal", default = true)
+        )) { c, s, cv -> HealthRenderers.renderSleepLast(c, s, cv) })
+        register(createDef("health.sleep.week", Category.HEALTH, "Sleep Week", "Seven nights of sleep as bars", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal_hours", "Sleep goal", min = 5, max = 10, step = 1, default = 8, unit = "h"),
+            com.example.core.config.WidgetOption.Toggle("show_avg", "Show average", default = true)
+        )) { c, s, cv -> HealthRenderers.renderSleepWeek(c, s, cv) })
+        register(createDef("health.heart.rate", Category.HEALTH, "Heart Rate", "Resting heart rate with a pulse trace", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Toggle("resting", "Resting vs live", default = true),
+            com.example.core.config.WidgetOption.Toggle("show_trace", "Show pulse trace", default = true)
+        )) { c, s, cv -> HealthRenderers.renderHeartRate(c, s, cv) })
+        register(createDef("health.workout.streak", Category.HEALTH, "Workout Streak", "Consecutive workout days and week dots", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("weekly_target", "Weekly target", min = 1, max = 7, step = 1, default = 5, unit = "days"),
+            com.example.core.config.WidgetOption.Toggle("show_week", "Show week dots", default = true)
+        )) { c, s, cv -> HealthRenderers.renderWorkoutStreak(c, s, cv) })
+        register(createDef("health.calories.ring", Category.HEALTH, "Calories Ring", "Active calories against a goal ring", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal", "Calorie goal", min = 100, max = 3000, step = 50, default = 600, unit = "kcal"),
+            com.example.core.config.WidgetOption.Choice.of("kind", "Active vs total", listOf("active", "total", "basal"), "active")
+        )) { c, s, cv -> HealthRenderers.renderCaloriesRing(c, s, cv) })
+        register(createDef("health.weight.trend", Category.HEALTH, "Weight Trend", "Recent weight entries as a trend line", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Choice.of("unit", "Unit", listOf("KG", "LB"), "KG"),
+            com.example.core.config.WidgetOption.Slider("goal_kg", "Goal weight", min = 40, max = 150, step = 1, default = 70, unit = "kg")
+        )) { c, s, cv -> HealthRenderers.renderWeightTrend(c, s, cv) })
+        register(createDef("health.meditation", Category.HEALTH, "Mindfulness Minutes", "Today's mindful minutes against a goal", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal", "Daily goal", min = 1, max = 60, step = 1, default = 10, unit = "min"),
+            com.example.core.config.WidgetOption.Toggle("show_zero", "Show when zero", default = false)
+        )) { c, s, cv -> HealthRenderers.renderMeditation(c, s, cv) })
+        register(createDef("health.stand.hours", Category.HEALTH, "Stand Hours", "Hours you moved today as a ring", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal", "Daily goal", min = 1, max = 24, step = 1, default = 12, unit = "hours"),
+            com.example.core.config.WidgetOption.Choice.of("style", "Style", listOf("ring", "bar"), "ring")
+        )) { c, s, cv -> HealthRenderers.renderStandHours(c, s, cv) })
+        register(createDef("health.body.battery", Category.HEALTH, "Body Battery", "Energy level as a fuel gauge", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Choice.of("formula", "Formula", listOf("BALANCED", "STRESS", "SLEEP"), "BALANCED"),
+            com.example.core.config.WidgetOption.Toggle("show_charge", "Show charge label", default = true)
+        )) { c, s, cv -> HealthRenderers.renderBodyBattery(c, s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {
@@ -318,6 +369,11 @@ object WidgetDescription {
                 if (q == null) "Crypto price" else "${q.symbol} ${q.price.toInt()} ${q.currency}"
             }
             id.startsWith("finance.") -> "Finance"
+            id.startsWith("health.steps.") -> {
+                val s = com.example.data.activity.StepRepository.todaySteps(context)
+                if (s == null) "Steps" else "$s steps today"
+            }
+            id.startsWith("health.") -> "Health"
             id == "sensor.stopwatch.chrono" -> "Stopwatch"
             id == "prod.focus.timer" -> "Focus timer"
             id == "prod.countdown.timer" -> "Countdown timer"
