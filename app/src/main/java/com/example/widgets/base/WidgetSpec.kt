@@ -59,5 +59,11 @@ enum class Category(val title: String, val iconName: String) {
     PRODUCTIVITY("Productivity", "checklist"),
     PHOTO("Photo", "image"),
     MEDIA("Media", "music_note"),
-    FUN("Fun & Lab", "casino")
+    FUN("Fun & Lab", "casino"),
+    FINANCE("Finance", "payments"),
+    HEALTH("Health", "favorite"),
+    SMART_HOME("Smart Home", "home"),
+    SPORTS("Sports", "sports_soccer"),
+    LEARNING("Learning", "school"),
+    TRAVEL("Travel", "flight")
 }

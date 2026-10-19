@@ -11,6 +11,7 @@ import com.example.widgets.catalogue.ClockRenderers
 import com.example.widgets.catalogue.ClockStyleRenderers
 import com.example.widgets.catalogue.DeviceInfoRenderers
 import com.example.widgets.catalogue.ExclusiveRenderers
+import com.example.widgets.catalogue.FinanceRenderers
 import com.example.widgets.catalogue.LiveDataRenderers
 import com.example.widgets.catalogue.MediaAndFunRenderers
 import com.example.widgets.catalogue.MediaRenderers
@@ -166,6 +167,58 @@ object WidgetRegistry {
         register(createDef("fun.dice.roll", Category.FUN, "Dice Roll Pair", "Tap to roll a pair of dot-matrix dice", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> MediaAndFunRenderers.renderDiceRoll(c, s, cv) })
         register(createDef("fun.pattern.generator", Category.FUN, "Ambient Dot Matrix", "Procedural geometric dot matrix rhythm", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT) { c, s, cv -> DeviceInfoRenderers.renderAmbientPattern(s, cv) })
         register(createDef("fun.orbit.ambient", Category.FUN, "Orbit Ambient", "Slow concentric dot rings drifting with the clock", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT) { c, s, cv -> ExclusiveRenderers.renderOrbitAmbient(s, cv) })
+
+        // --- 11. FINANCE (12 widgets) ---
+        register(createDef("finance.crypto.tick", Category.FINANCE, "Crypto Ticker", "Live coin price with 24h move", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("coin", "Coin symbol", default = "BTC"),
+            com.example.core.config.WidgetOption.Toggle("up_down_colour", "Colour down moves", default = true)
+        )) { c, s, cv -> FinanceRenderers.renderCryptoTick(c, s, cv) })
+        register(createDef("finance.crypto.spark", Category.FINANCE, "Crypto Sparkline", "Coin price with an intraday dot sparkline", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("coin", "Coin symbol", default = "BTC"),
+            com.example.core.config.WidgetOption.Choice.of("range", "Timeframe", listOf("24H", "7D", "30D"), "24H"),
+            com.example.core.config.WidgetOption.Toggle("fill", "Fill under the line", default = true)
+        )) { c, s, cv -> FinanceRenderers.renderCryptoSpark(c, s, cv) })
+        register(createDef("finance.crypto.portfolio", Category.FINANCE, "Crypto Portfolio", "Your holdings with live BTC valuation", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("currency", "Display currency", default = "USD"),
+            com.example.core.config.WidgetOption.Toggle("show_units", "Show units", default = true)
+        )) { c, s, cv -> FinanceRenderers.renderPortfolio(c, s, cv) })
+        register(createDef("finance.stock.tick", Category.FINANCE, "Stock Ticker", "Last-known share price with change", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("symbol", "Ticker symbol", default = "AAPL"),
+            com.example.core.config.WidgetOption.Choice.of("market", "Market", listOf("US", "LSE", "NSE"), "US")
+        )) { c, s, cv -> FinanceRenderers.renderStockTick(c, s, cv) })
+        register(createDef("finance.stock.spark", Category.FINANCE, "Stock Sparkline", "Share price with a trend sparkline", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("symbol", "Ticker symbol", default = "AAPL"),
+            com.example.core.config.WidgetOption.Choice.of("range", "Range", listOf("1D", "1W", "1M"), "1M")
+        )) { c, s, cv -> FinanceRenderers.renderStockSpark(c, s, cv) })
+        register(createDef("finance.currency.pair", Category.FINANCE, "FX Rate Pair", "Live exchange rate for a currency pair", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("base", "Base currency", default = "USD"),
+            com.example.core.config.WidgetOption.Text("quote", "Quote currency", default = "INR"),
+            com.example.core.config.WidgetOption.Toggle("inverse", "Invert pair", default = false)
+        )) { c, s, cv -> FinanceRenderers.renderCurrencyPair(c, s, cv) })
+        register(createDef("finance.currency.multi", Category.FINANCE, "Multi-FX Board", "Up to six currencies against a base", setOf(SizeBucket.L), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("base", "Base currency", default = "USD"),
+            com.example.core.config.WidgetOption.Text("pairs", "Currencies (comma sep)", default = "EUR,GBP,JPY,INR,AUD,CAD")
+        )) { c, s, cv -> FinanceRenderers.renderCurrencyMulti(c, s, cv) })
+        register(createDef("finance.market.status", Category.FINANCE, "Market Open/Closed", "Exchange trading-hours status", setOf(SizeBucket.S), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Choice.of("exchange", "Exchange", listOf("NYSE", "LSE", "NSE", "TSE"), "NYSE"),
+            com.example.core.config.WidgetOption.Toggle("holiday_aware", "Holiday aware", default = true)
+        )) { c, s, cv -> FinanceRenderers.renderMarketStatus(c, s, cv) })
+        register(createDef("finance.spend.daily", Category.FINANCE, "Daily Spend Meter", "Spend today versus your daily budget", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Slider("budget", "Daily budget", min = 100, max = 20000, step = 100, default = 2000, unit = "₹"),
+            com.example.core.config.WidgetOption.Toggle("show_bar", "Show progress bar", default = true)
+        )) { c, s, cv -> FinanceRenderers.renderSpendDaily(c, s, cv) })
+        register(createDef("finance.budget.ring", Category.FINANCE, "Budget Ring", "Spend against budget as a dot ring", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Slider("warn_pct", "Warn at % of budget", min = 50, max = 100, step = 5, default = 80, unit = "%"),
+            com.example.core.config.WidgetOption.Choice.of("period", "Period", listOf("DAILY", "WEEKLY", "MONTHLY"), "DAILY")
+        )) { c, s, cv -> FinanceRenderers.renderBudgetRing(c, s, cv) })
+        register(createDef("finance.savings.goal", Category.FINANCE, "Savings Goal Dots", "Progress toward a savings target", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Slider("goal", "Goal amount", min = 10000, max = 1000000, step = 10000, default = 100000, unit = "₹"),
+            com.example.core.config.WidgetOption.Text("target_date", "Target date", default = "")
+        )) { c, s, cv -> FinanceRenderers.renderSavingsGoal(c, s, cv) })
+        register(createDef("finance.payday.countdown", Category.FINANCE, "Payday Countdown", "Days until the next salary date", setOf(SizeBucket.S), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Slider("payday_dom", "Payday (day of month)", min = 1, max = 28, step = 1, default = 1, unit = ""),
+            com.example.core.config.WidgetOption.Toggle("show_month", "Show month name", default = false)
+        )) { c, s, cv -> FinanceRenderers.renderPaydayCountdown(c, s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {
@@ -260,6 +313,11 @@ object WidgetDescription {
                 if (heading == null) "Compass"
                 else "Compass heading ${heading} degrees ${com.example.data.sensor.CompassRepository.cardinal(heading)}"
             }
+            id.startsWith("finance.crypto.tick") || id.startsWith("finance.crypto.spark") -> {
+                val q = com.example.data.market.CryptoRepository.quote(context)
+                if (q == null) "Crypto price" else "${q.symbol} ${q.price.toInt()} ${q.currency}"
+            }
+            id.startsWith("finance.") -> "Finance"
             id == "sensor.stopwatch.chrono" -> "Stopwatch"
             id == "prod.focus.timer" -> "Focus timer"
             id == "prod.countdown.timer" -> "Countdown timer"
