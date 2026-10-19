@@ -15,6 +15,7 @@ import com.example.widgets.catalogue.FinanceRenderers
 import com.example.widgets.catalogue.HealthRenderers
 import com.example.widgets.catalogue.LearnRenderers
 import com.example.widgets.catalogue.LiveDataRenderers
+import com.example.widgets.catalogue.TravelRenderers
 import com.example.widgets.catalogue.MediaAndFunRenderers
 import com.example.widgets.catalogue.MediaRenderers
 import com.example.widgets.catalogue.PhotoRenderers
@@ -396,6 +397,48 @@ object WidgetRegistry {
             com.example.core.config.WidgetOption.Text("exam", "Exam name", default = "EXAM"),
             com.example.core.config.WidgetOption.Toggle("show_date", "Show date", default = false)
         )) { c, s, cv -> LearnRenderers.renderExamCountdown(c, s, cv) })
+
+        // --- 16. TRAVEL & WORLD (10 widgets) ---
+        register(createDef("travel.clock.multi", Category.TRAVEL, "Multi-City Clock", "Up to four world cities at once", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("zones", "Zones (comma-separated)", default = "Europe/London,Asia/Tokyo,America/New_York"),
+            com.example.core.config.WidgetOption.Slider("count", "Visible cities", min = 2, max = 4, step = 1, default = 3, unit = "cities")
+        )) { c, s, cv -> TravelRenderers.renderMultiCityClock(c, s, cv) })
+        register(createDef("travel.clock.city", Category.TRAVEL, "World City Clock", "A single city's time", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("city", "City zone", default = "Europe/London"),
+            com.example.core.config.WidgetOption.Toggle("h24", "24-hour clock", default = true)
+        )) { c, s, cv -> TravelRenderers.renderSingleWorldCity(c, s, cv) })
+        register(createDef("travel.weather.city", Category.TRAVEL, "City Weather", "Current weather for a chosen city", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("city", "City name", default = "London"),
+            com.example.core.config.WidgetOption.Toggle("show_city", "Show city name", default = true)
+        )) { c, s, cv -> TravelRenderers.renderWeatherCity(c, s, cv) })
+        register(createDef("travel.sun.times", Category.TRAVEL, "Sunrise & Sunset", "Today's rise and set for your location", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Toggle("show_arc", "Show arc", default = false),
+            com.example.core.config.WidgetOption.Toggle("h24", "24-hour clock", default = true)
+        )) { c, s, cv -> TravelRenderers.renderSunTimes(c, s, cv) })
+        register(createDef("travel.flight.countdown", Category.TRAVEL, "Flight Countdown", "Time until your next flight", setOf(SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Text("flight", "Flight code", default = "FLIGHT"),
+            com.example.core.config.WidgetOption.Toggle("show_time", "Show departure time", default = true)
+        )) { c, s, cv -> TravelRenderers.renderFlightCountdown(c, s, cv) })
+        register(createDef("travel.packing.list", Category.TRAVEL, "Packing List", "Tick off packing items", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Slider("max_items", "Items shown", min = 3, max = 10, step = 1, default = 6, unit = "items"),
+            com.example.core.config.WidgetOption.Toggle("show_checkboxes", "Show checkboxes", default = true)
+        )) { c, s, cv -> TravelRenderers.renderPackingCheck(c, s, cv) })
+        register(createDef("travel.trip.countdown", Category.TRAVEL, "Trip Countdown", "Days until your trip", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, options = listOf(
+            com.example.core.config.WidgetOption.Text("destination", "Destination", default = "TRIP"),
+            com.example.core.config.WidgetOption.Toggle("show_date", "Show date", default = false)
+        )) { c, s, cv -> TravelRenderers.renderTripCountdown(c, s, cv) })
+        register(createDef("travel.currency.tip", Category.TRAVEL, "Travel Currency", "Exchange rate between two currencies", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = false, options = listOf(
+            com.example.core.config.WidgetOption.Text("home", "Home currency", default = "USD"),
+            com.example.core.config.WidgetOption.Text("away", "Away currency", default = "EUR")
+        )) { c, s, cv -> TravelRenderers.renderCurrencyTip(c, s, cv) })
+        register(createDef("travel.tz.diff", Category.TRAVEL, "Time Difference", "Hours between two zones", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Text("home", "Home zone", default = "UTC"),
+            com.example.core.config.WidgetOption.Text("away", "Away zone", default = "Europe/London")
+        )) { c, s, cv -> TravelRenderers.renderTzDiff(c, s, cv) })
+        register(createDef("travel.day.length", Category.TRAVEL, "Daylight Length", "Hours of daylight today", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+            com.example.core.config.WidgetOption.Toggle("show_progress", "Show progress", default = true),
+            com.example.core.config.WidgetOption.Toggle("h24", "24-hour clock", default = true)
+        )) { c, s, cv -> TravelRenderers.renderDayLength(c, s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {
@@ -503,6 +546,7 @@ object WidgetDescription {
             id.startsWith("home.") -> "Smart home"
             id.startsWith("sports.") -> "Sports"
             id.startsWith("learn.") -> "Learning"
+            id.startsWith("travel.") -> "Travel"
             id == "sensor.stopwatch.chrono" -> "Stopwatch"
             id == "prod.focus.timer" -> "Focus timer"
             id == "prod.countdown.timer" -> "Countdown timer"
