@@ -19,6 +19,7 @@ import com.example.widgets.catalogue.MediaRenderers
 import com.example.widgets.catalogue.PhotoRenderers
 import com.example.widgets.catalogue.ProductivityRenderers
 import com.example.widgets.catalogue.ShortcutRenderers
+import com.example.widgets.catalogue.SmartHomeRenderers
 import com.example.widgets.catalogue.ToggleRenderers
 import com.example.widgets.catalogue.UniqueSensorRenderers
 import com.example.widgets.catalogue.UtilityRenderers
@@ -270,6 +271,45 @@ object WidgetRegistry {
             com.example.core.config.WidgetOption.Choice.of("formula", "Formula", listOf("BALANCED", "STRESS", "SLEEP"), "BALANCED"),
             com.example.core.config.WidgetOption.Toggle("show_charge", "Show charge label", default = true)
         )) { c, s, cv -> HealthRenderers.renderBodyBattery(c, s, cv) })
+
+        // --- 13. SMART HOME (10 widgets) ---
+        register(createDef("home.device.toggle", Category.SMART_HOME, "Device Toggle", "On/off ring for one Home Assistant entity", setOf(SizeBucket.S), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entity", "Entity id", default = "switch.lamp"),
+            com.example.core.config.WidgetOption.Text("label", "Label", default = "DEVICE")
+        )) { c, s, cv -> SmartHomeRenderers.renderDeviceToggle(c, s, cv) })
+        register(createDef("home.room.status", Category.SMART_HOME, "Room Status Grid", "Multiple entities as a status grid", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entities", "Entity ids (comma sep)", default = "light.living_room,light.kitchen")
+        )) { c, s, cv -> SmartHomeRenderers.renderRoomStatus(c, s, cv) })
+        register(createDef("home.lights.count", Category.SMART_HOME, "Lights On Counter", "How many lights are on right now", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entities", "Light entity ids", default = "light.living_room,light.bedroom"),
+            com.example.core.config.WidgetOption.Text("label", "Label", default = "LIGHTS")
+        )) { c, s, cv -> SmartHomeRenderers.renderLightsCount(c, s, cv) })
+        register(createDef("home.thermostat", Category.SMART_HOME, "Thermostat Dial", "Current temperature as a dial", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entity", "Climate entity", default = "climate.thermostat"),
+            com.example.core.config.WidgetOption.Choice.of("unit", "Unit", listOf("°C", "°F"), "°C")
+        )) { c, s, cv -> SmartHomeRenderers.renderThermostat(c, s, cv) })
+        register(createDef("home.scene.button", Category.SMART_HOME, "Scene Button", "One-tap scene trigger", setOf(SizeBucket.S), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("scene", "Scene name", default = "MOVIE NIGHT"),
+            com.example.core.config.WidgetOption.Text("entity", "Scene entity", default = "scene.movie_night")
+        )) { c, s, cv -> SmartHomeRenderers.renderSceneButton(c, s, cv) })
+        register(createDef("home.energy.today", Category.SMART_HOME, "Energy Today", "Today's energy consumption", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entity", "Energy sensor", default = "sensor.energy_today"),
+            com.example.core.config.WidgetOption.Text("currency", "Unit", default = "kWh")
+        )) { c, s, cv -> SmartHomeRenderers.renderEnergyToday(c, s, cv) })
+        register(createDef("home.sensor.temp", Category.SMART_HOME, "Room Temperature", "A room temperature sensor", setOf(SizeBucket.S), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entity", "Temperature sensor", default = "sensor.room_temperature"),
+            com.example.core.config.WidgetOption.Toggle("show_name", "Show sensor name", default = true)
+        )) { c, s, cv -> SmartHomeRenderers.renderSensorTemp(c, s, cv) })
+        register(createDef("home.humidity", Category.SMART_HOME, "Humidity Gauge", "A humidity sensor with a dot bar", setOf(SizeBucket.S), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entity", "Humidity sensor", default = "sensor.humidity"),
+            com.example.core.config.WidgetOption.Toggle("show_bar", "Show dot bar", default = true)
+        )) { c, s, cv -> SmartHomeRenderers.renderHumidity(c, s, cv) })
+        register(createDef("home.door.status", Category.SMART_HOME, "Door/Window Status", "Open/closed state of doors and windows", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entities", "Contact sensors", default = "binary_sensor.front_door,binary_sensor.window")
+        )) { c, s, cv -> SmartHomeRenderers.renderDoorStatus(c, s, cv) })
+        register(createDef("home.presence", Category.SMART_HOME, "Presence Tracker", "Who is home right now", setOf(SizeBucket.S), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
+            com.example.core.config.WidgetOption.Text("entities", "Person entities", default = "person.alex,person.sam")
+        )) { c, s, cv -> SmartHomeRenderers.renderPresence(c, s, cv) })
     }
 
     private fun register(def: WidgetDefinition) {
@@ -374,6 +414,7 @@ object WidgetDescription {
                 if (s == null) "Steps" else "$s steps today"
             }
             id.startsWith("health.") -> "Health"
+            id.startsWith("home.") -> "Smart home"
             id == "sensor.stopwatch.chrono" -> "Stopwatch"
             id == "prod.focus.timer" -> "Focus timer"
             id == "prod.countdown.timer" -> "Countdown timer"
