@@ -38,7 +38,7 @@ object WidgetRegistry {
         register(createDef("clock.world.nyc", Category.CLOCK, "World Clock: New York", "Timezone override for New York (EST)", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv, timeZoneId = "America/New_York") })
         register(createDef("clock.flip.style", Category.CLOCK, "Flip-Style Dot Clock", "Split-flap dot digital aesthetic", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CLOCK) { c, s, cv -> ClockStyleRenderers.renderFlipClock(s, cv) })
         register(createDef("clock.text.words", Category.CLOCK, "Text Matrix Clock", "Spelled out time representation", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockStyleRenderers.renderWordClock(s, cv) })
-        register(createDef("clock.seconds.live", Category.CLOCK, "Precision Seconds", "Live hh:mm:ss second-accurate clock", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv, showSeconds = true, liveTime = true) })
+        register(createDef("clock.seconds.live", Category.CLOCK, "Precision Seconds", "Live hh:mm:ss second-accurate clock", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv, showSeconds = true, liveTime = s.liveOverlays) })
         register(createDef("clock.minimal.pill", Category.CLOCK, "Capsule Time Pill", "Ultra-condensed dot time badge", setOf(SizeBucket.S), TapAction.OPEN_CLOCK) { c, s, cv -> ClockStyleRenderers.renderCapsulePill(s, cv) })
 
         // --- 2. DATE & CALENDAR (10 widgets) ---

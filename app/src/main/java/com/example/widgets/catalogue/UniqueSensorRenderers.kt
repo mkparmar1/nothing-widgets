@@ -674,7 +674,7 @@ object UniqueSensorRenderers {
         val startY = spec.heightPx * 0.34f
 
         // While running, a live Chronometer drawn by the launcher shows the time (see WidgetRenderEngine).
-        if (!swState.isRunning) {
+        if (!swState.isRunning || !spec.liveOverlays) {
             DotMatrixRenderer.drawText(
                 canvas = canvas,
                 text = chronoStr,

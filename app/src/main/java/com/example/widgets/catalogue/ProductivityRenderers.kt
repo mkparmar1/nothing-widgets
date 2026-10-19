@@ -369,7 +369,7 @@ object ProductivityRenderers {
         val startY = spec.heightPx * 0.35f
 
         // While running, a live countdown Chronometer drawn by the launcher shows the time.
-        if (!state.isRunning) {
+        if (!state.isRunning || !spec.liveOverlays) {
             DotMatrixRenderer.drawText(
                 canvas = canvas,
                 text = timeStr,

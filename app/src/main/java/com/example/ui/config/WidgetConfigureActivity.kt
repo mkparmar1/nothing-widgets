@@ -7,7 +7,11 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +24,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,6 +58,7 @@ class WidgetConfigureActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         val appWidgetId = intent.getIntExtra(
             AppWidgetManager.EXTRA_APPWIDGET_ID,
@@ -100,7 +106,9 @@ class WidgetConfigureActivity : ComponentActivity() {
         val result = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
 
         setContent {
-            DotWidgetsTheme(accentOption = initialState?.accent ?: preferences.getSavedAccent()) {
+            // The app's own accent and background, like MainActivity; the widget's chosen accent
+            // only affects the preview inside the setup content.
+            AppScreen(accent = preferences.getSavedAccent()) {
                 var definition by remember {
                     mutableStateOf(initialDefinition)
                 }
@@ -181,6 +189,26 @@ class WidgetConfigureActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "WidgetConfigureActivity"
+    }
+}
+
+/**
+ * Same look as the main app: theme, black/white app background, readable text colours, and
+ * content kept clear of the status and navigation bars.
+ */
+@Composable
+private fun AppScreen(accent: AccentOption, content: @Composable () -> Unit) {
+    DotWidgetsTheme(accentOption = accent) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            ) {
+                content()
+            }
+        }
     }
 }
 
