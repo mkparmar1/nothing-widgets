@@ -74,6 +74,7 @@ class WidgetConfigureActivity : ComponentActivity() {
 
         val providerInfo = AppWidgetManager.getInstance(this).getAppWidgetInfo(appWidgetId)
         val size = providerInfo?.let(::sizeForProvider)
+        lockScreenOnly = providerInfo?.let { WidgetProviders.isLockScreenProvider(it.provider.className) } == true
         if (providerInfo == null || size == null) {
             Log.e(TAG, "Cannot resolve provider size for app widget $appWidgetId")
             finish()
@@ -91,6 +92,9 @@ class WidgetConfigureActivity : ComponentActivity() {
             showConfiguration(appWidgetId, size, editInstance, initialDefinition)
         }
     }
+
+    /** True when configuring a lock-screen widget: the picker then lists only lock-safe designs. */
+    private var lockScreenOnly = false
 
     private fun showConfiguration(
         appWidgetId: Int,
@@ -122,6 +126,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                 if (definition == null) {
                     WidgetDesignPicker(
                         size = size,
+                        lockScreenOnly = lockScreenOnly,
                         onSelect = { selected ->
                             definition = selected
                             setupState = WidgetSetupState.defaults(
@@ -222,13 +227,14 @@ private fun AppScreen(accent: AccentOption, content: @Composable () -> Unit) {
 @Composable
 private fun WidgetDesignPicker(
     size: SizeBucket,
+    lockScreenOnly: Boolean,
     onSelect: (WidgetDefinition) -> Unit
 ) {
     val context = LocalContext.current
     val preferences = remember { PreferencesManager.getInstance(context) }
     val definitionsByCategory = remember(size) {
         WidgetRegistry.getAll()
-            .filter { size in it.sizes }
+            .filter { size in it.sizes && (!lockScreenOnly || it.lockSafe) }
             .groupBy { it.category }
             .toList()
     }

@@ -34,6 +34,22 @@ import com.example.widgets.catalogue.UtilityRenderers
 import com.example.widgets.catalogue.WeatherRenderers
 import com.example.ui.permissions.AppPermission
 
+/**
+ * Glanceable widgets that also suit the lock screen / Always-On Display (no tapping needed,
+ * no live sensor, no network or permission), on top of the ones registered with lockSafe = true. Top-level (not in the object)
+ * because register() runs from WidgetRegistry's init block, before the object's own properties exist.
+ */
+private val LOCK_SAFE_EXTRA = setOf(
+    "clock.dotdigital.s", "clock.dotdigital.m", "clock.analog.ring", "clock.stacked.hhmm",
+    "clock.binary", "clock.flip.style", "clock.text.words", "clock.minimal.pill",
+    "clock.world.london", "clock.world.tokyo", "clock.world.nyc", "clock.seconds.live",
+    "calendar.day.date", "calendar.iso.week", "calendar.minimal.split", "calendar.week.progress",
+    "calendar.year.progress", "battery.ring", "battery.percentage", "battery.minimal.pill",
+    "battery.charging.active", "sensor.glyph.lights", "weather.moon.phase", "sensor.lunar.moon",
+    "weather.golden.hour",
+    "prod.focus.timer", "prod.countdown.timer"
+)
+
 object WidgetRegistry {
 
     private val widgetsList = mutableListOf<WidgetDefinition>()
@@ -625,7 +641,11 @@ object WidgetRegistry {
     }
 
     private fun register(def: WidgetDefinition) {
-        widgetsList.add(def)
+        widgetsList.add(
+            if (def.id in LOCK_SAFE_EXTRA && !def.lockSafe) object : WidgetDefinition by def {
+                override val lockSafe = true
+            } else def
+        )
     }
 
     private fun createDef(

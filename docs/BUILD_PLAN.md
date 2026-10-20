@@ -811,6 +811,63 @@ sealed interface WidgetOption {
 
 ---
 
+## Phase 9 — Style system: skins, frames, refresh efficiency  *(P0 · L)*
+
+> **Status: ✅ done** (`d69571d`).
+>
+> - **9.0 Skip unchanged updates.** Each widget's bitmap + settings get a signature; the minute tick
+>   sends only widgets whose signature changed (boot / app update / clock changes force a full
+>   send). Verified on device: 32 placed widgets → "sent 0 of 32" on idle refreshes.
+>   `WidgetProviders` lists all five providers, fixing lock-screen widgets being skipped by the
+>   refresh, by the alarm's "any placed?" check, and by the configure screen.
+> - **9.1 Skins** (`core/render/Skin.kt`), per widget: Dot, Glyph, Segment, Pixel, Terminal, Paper,
+>   Neon (+ Nothing, Phase 12). Applied centrally in `DotMatrixRenderer` (letterforms, label
+>   typeface, dot runs/rings, background), so every widget supports every skin.
+> - **9.2 Frames** (Hairline, None, Dotted, Glow) and a "Full" corner option.
+> - Tests: `SkinSnapshotTest` (18 representative widgets × every skin, one sheet per skin).
+
+## Phase 10 — New kinds of widget  *(P0 · L)*
+
+> **Status: ✅ done** (`317a642`).
+>
+> - **10.1 Scrollable lists** via `RemoteViewsService` (`widgets/collection/*`): Scrolling To-Do,
+>   Shopping List, Habit List (tap to tick on the home screen), Week Agenda (tap opens the event),
+>   Favourite Contacts (starred; tap opens the dialer).
+> - **10.2 Smart Stack**: `StackView` of up to 5 chosen designs, each card drawn by the engine;
+>   swipe or auto-advance (`autoAdvanceViewId`).
+> - **10.3 Multi-button**: Tally Counter, Mood Log, Quick Timer, Volume Steps.
+> - **10.4 Flipbook animations** (`AnimatedOverlays`): Soundwave, charging pulse, rain, Ambient.
+
+## Phase 11 — Data widgets  *(P1 · M)*
+
+> **Status: ✅ done** (`53cac42`). Next Alarm, Network Speed, Thermal & Uptime, Battery History,
+> Air Quality (Open-Meteo), Golden Hour, Top Apps Today, Mobile Data Today, Festivals & Holidays
+> (bundled through Dec 2027, lunar dates ≈), Tithi (≈ from moon phase). No new permissions.
+>
+> **Not built, by decision:** notification counts (would break the "doesn't read notifications"
+> promise), cricket scores (no free key-less API), pollen (no free data for India).
+
+## Phase 12 — Nothing-only features  *(P1 · M)*
+
+> **Status: ✅ done except 12.3.**
+>
+> - **12.1 Nothing skin**: digits in Nothing OS's `NDot57` system font, labels in `Lettera`
+>   (`NothingFonts` detects them; other phones fall back to the Dot look).
+> - **12.2 Lock screen / AOD**: 27 more glanceable widgets marked lock-safe (clocks, dates,
+>   battery, moon, golden hour, timers — nothing needing network or a permission); the lock-screen
+>   configure picker now lists only lock-safe designs.
+> - **12.3 Glyph lights — ⏸ blocked on Nothing.** Needs the Glyph Developer Kit and an API key from
+>   Nothing (apply at the Nothing developer programme). Plan once granted: a `GlyphBridge` behind
+>   the existing timer/charging/notification state — focus-timer progress on the Glyph progress
+>   segment, charging level while plugged in — opt-in per widget, off when the kit is unavailable.
+
+## Phase 13 — Looks and finishing  *(P1 · M)*
+
+- **13.1 One-tap Looks**: presets (skin + accent + background + frame + dot style) applied to every
+  placed widget at once, from Settings.
+- **13.2 Finish Phase 8**: ≥ 2 advanced options on the remaining widgets.
+- **13.3 Browse "Advanced options" badge/filter** (8.3.5).
+
 ## 5. Dependency order
 
 ```

@@ -20,7 +20,9 @@ enum class Skin(val label: String) {
     /** Warm off-white paper with ink, always light. */
     PAPER("Paper"),
     /** Glowing dots on black, always dark. */
-    NEON("Neon");
+    NEON("Neon"),
+    /** Nothing OS's own NDot and Lettera fonts (Nothing phones; others fall back to Dot). */
+    NOTHING("Nothing");
 
     /** Skins with a fixed light/dark look override the theme. */
     fun resolveDark(isDark: Boolean): Boolean = when (this) {

@@ -15,15 +15,17 @@ object WidgetProviders {
     data class Entry(
         val providerClass: Class<out AppWidgetProvider>,
         val defaultWidgetTypeId: String,
-        val size: SizeBucket
+        val size: SizeBucket,
+        /** Lock screen / Always-On providers only offer lock-safe designs. */
+        val lockScreen: Boolean = false
     )
 
     val ALL = listOf(
         Entry(DotWidgetProviderS::class.java, "clock.dotdigital.s", SizeBucket.S),
         Entry(DotWidgetProviderM::class.java, "clock.dotdigital.m", SizeBucket.M),
         Entry(DotWidgetProviderL::class.java, "clock.dotdigital.l", SizeBucket.L),
-        Entry(DotWidgetProviderLockS::class.java, "clock.dotdigital.s", SizeBucket.S),
-        Entry(DotWidgetProviderLockM::class.java, "clock.dotdigital.m", SizeBucket.M)
+        Entry(DotWidgetProviderLockS::class.java, "clock.dotdigital.s", SizeBucket.S, lockScreen = true),
+        Entry(DotWidgetProviderLockM::class.java, "clock.dotdigital.m", SizeBucket.M, lockScreen = true)
     )
 
     /** Placed widget ids per provider entry. */
@@ -37,4 +39,7 @@ object WidgetProviders {
     /** Size bucket for a provider class name, or null if it isn't one of ours. */
     fun sizeForProviderClass(className: String): SizeBucket? =
         ALL.firstOrNull { it.providerClass.name == className }?.size
+
+    fun isLockScreenProvider(className: String): Boolean =
+        ALL.firstOrNull { it.providerClass.name == className }?.lockScreen == true
 }

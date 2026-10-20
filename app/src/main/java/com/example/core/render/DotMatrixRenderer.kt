@@ -142,6 +142,7 @@ object DotMatrixRenderer {
             val drawn = when (activeSkin) {
                 Skin.SEGMENT, Skin.GLYPH -> drawSegmentChar(canvas, char, currentX, startY, dotGap, litColor, offColor, activeSkin == Skin.GLYPH)
                 Skin.TERMINAL -> drawTerminalChar(canvas, char, currentX, startY, dotGap, litColor)
+                Skin.NOTHING -> NothingFonts.ndot?.let { drawFontChar(canvas, char, currentX, startY, dotGap, litColor, it) } ?: false
                 else -> false
             }
             if (!drawn) {
@@ -258,6 +259,21 @@ object DotMatrixRenderer {
     }
 
     /** Monospace character filling the dot cell. */
+    private val nothingPaint = ThreadLocal.withInitial {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    }
+
+    /** Character in Nothing's NDot font, sized to fill the same 5×7 cell as the dot grid. */
+    private fun drawFontChar(canvas: Canvas, char: Char, x0: Float, y0: Float, gap: Float, color: Int, typeface: Typeface): Boolean {
+        if (char == ' ') return true
+        val p = nothingPaint.get()!!
+        p.typeface = typeface
+        p.color = color
+        p.textSize = gap * 8.6f
+        canvas.drawText(char.uppercaseChar().toString(), x0 + 2 * gap, y0 + 6.3f * gap, p)
+        return true
+    }
+
     private fun drawTerminalChar(canvas: Canvas, char: Char, x0: Float, y0: Float, gap: Float, color: Int): Boolean {
         if (char == ' ') return true
         val p = terminalPaint.get()!!
@@ -321,6 +337,7 @@ object DotMatrixRenderer {
 
     /** Label typeface for the current skin, or null to keep the renderer's own. */
     fun skinTypeface(): Typeface? = when (currentSkin) {
+        Skin.NOTHING -> NothingFonts.lettera
         Skin.TERMINAL, Skin.SEGMENT -> Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
         Skin.PAPER -> Typeface.create(Typeface.SERIF, Typeface.BOLD)
         else -> null
