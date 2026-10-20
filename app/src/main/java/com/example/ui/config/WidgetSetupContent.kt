@@ -58,6 +58,8 @@ import com.example.core.config.WidgetOptions
 import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.MaterialYouPalette
+import com.example.core.render.Frame
+import com.example.core.render.Skin
 import com.example.core.theme.ThemeMode
 import com.example.core.time.ClockOptions
 import com.example.core.time.ClockSupport
@@ -89,6 +91,8 @@ data class WidgetSetupState(
     val timeFormat: TimeFormat? = null,
     val dateFormat: DateFormat? = null,
     val dotStyle: DotStyle = DotStyle.ROUND,
+    val skin: Skin = Skin.DOT,
+    val frame: Frame = Frame.HAIRLINE,
     /** IANA zone for world-clock widgets, null = phone's zone. */
     val timeZoneId: String? = null,
     /** Advanced-option values (Phase 8), stored under the `"opt"` config object. */
@@ -110,6 +114,8 @@ data class WidgetSetupState(
             dateFormat?.let { put(ClockOptions.KEY_DATE, it.name) }
             timeZoneId?.let { put(ClockOptions.KEY_TZ, it) }
             put(ClockOptions.KEY_DOT_STYLE, dotStyle.name)
+            put(Skin.KEY, skin.name)
+            put(Frame.KEY, frame.name)
         }.toString()
         // Option values live in a nested object so they never collide with core config keys.
         return com.example.core.config.WidgetOptions.write(base, optionValues)
@@ -137,6 +143,8 @@ data class WidgetSetupState(
                 timeFormat = json.optString(ClockOptions.KEY_TIME).takeIf { it.isNotEmpty() }?.let { TimeFormat.fromName(it) },
                 dateFormat = json.optString(ClockOptions.KEY_DATE).takeIf { it.isNotEmpty() }?.let { DateFormat.fromName(it) },
                 dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
+                skin = Skin.fromName(json.optString(Skin.KEY)),
+                frame = Frame.fromName(json.optString(Frame.KEY)),
                 timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}"),
                 optionValues = resolveOptions(definition, importedConfigJson)
             )
@@ -166,6 +174,8 @@ data class WidgetSetupState(
                 timeFormat = json.optString(ClockOptions.KEY_TIME).takeIf { it.isNotEmpty() }?.let { TimeFormat.fromName(it) },
                 dateFormat = json.optString(ClockOptions.KEY_DATE).takeIf { it.isNotEmpty() }?.let { DateFormat.fromName(it) },
                 dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
+                skin = Skin.fromName(json.optString(Skin.KEY)),
+                frame = Frame.fromName(json.optString(Frame.KEY)),
                 timeZoneId = ClockOptions.timeZone(instance.configJson),
                 optionValues = resolveOptions(definition, instance.configJson)
             )
@@ -240,7 +250,8 @@ fun WidgetSetupContent(
         bgMode = state.background,
         bgAlpha = state.bgAlpha,
         themeMode = state.theme,
-        isDark = isDark,
+        // Paper is always light; Neon and Terminal always dark (matches the home screen).
+        isDark = state.skin.resolveDark(isDark),
         cornerRadiusDp = state.cornerRadius,
         showLabel = state.showLabel,
         tapAction = state.tapAction,
@@ -276,18 +287,47 @@ fun WidgetSetupContent(
 
         ClockFormatSection(definition.id, state, update)
 
-        SetupSectionLabel("DOT STYLE")
+        SetupSectionLabel("SKIN")
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            DotStyle.entries.forEach { style ->
-                SetupChip(style == state.dotStyle, style.label, uiAccent) {
-                    update(state.copy(dotStyle = style))
+            Skin.entries.forEach { s ->
+                SetupChip(s == state.skin, s.label, uiAccent) {
+                    update(state.copy(skin = s))
                 }
             }
         }
         Spacer(Modifier.height(20.dp))
+
+        SetupSectionLabel("FRAME")
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Frame.entries.forEach { f ->
+                SetupChip(f == state.frame, f.label, uiAccent) {
+                    update(state.copy(frame = f))
+                }
+            }
+        }
+        Spacer(Modifier.height(20.dp))
+
+        // Dot shapes only apply to the dot-based skins.
+        if (state.skin == Skin.DOT || state.skin == Skin.PAPER || state.skin == Skin.NEON) {
+            SetupSectionLabel("DOT STYLE")
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                DotStyle.entries.forEach { style ->
+                    SetupChip(style == state.dotStyle, style.label, uiAccent) {
+                        update(state.copy(dotStyle = style))
+                    }
+                }
+            }
+            Spacer(Modifier.height(20.dp))
+        }
 
         if (lockedSize == null && definition.sizes.size > 1) {
             SetupSectionLabel("SIZE")
@@ -346,8 +386,9 @@ fun WidgetSetupContent(
 
         SetupSectionLabel("CORNER RADIUS")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(0, 12, 20, 28).forEach { radius ->
-                SetupChip(radius == state.cornerRadius, "${radius}dp", uiAccent) {
+            // FULL_ROUND makes a pill (or a circle on square widgets).
+            listOf(0, 12, 20, 28, FULL_ROUND).forEach { radius ->
+                SetupChip(radius == state.cornerRadius, if (radius == FULL_ROUND) "Full" else "${radius}dp", uiAccent) {
                     update(state.copy(cornerRadius = radius))
                 }
             }
@@ -580,6 +621,9 @@ private fun TimeZonePicker(selectedZone: String?, accentColor: Color, onPick: (S
         )
     }
 }
+
+/** Corner radius large enough to fully round any widget edge. */
+private const val FULL_ROUND = 999
 
 @Composable
 private fun SetupSectionLabel(text: String) {

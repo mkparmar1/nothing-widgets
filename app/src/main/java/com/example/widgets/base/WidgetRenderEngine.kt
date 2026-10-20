@@ -30,6 +30,8 @@ import com.example.core.theme.ThemeMode
 import com.example.data.db.AppDatabase
 import com.example.data.db.WidgetInstance
 import com.example.core.render.DotMatrixRenderer
+import com.example.core.render.Frame
+import com.example.core.render.Skin
 import com.example.core.time.ClockOptions
 import com.example.core.time.ClockSupport
 import com.example.core.time.TimeFormat
@@ -80,7 +82,7 @@ object WidgetRenderEngine {
         val canvas = Canvas(bitmap)
 
         try {
-            DotMatrixRenderer.withDotStyle(ClockOptions.dotStyle(spec.configJson)) {
+            DotMatrixRenderer.withStyle(ClockOptions.dotStyle(spec.configJson), Skin.from(spec.configJson), Frame.from(spec.configJson)) {
                 definition.render(context, spec, canvas)
             }
         } catch (e: Exception) {
@@ -97,7 +99,19 @@ object WidgetRenderEngine {
         context: Context,
         appWidgetId: Int,
         instance: WidgetInstance
-    ): RemoteViews = withContext(Dispatchers.Default) {
+    ): RemoteViews {
+        // Callers send these straight to the launcher, so remember what it now shows.
+        val (views, signature) = buildWidget(context, appWidgetId, instance)
+        lastSignatures[appWidgetId] = signature
+        return views
+    }
+
+    /** Builds the widget's views plus a signature of everything visible, used to skip no-op updates. */
+    private suspend fun buildWidget(
+        context: Context,
+        appWidgetId: Int,
+        instance: WidgetInstance
+    ): Pair<RemoteViews, Long> = withContext(Dispatchers.Default) {
         val manager = AppWidgetManager.getInstance(context)
         val options = manager.getAppWidgetOptions(appWidgetId) ?: Bundle()
 
@@ -154,7 +168,8 @@ object WidgetRenderEngine {
             bgMode = bgMode,
             bgAlpha = bgAlpha,
             themeMode = themeMode,
-            isDark = isDark,
+            // Paper is always light; Neon and Terminal always dark.
+            isDark = Skin.from(instance.configJson).resolveDark(isDark),
             cornerRadiusDp = cornerRadius,
             showLabel = showLabel,
             tapAction = tapAction,
@@ -230,7 +245,26 @@ object WidgetRenderEngine {
             views.setOnClickPendingIntent(R.id.widget_root, permissionIntent)
         }
 
-        views
+        // Live overlays (TextClock, Chronometer, Soundwave frames) tick on their own; anything they
+        // change visibly (running/paused, title, date) is in the bitmap, so the bitmap plus these
+        // inputs identify what the launcher would show.
+        val signature = bitmapSignature(bitmap) * 31 +
+            listOf(definition.id, instance.configJson, missingPermission?.id, DeviceToggles.hasDndAccess(context)).hashCode()
+        views to signature
+    }
+
+    /** Last signature sent per widget id; empty after a process restart, so the first refresh resends everything. */
+    private val lastSignatures = java.util.concurrent.ConcurrentHashMap<Int, Long>()
+
+    /** Cheap rolling hash of the pixels (row by row, no full-size copy). */
+    private fun bitmapSignature(bitmap: android.graphics.Bitmap): Long {
+        val row = IntArray(bitmap.width)
+        var h = 1125899906842597L
+        for (y in 0 until bitmap.height) {
+            bitmap.getPixels(row, 0, bitmap.width, 0, y, bitmap.width, 1)
+            for (px in row) h = 31 * h + px
+        }
+        return h * 31 + bitmap.width * 7919 + bitmap.height
     }
 
     private fun renderPermissionMessage(
@@ -452,19 +486,19 @@ object WidgetRenderEngine {
         return PendingIntent.getBroadcast(context, appWidgetId * 100 + requestCodeOffset, intent, flags)
     }
 
-    suspend fun updateAllPlacedWidgets(context: Context) = withContext(Dispatchers.IO) {
+    /**
+     * Redraws every placed widget (home and lock screen). Widgets whose picture and settings are
+     * unchanged since the last update are skipped, so the launcher isn't sent ~1 MB per widget every
+     * minute for nothing. Pass [force] after boot, app updates or time changes, when the launcher
+     * may need everything again.
+     */
+    suspend fun updateAllPlacedWidgets(context: Context, force: Boolean = false) = withContext(Dispatchers.IO) {
         val db = AppDatabase.getInstance(context)
         val manager = AppWidgetManager.getInstance(context)
 
-        val providers = listOf(
-            android.content.ComponentName(context, DotWidgetProviderS::class.java) to "clock.dotdigital.s",
-            android.content.ComponentName(context, DotWidgetProviderM::class.java) to "clock.dotdigital.m",
-            android.content.ComponentName(context, DotWidgetProviderL::class.java) to "clock.dotdigital.l"
-        )
-
         val placed = mutableListOf<WidgetInstance>()
-        for ((provider, defaultType) in providers) {
-            val ids = try { manager.getAppWidgetIds(provider) } catch (_: Exception) { IntArray(0) }
+        for ((entry, ids) in WidgetProviders.placedIds(context)) {
+            val defaultType = entry.defaultWidgetTypeId
             for (id in ids) {
                 var instance = db.widgetInstanceDao().getById(id)
                 if (instance == null) {
@@ -483,28 +517,28 @@ object WidgetRenderEngine {
         // Read slow data sources once, and only when a widget on screen needs them.
         WidgetDataPrefetch.prefetch(context, placed.map { it.widgetTypeId }.toSet())
 
+        if (force) lastSignatures.clear()
+        val placedIds = placed.map { it.appWidgetId }.toSet()
+        lastSignatures.keys.retainAll(placedIds)
+
+        var sent = 0
         for (instance in placed) {
             try {
-                val views = buildRemoteViews(context, instance.appWidgetId, instance)
+                val (views, signature) = buildWidget(context, instance.appWidgetId, instance)
+                if (lastSignatures[instance.appWidgetId] == signature) continue
                 manager.updateAppWidget(instance.appWidgetId, views)
+                lastSignatures[instance.appWidgetId] = signature
+                sent++
             } catch (e: Exception) {
                 android.util.Log.e("WidgetRenderEngine", "Failed to update widget ${instance.appWidgetId}", e)
             }
         }
 
+        android.util.Log.d("WidgetRenderEngine", "Refresh: sent $sent of ${placed.size} widgets (${placed.size - sent} unchanged)")
         PreferencesManager.getInstance(context).setLastWidgetRefresh(System.currentTimeMillis())
     }
 
     /** Number of Dot Widgets currently placed on the home screen. */
-    fun placedWidgetCount(context: Context): Int {
-        val manager = AppWidgetManager.getInstance(context)
-        val providers = listOf(
-            android.content.ComponentName(context, DotWidgetProviderS::class.java),
-            android.content.ComponentName(context, DotWidgetProviderM::class.java),
-            android.content.ComponentName(context, DotWidgetProviderL::class.java)
-        )
-        return providers.sumOf { provider ->
-            try { manager.getAppWidgetIds(provider).size } catch (_: Exception) { 0 }
-        }
-    }
+    fun placedWidgetCount(context: Context): Int =
+        WidgetProviders.placedIds(context).sumOf { (_, ids) -> ids.size }
 }

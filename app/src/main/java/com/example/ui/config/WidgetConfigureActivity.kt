@@ -46,6 +46,7 @@ import com.example.data.db.WidgetInstance
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.theme.DotWidgetsTheme
+import com.example.widgets.base.WidgetProviders
 import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetRenderEngine
@@ -189,13 +190,9 @@ class WidgetConfigureActivity : ComponentActivity() {
         }
     }
 
+    /** Home-screen and lock-screen providers alike (see [WidgetProviders]). */
     private fun sizeForProvider(info: AppWidgetProviderInfo): SizeBucket? =
-        when (info.provider.className.substringAfterLast('.')) {
-            "DotWidgetProviderS" -> SizeBucket.S
-            "DotWidgetProviderM" -> SizeBucket.M
-            "DotWidgetProviderL" -> SizeBucket.L
-            else -> null
-        }
+        WidgetProviders.sizeForProviderClass(info.provider.className)
 
     companion object {
         private const val TAG = "WidgetConfigureActivity"

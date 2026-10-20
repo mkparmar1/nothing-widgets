@@ -2,8 +2,6 @@ package com.example.widgets.base
 
 import android.app.AlarmManager
 import android.app.PendingIntent
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -16,18 +14,9 @@ object WidgetAlarmScheduler {
     const val ACTION_REFRESH_WIDGETS = "com.aistudio.dotwidgets.ACTION_REFRESH_WIDGETS"
     private const val REQUEST_CODE = 9918
 
-    /** True when at least one Dot widget is on the home screen. */
-    fun hasPlacedWidgets(context: Context): Boolean {
-        val manager = AppWidgetManager.getInstance(context) ?: return false
-        return listOf(DotWidgetProviderS::class.java, DotWidgetProviderM::class.java, DotWidgetProviderL::class.java)
-            .any { cls ->
-                try {
-                    manager.getAppWidgetIds(ComponentName(context, cls)).isNotEmpty()
-                } catch (_: Exception) {
-                    false
-                }
-            }
-    }
+    /** True when at least one Dot widget is placed, on the home screen or the lock screen. */
+    fun hasPlacedWidgets(context: Context): Boolean =
+        WidgetProviders.placedIds(context).any { (_, ids) -> ids.isNotEmpty() }
 
     /**
      * Android 12+ requires the user to allow "Alarms & reminders" for exact alarms, and on

@@ -29,11 +29,18 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
                 when (action) {
                     // Only broadcasts still delivered to manifest receivers on Android 8+.
                     // Battery/charging changes are picked up by the minute tick.
+                    // After boot, an app update or a clock change the launcher may need every
+                    // widget again, so send all of them.
                     Intent.ACTION_TIMEZONE_CHANGED,
                     Intent.ACTION_TIME_CHANGED,
                     Intent.ACTION_BOOT_COMPLETED,
                     Intent.ACTION_MY_PACKAGE_REPLACED,
-                    AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
+                    AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> {
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context, force = true)
+                    }
+
+                    // Minute tick: only widgets whose picture changed are sent.
                     WidgetAlarmScheduler.ACTION_REFRESH_WIDGETS -> {
                         BitmapCache.clear()
                         WidgetRenderEngine.updateAllPlacedWidgets(context)

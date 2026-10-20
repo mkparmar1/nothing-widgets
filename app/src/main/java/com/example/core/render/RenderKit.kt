@@ -40,13 +40,15 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
     /** Small header label in the top-left, respecting the "show label" option. */
     fun header(text: String, color: Int = greyColor, widthFraction: Float = 0.75f) {
         if (!spec.showLabel) return
-        DotMatrixRenderer.drawFittedLabel(canvas, text, pad, pad + 12f * d, maxW * widthFraction, textPaint(color, 10.5f, 14f))
+        val label = if (DotMatrixRenderer.currentSkin == Skin.TERMINAL) "> $text" else text
+        DotMatrixRenderer.drawFittedLabel(canvas, label, pad, pad + 12f * d, maxW * widthFraction, textPaint(color, 10.5f, 14f))
     }
 
     fun textPaint(color: Int, sizeDp: Float, maxPx: Float, bold: Boolean = true) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.color = color
         textSize = (sizeDp * d).coerceAtMost(maxPx)
         isFakeBoldText = bold
+        DotMatrixRenderer.skinTypeface()?.let { typeface = it }
     }
 
     /** Text sized in [u]; scales evenly with the widget instead of being capped in px. */
@@ -54,6 +56,7 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
         this.color = color
         textSize = sizeU * u
         isFakeBoldText = true
+        DotMatrixRenderer.skinTypeface()?.let { typeface = it }
     }
 
     fun fill(color: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
