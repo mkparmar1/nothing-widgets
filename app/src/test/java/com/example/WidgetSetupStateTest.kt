@@ -46,8 +46,9 @@ class WidgetSetupStateTest {
         )
 
         assertTrue(WidgetSetupState.isConfigured(instance))
+        // Reading back fills in option defaults (every widget has the universal text size / corner dot).
         assertEquals(
-            state,
+            state.copy(optionValues = WidgetSetupState.resolveOptions(definition, null)),
             WidgetSetupState.fromInstance(instance, definition, preferences)
         )
         val existingConfig = JSONObject(instance.configJson).put("future_option", "preserved").toString()

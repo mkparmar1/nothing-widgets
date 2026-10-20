@@ -84,6 +84,8 @@ fun SettingsScreen(
         }
 
         // --- 0. WEATHER LOCATION AND DATA ACCESS ---
+        LooksCard(accent = globalAccent)
+
         WeatherLocationCard(accent = globalAccent)
 
         if (!allPermissionsGranted(context)) {

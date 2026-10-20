@@ -29,6 +29,7 @@ import com.example.core.theme.MaterialYouPalette
 import com.example.core.theme.ThemeMode
 import com.example.data.db.AppDatabase
 import com.example.data.db.WidgetInstance
+import com.example.core.config.UniversalOptions
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.Frame
 import com.example.core.render.Skin
@@ -85,7 +86,9 @@ object WidgetRenderEngine {
 
         try {
             DotMatrixRenderer.withStyle(ClockOptions.dotStyle(spec.configJson), Skin.from(spec.configJson), Frame.from(spec.configJson)) {
-                definition.render(context, spec, canvas)
+                DotMatrixRenderer.withUniversal(UniversalOptions.textScale(spec.options), UniversalOptions.cornerDot(spec.options)) {
+                    definition.render(context, spec, canvas)
+                }
             }
         } catch (e: Exception) {
             android.util.Log.e("WidgetRenderEngine", "Render failed for ${definition.id}", e)

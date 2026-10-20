@@ -671,7 +671,8 @@ object WidgetRegistry {
             override val requiresNetwork = requiresNetwork
             override val requiredPermission = requiredPermission
             override val lockSafe = lockSafe
-            override val options = options
+            // Every widget also gets the universal options (text size, corner dot).
+            override val options = options + com.example.core.config.UniversalOptions.ALL
 
             override fun render(context: Context, spec: WidgetSpec, canvas: Canvas) {
                 renderFn(context, spec, canvas)

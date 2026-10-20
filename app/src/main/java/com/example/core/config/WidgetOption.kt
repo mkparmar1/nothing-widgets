@@ -116,3 +116,28 @@ class WidgetOptions(private val values: Map<String, Any>) {
         }
     }
 }
+
+/**
+ * Options every widget gets, applied centrally while drawing (like skins), so each design has
+ * at least these two working controls on top of its own.
+ */
+object UniversalOptions {
+    const val TEXT_SIZE = "text_size"
+    const val CORNER_DOT = "corner_dot"
+
+    val ALL: List<WidgetOption> = listOf(
+        WidgetOption.Choice(TEXT_SIZE, "Text size", listOf("SMALL" to "Small", "NORMAL" to "Normal", "LARGE" to "Large"), "NORMAL"),
+        WidgetOption.Toggle(CORNER_DOT, "Corner accent dot", default = true)
+    )
+
+    /** Multiplier for label text. */
+    fun textScale(options: WidgetOptions): Float = when (options.string(TEXT_SIZE, "NORMAL")) {
+        "SMALL" -> 0.85f
+        "LARGE" -> 1.2f
+        else -> 1f
+    }
+
+    fun cornerDot(options: WidgetOptions): Boolean = options.boolean(CORNER_DOT, true)
+
+    val KEYS = ALL.map { it.key }.toSet()
+}

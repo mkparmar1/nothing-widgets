@@ -59,6 +59,7 @@ import com.example.core.theme.BackgroundMode
 import com.example.core.theme.ThemeMode
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.EmptyStateView
+import com.example.core.config.UniversalOptions
 import com.example.ui.components.SizeBadge
 import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.config.WidgetConfigSheet
@@ -412,6 +413,22 @@ fun MinimalWidgetCard(
                     .background(Color(0x1A8A8A8A))
                     .padding(horizontal = 6.dp, vertical = 2.dp)
                     .testTag("lock_badge_${definition.id}")
+            )
+        }
+
+        // Widgets with their own advanced options (beyond the universal text size / corner dot).
+        if (definition.options.count { it.key !in UniversalOptions.KEYS } >= 2) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "ADVANCED OPTIONS",
+                style = MaterialTheme.typography.labelSmall,
+                color = accent.color,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(accent.color.copy(alpha = 0.12f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .testTag("advanced_badge_${definition.id}")
             )
         }
 

@@ -23,6 +23,22 @@ object DotMatrixRenderer {
     private val dotStyle = ThreadLocal.withInitial { DotStyle.ROUND }
     private val skin = ThreadLocal.withInitial { Skin.DOT }
     private val frame = ThreadLocal.withInitial { Frame.HAIRLINE }
+    private val textScale = ThreadLocal.withInitial { 1f }
+    private val cornerDot = ThreadLocal.withInitial { true }
+
+    /** Universal per-widget options (text size, corner dot) for the widget being drawn. */
+    fun <T> withUniversal(scale: Float, showCornerDot: Boolean, block: () -> T): T {
+        val prevScale = textScale.get()
+        val prevDot = cornerDot.get()
+        textScale.set(scale)
+        cornerDot.set(showCornerDot)
+        try {
+            return block()
+        } finally {
+            textScale.set(prevScale)
+            cornerDot.set(prevDot)
+        }
+    }
 
     /** Skin of the widget being drawn, for renderers that draw their own shapes. */
     val currentSkin: Skin get() = skin.get() ?: Skin.DOT
@@ -318,7 +334,8 @@ object DotMatrixRenderer {
         val originalSize = paint.textSize
         val originalTypeface = paint.typeface
         skinTypeface()?.let { paint.typeface = it }
-        var currentSize = originalSize
+        paint.textSize = originalSize * (textScale.get() ?: 1f)
+        var currentSize = paint.textSize
         while (paint.measureText(text) > maxWidth && currentSize > 9f) {
             currentSize -= 0.5f
             paint.textSize = currentSize
@@ -626,8 +643,8 @@ object DotMatrixRenderer {
             }
         }
 
-        // Accent indicator dot in top-right corner
-        if (showAccentDot) {
+        // Accent indicator dot in top-right corner (can be turned off per widget)
+        if (showAccentDot && cornerDot.get() != false) {
             val dotInset = (cornerRadius * 0.72f).coerceIn(16f, 24f)
             paintOn.color = accentColor
             canvas.drawCircle(width - dotInset, dotInset, 4.0f, paintOn)
