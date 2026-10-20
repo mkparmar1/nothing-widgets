@@ -8,7 +8,13 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import com.example.core.bitmap.BitmapCache
+import com.example.data.lists.ListStore
+import com.example.data.lists.TapStore
 import com.example.data.media.MediaRepository
+import com.example.widgets.collection.CollectionViews
+import com.example.widgets.collection.CollectionWidgetService
+import com.example.widgets.collection.CollectionWidgets
+import com.example.widgets.collection.RowAction
 import com.example.data.prefs.PreferencesManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -70,6 +76,50 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
                     "com.aistudio.dotwidgets.ACTION_TIMER_TOGGLE" -> {
                         vibrateClick(context)
                         WidgetStateManager.toggleFocusTimer(context)
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    CollectionViews.ACTION_LIST_ITEM -> {
+                        val item = intent.getStringExtra(CollectionWidgetService.EXTRA_ITEM_ID)
+                        val rowAction = intent.getStringExtra(CollectionWidgetService.EXTRA_ROW_ACTION)
+                            ?.let { runCatching { RowAction.valueOf(it) }.getOrNull() }
+                        if (item != null && rowAction != null) {
+                            vibrateClick(context)
+                            val changedType = when (rowAction) {
+                                RowAction.TOGGLE_TODO -> {
+                                    val prefs = PreferencesManager.getInstance(context)
+                                    val todos = prefs.getTodos().toMutableList()
+                                    item.toIntOrNull()?.takeIf { it in todos.indices }?.let { todos[it] = todos[it].copy(done = !todos[it].done) }
+                                    prefs.setTodos(todos)
+                                    CollectionWidgets.TODO
+                                }
+                                RowAction.TOGGLE_SHOPPING -> { ListStore.toggleShopping(context, item); CollectionWidgets.SHOPPING }
+                                RowAction.TOGGLE_HABIT -> { ListStore.toggleHabitToday(context, item); CollectionWidgets.HABITS }
+                                else -> null
+                            }
+                            if (changedType != null) {
+                                // Header counts live in the bitmap; rows come from the service.
+                                BitmapCache.clear()
+                                WidgetRenderEngine.updateAllPlacedWidgets(context)
+                                CollectionViews.notifyChanged(context, CollectionViews.placedTypes(context), setOf(changedType))
+                            }
+                        }
+                    }
+
+                    WidgetTapTargets.ACTION_TALLY, WidgetTapTargets.ACTION_MOOD,
+                    WidgetTapTargets.ACTION_TIMER_PRESET, WidgetTapTargets.ACTION_VOLUME_STEP -> {
+                        vibrateClick(context)
+                        val value = intent.getIntExtra(WidgetTapTargets.EXTRA_VALUE, 0)
+                        when (action) {
+                            WidgetTapTargets.ACTION_TALLY -> TapStore.addTally(context, value)
+                            WidgetTapTargets.ACTION_MOOD -> TapStore.setMoodToday(context, value)
+                            WidgetTapTargets.ACTION_TIMER_PRESET -> WidgetStateManager.restartCountdown(context, value)
+                            WidgetTapTargets.ACTION_VOLUME_STEP -> {
+                                val am = context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+                                am?.let { it.setStreamVolume(android.media.AudioManager.STREAM_MUSIC, it.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC) * value / 100, 0) }
+                            }
+                        }
                         BitmapCache.clear()
                         WidgetRenderEngine.updateAllPlacedWidgets(context)
                     }

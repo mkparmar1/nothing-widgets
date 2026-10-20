@@ -199,6 +199,17 @@ object WidgetStateManager {
     fun getCountdownState(context: Context): FocusTimerState =
         getTimerState(context, "countdown", PreferencesManager.getInstance(context).getCountdownMinutes() * 60)
 
+    /** Quick Timer preset: set the countdown to [minutes] and start it from the top. */
+    fun restartCountdown(context: Context, minutes: Int) {
+        PreferencesManager.getInstance(context).setCountdownMinutes(minutes)
+        getPrefs(context).edit()
+            .putBoolean("countdown_running", false)
+            .putInt("countdown_length_seconds", minutes * 60)
+            .putInt("countdown_remaining_paused", minutes * 60)
+            .apply()
+        toggleCountdown(context)
+    }
+
     fun toggleCountdown(context: Context): FocusTimerState =
         toggleTimer(context, "countdown", PreferencesManager.getInstance(context).getCountdownMinutes() * 60)
 

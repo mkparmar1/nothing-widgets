@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import com.example.core.bitmap.SizeBucket
 import com.example.core.time.TimeFormat
+import com.example.widgets.collection.CollectionWidgets
 import com.example.widgets.catalogue.BatteryRenderers
 import com.example.widgets.catalogue.CalendarExtraRenderers
 import com.example.widgets.catalogue.CalendarRenderers
@@ -13,6 +14,7 @@ import com.example.widgets.catalogue.DeviceInfoRenderers
 import com.example.widgets.catalogue.ExclusiveRenderers
 import com.example.widgets.catalogue.FinanceRenderers
 import com.example.widgets.catalogue.HealthRenderers
+import com.example.widgets.catalogue.InteractiveRenderers
 import com.example.widgets.catalogue.LearnRenderers
 import com.example.core.config.WidgetOption
 import com.example.widgets.catalogue.DeepVariantRenderers
@@ -149,6 +151,20 @@ object WidgetRegistry {
         register(createDef("prod.notes.pin", Category.PRODUCTIVITY, "Notes Pin", "Pinned quick memo and thoughts", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderNotesPin(c, s, cv) })
         register(createDef("prod.todo.3", Category.PRODUCTIVITY, "To-Do Checklist (3)", "Daily task checklist with checkmarks", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderTodoList(c, s, cv, 3) })
         register(createDef("prod.todo.5", Category.PRODUCTIVITY, "To-Do Checklist (5)", "Extended 5-item daily checklist", setOf(SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> ProductivityRenderers.renderTodoList(c, s, cv, 5) })
+
+        // --- Phase 10: scrollable lists (RemoteViewsService rows) and the swipeable Smart Stack ---
+        register(createDef(CollectionWidgets.TODO, Category.PRODUCTIVITY, "Scrolling To-Do", "Every task in a scrolling list; tap a task to tick it off", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> CollectionWidgets.renderList(c, s, cv, CollectionWidgets.TODO) })
+        register(createDef(CollectionWidgets.SHOPPING, Category.PRODUCTIVITY, "Shopping List", "Scrolling shopping list; tap an item to check it", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> CollectionWidgets.renderList(c, s, cv, CollectionWidgets.SHOPPING) })
+        register(createDef(CollectionWidgets.HABITS, Category.PRODUCTIVITY, "Habit List", "Several habits with streaks; tap one to mark today done", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> CollectionWidgets.renderList(c, s, cv, CollectionWidgets.HABITS) })
+        register(createDef(CollectionWidgets.WEEK_AGENDA, Category.CALENDAR, "Week Agenda (Scroll)", "Your events for the next 7 days in a scrolling list", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR, requiredPermission = AppPermission.Calendar) { c, s, cv -> CollectionWidgets.renderList(c, s, cv, CollectionWidgets.WEEK_AGENDA) })
+        register(createDef(CollectionWidgets.FAVORITES, Category.CONTACTS, "Favourite Contacts (Scroll)", "Your starred contacts; tap one to call", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Contacts) { c, s, cv -> CollectionWidgets.renderList(c, s, cv, CollectionWidgets.FAVORITES) })
+        register(createDef(CollectionWidgets.SMART_STACK, Category.PRODUCTIVITY, "Smart Stack", "Up to 5 of your widgets in one spot; swipe between them", setOf(SizeBucket.S, SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN) { c, s, cv -> CollectionWidgets.renderStackBackground(c, s, cv, CollectionWidgets.stackItems(s.configJson)) })
+
+        // --- Phase 10.3: multi-button widgets (tap grid matches InteractiveRenderers) ---
+        register(createDef("prod.tally.counter", Category.PRODUCTIVITY, "Tally Counter", "Count anything: tap − or +", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InteractiveRenderers.renderTally(c, s, cv) })
+        register(createDef("health.mood.log", Category.HEALTH, "Mood Log", "Tap how you feel today; see your week", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InteractiveRenderers.renderMood(c, s, cv) })
+        register(createDef("prod.timer.presets", Category.PRODUCTIVITY, "Quick Timer", "One-tap 1, 5, 10 or 25 minute countdown", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InteractiveRenderers.renderTimerPresets(c, s, cv) })
+        register(createDef("toggle.volume.steps", Category.TOGGLES, "Volume Steps", "Set media volume to mute, 33, 66 or 100% in one tap", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InteractiveRenderers.renderVolumeSteps(c, s, cv) })
         register(createDef("prod.step.counter", Category.PRODUCTIVITY, "Daily Step Counter", "Live step metrics with 20-dot progress run", setOf(SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Activity, options = listOf(
             com.example.core.config.WidgetOption.Slider("goal", "Daily step goal", min = 1000, max = 30000, step = 1000, default = 10000, unit = "steps"),
             com.example.core.config.WidgetOption.Toggle("show_pct", "Show % of goal", default = true)

@@ -37,6 +37,8 @@ import com.example.core.time.ClockSupport
 import com.example.core.time.TimeFormat
 import com.example.data.prefs.PreferencesManager
 import com.example.widgets.catalogue.MediaRenderers
+import com.example.widgets.collection.CollectionViews
+import com.example.widgets.collection.CollectionWidgets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -106,12 +108,16 @@ object WidgetRenderEngine {
         return views
     }
 
-    /** Builds the widget's views plus a signature of everything visible, used to skip no-op updates. */
-    private suspend fun buildWidget(
+    /**
+     * The spec a placed widget renders with: real size, accent (incl. Material You), background,
+     * theme and skin-adjusted dark mode. Shared by normal widgets and collection rows/stack cards.
+     */
+    fun specFor(
         context: Context,
         appWidgetId: Int,
-        instance: WidgetInstance
-    ): Pair<RemoteViews, Long> = withContext(Dispatchers.Default) {
+        instance: WidgetInstance,
+        budgetBytes: Long? = null
+    ): WidgetSpec {
         val manager = AppWidgetManager.getInstance(context)
         val options = manager.getAppWidgetOptions(appWidgetId) ?: Bundle()
 
@@ -120,7 +126,7 @@ object WidgetRenderEngine {
         val sizeBucket = SizeBucket.resolve(minW, minH)
 
         // The animated Soundwave sends extra frames in the same update, so its main image is smaller.
-        val budget = if (instance.widgetTypeId == SOUNDWAVE_WIDGET_ID) MediaRenderers.SOUNDWAVE_MAIN_BUDGET else 1_000_000L
+        val budget = budgetBytes ?: AnimatedOverlays.mainBudget(instance.widgetTypeId)
         val dims = SizeResolver.resolveFromOptions(context, options, sizeBucket, budget)
 
         // Read global defaults or instance override
@@ -177,6 +183,19 @@ object WidgetRenderEngine {
             liveOverlays = true
         )
 
+        return spec
+    }
+
+    /** Builds the widget's views plus a signature of everything visible, used to skip no-op updates. */
+    private suspend fun buildWidget(
+        context: Context,
+        appWidgetId: Int,
+        instance: WidgetInstance
+    ): Pair<RemoteViews, Long> = withContext(Dispatchers.Default) {
+        val spec = specFor(context, appWidgetId, instance)
+        val sizeBucket = spec.sizeBucket
+        val tapAction = spec.tapAction
+
         val definition = WidgetRegistry.getById(instance.widgetTypeId)
             ?: WidgetRegistry.getAll().first()
 
@@ -187,12 +206,19 @@ object WidgetRenderEngine {
             renderBitmap(context, definition, spec, appWidgetId)
         }
 
+        // Scrollable lists and the Smart Stack use their own layouts and a RemoteViewsService.
+        if (missingPermission == null && CollectionWidgets.isCollection(definition.id)) {
+            val views = CollectionViews.build(context, appWidgetId, definition.id, spec, bitmap)
+            views.setContentDescription(R.id.widget_image_view, definition.describe(context))
+            return@withContext views to (bitmapSignature(bitmap) * 31 + listOf(definition.id, instance.configJson).hashCode())
+        }
+
         val views = RemoteViews(context.packageName, R.layout.widget_canvas_layout)
         views.setImageViewBitmap(R.id.widget_image_view, bitmap)
         views.setContentDescription(R.id.widget_image_view, definition.describe(context))
         applyLiveClock(views, definition.id, spec)
         applyLiveTimer(context, views, definition.id, spec)
-        applySoundwave(context, views, definition.id, spec)
+        applyAnimation(context, views, definition.id, spec)
 
         val regions = WidgetTapTargets.regions(context, appWidgetId, definition.id, sizeBucket)
         if (regions == null) views.setViewVisibility(R.id.dynamic_regions, View.GONE)
@@ -303,23 +329,22 @@ object WidgetRenderEngine {
         )
     }
 
-    private const val SOUNDWAVE_WIDGET_ID = "sensor.visualizer.eq"
     private val WAVE_FRAME_IDS = intArrayOf(
         R.id.wave_frame_0, R.id.wave_frame_1, R.id.wave_frame_2,
         R.id.wave_frame_3, R.id.wave_frame_4, R.id.wave_frame_5
     )
 
     /** Animated bars for a playing Soundwave; hidden otherwise (the bitmap shows a static wave). */
-    private fun applySoundwave(context: Context, views: RemoteViews, widgetTypeId: String, spec: WidgetSpec) {
-        val frames = if (widgetTypeId == SOUNDWAVE_WIDGET_ID) MediaRenderers.soundwaveFrames(context, spec) else null
-        if (frames == null) {
+    /** Flipbook animation (soundwave, charging pulse, rain, ambient) when the widget has one right now. */
+    private fun applyAnimation(context: Context, views: RemoteViews, widgetTypeId: String, spec: WidgetSpec) {
+        val animation = AnimatedOverlays.frames(context, widgetTypeId, spec)
+        if (animation == null) {
             views.setViewVisibility(R.id.soundwave_flipper, View.GONE)
             return
         }
-        val tint = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
-        frames.forEachIndexed { i, frame ->
+        animation.frames.take(WAVE_FRAME_IDS.size).forEachIndexed { i, frame ->
             views.setImageViewBitmap(WAVE_FRAME_IDS[i], frame)
-            views.setInt(WAVE_FRAME_IDS[i], "setColorFilter", tint)
+            views.setInt(WAVE_FRAME_IDS[i], "setColorFilter", animation.tint)
         }
         views.setViewVisibility(R.id.soundwave_flipper, View.VISIBLE)
     }
@@ -379,7 +404,7 @@ object WidgetRenderEngine {
                 .takeIf { it.isRunning }?.let { now - it.elapsedMs }
             "prod.focus.timer" -> WidgetStateManager.getFocusTimerState(context)
                 .takeIf { it.isRunning }?.let { now + it.remainingSeconds * 1000L }
-            "prod.countdown.timer" -> WidgetStateManager.getCountdownState(context)
+            "prod.countdown.timer", "prod.timer.presets" -> WidgetStateManager.getCountdownState(context)
                 .takeIf { it.isRunning }?.let { now + it.remainingSeconds * 1000L }
             else -> null
         }
@@ -534,6 +559,8 @@ object WidgetRenderEngine {
             }
         }
 
+        // Lists/stacks change with time too (event ended, new day, stack clocks), so let the launcher re-read them.
+        CollectionViews.notifyChanged(context, placed.associate { it.appWidgetId to it.widgetTypeId })
         android.util.Log.d("WidgetRenderEngine", "Refresh: sent $sent of ${placed.size} widgets (${placed.size - sent} unchanged)")
         PreferencesManager.getInstance(context).setLastWidgetRefresh(System.currentTimeMillis())
     }

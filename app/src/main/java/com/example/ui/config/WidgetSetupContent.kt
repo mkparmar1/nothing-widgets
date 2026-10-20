@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -23,13 +23,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -55,11 +58,11 @@ import com.example.core.bitmap.SizeBucket
 import com.example.core.bitmap.SizeResolver
 import com.example.core.config.WidgetOption
 import com.example.core.config.WidgetOptions
+import com.example.core.render.Frame
+import com.example.core.render.Skin
 import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.MaterialYouPalette
-import com.example.core.render.Frame
-import com.example.core.render.Skin
 import com.example.core.theme.ThemeMode
 import com.example.core.time.ClockOptions
 import com.example.core.time.ClockSupport
@@ -73,9 +76,12 @@ import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.permissions.AppPermission
 import com.example.widgets.base.TapAction
 import com.example.widgets.base.WidgetDefinition
+import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetSpec
-import org.json.JSONObject
+import com.example.widgets.collection.CollectionWidgets
 import kotlin.math.roundToInt
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class WidgetSetupState(
     val size: SizeBucket,
@@ -93,6 +99,8 @@ data class WidgetSetupState(
     val dotStyle: DotStyle = DotStyle.ROUND,
     val skin: Skin = Skin.DOT,
     val frame: Frame = Frame.HAIRLINE,
+    /** Smart Stack only: widget ids shown as swipeable cards, in order. */
+    val stackItems: List<String> = emptyList(),
     /** IANA zone for world-clock widgets, null = phone's zone. */
     val timeZoneId: String? = null,
     /** Advanced-option values (Phase 8), stored under the `"opt"` config object. */
@@ -116,6 +124,7 @@ data class WidgetSetupState(
             put(ClockOptions.KEY_DOT_STYLE, dotStyle.name)
             put(Skin.KEY, skin.name)
             put(Frame.KEY, frame.name)
+            put(CollectionWidgets.STACK_KEY, JSONArray(stackItems))
         }.toString()
         // Option values live in a nested object so they never collide with core config keys.
         return com.example.core.config.WidgetOptions.write(base, optionValues)
@@ -145,6 +154,7 @@ data class WidgetSetupState(
                 dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
                 skin = Skin.fromName(json.optString(Skin.KEY)),
                 frame = Frame.fromName(json.optString(Frame.KEY)),
+                stackItems = CollectionWidgets.stackItems(importedConfigJson ?: "{}"),
                 timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}"),
                 optionValues = resolveOptions(definition, importedConfigJson)
             )
@@ -176,6 +186,7 @@ data class WidgetSetupState(
                 dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
                 skin = Skin.fromName(json.optString(Skin.KEY)),
                 frame = Frame.fromName(json.optString(Frame.KEY)),
+                stackItems = CollectionWidgets.stackItems(instance.configJson),
                 timeZoneId = ClockOptions.timeZone(instance.configJson),
                 optionValues = resolveOptions(definition, instance.configJson)
             )
@@ -284,6 +295,10 @@ fun WidgetSetupContent(
         )
         Spacer(Modifier.height(24.dp))
         WidgetContentEditor(definition.id, state.accent) { contentVersion++ }
+
+        if (CollectionWidgets.isStack(definition.id)) {
+            StackItemsSection(state, uiAccent, update)
+        }
 
         ClockFormatSection(definition.id, state, update)
 
@@ -620,6 +635,47 @@ private fun TimeZonePicker(selectedZone: String?, accentColor: Color, onPick: (S
             }
         )
     }
+}
+
+/** Choose up to [CollectionWidgets.MAX_STACK] designs (that fit the stack's size) as Smart Stack cards. */
+@Composable
+private fun StackItemsSection(state: WidgetSetupState, accent: Color, update: (WidgetSetupState) -> Unit) {
+    val candidates = remember(state.size) {
+        WidgetRegistry.getAll().filter { state.size in it.sizes && !CollectionWidgets.isCollection(it.id) }
+    }
+    var query by remember { mutableStateOf("") }
+    SetupSectionLabel("STACK CARDS • ${state.stackItems.size}/${CollectionWidgets.MAX_STACK}")
+    state.stackItems.forEachIndexed { i, id ->
+        val def = WidgetRegistry.getById(id) ?: return@forEachIndexed
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text("${i + 1}. ${def.title}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            IconButton(onClick = { update(state.copy(stackItems = state.stackItems - id)) }) {
+                Icon(Icons.Default.Close, contentDescription = "Remove card", tint = Color(0xFF8A8A8A))
+            }
+        }
+    }
+    if (state.stackItems.size < CollectionWidgets.MAX_STACK) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Search a widget to add") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        val q = query.trim().lowercase()
+        candidates.filter { it.id !in state.stackItems && (q.isEmpty() || it.title.lowercase().contains(q)) }.take(6).forEach { def ->
+            Text(
+                text = "+ ${def.title}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = accent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { update(state.copy(stackItems = state.stackItems + def.id)) }
+                    .padding(vertical = 8.dp)
+            )
+        }
+    }
+    Spacer(Modifier.height(20.dp))
 }
 
 /** Corner radius large enough to fully round any widget edge. */

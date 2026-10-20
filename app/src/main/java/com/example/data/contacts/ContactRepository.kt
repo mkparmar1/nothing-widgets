@@ -20,8 +20,11 @@ object ContactRepository {
     fun hasPermission(context: Context) =
         ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
 
+    /** Contacts starred as favourites in the phone's Contacts app; empty without permission. */
+    fun starred(context: Context): List<ContactInfo> = contacts(context, starredOnly = true)
+
     /** All contacts that have a phone number, sorted by name; empty without permission. */
-    fun contacts(context: Context): List<ContactInfo> {
+    fun contacts(context: Context, starredOnly: Boolean = false): List<ContactInfo> {
         if (!hasPermission(context)) return emptyList()
         val out = mutableListOf<ContactInfo>()
         val seen = mutableSetOf<String>()
@@ -33,7 +36,7 @@ object ContactRepository {
                     ContactsContract.CommonDataKinds.Phone.NUMBER,
                     ContactsContract.CommonDataKinds.Phone.PHOTO_URI
                 ),
-                null, null,
+                if (starredOnly) "${ContactsContract.CommonDataKinds.Phone.STARRED} = 1" else null, null,
                 "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} ASC"
             )?.use { c ->
                 val nameIdx = c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)

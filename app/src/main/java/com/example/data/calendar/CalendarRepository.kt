@@ -34,6 +34,17 @@ object CalendarRepository {
             .sortedWith(compareBy<CalendarEvent>({ !it.allDay }, { it.beginMs }))
     }
 
+    /** Events from now through the next [days] days that haven't finished, or null without access. */
+    fun upcoming(context: Context, days: Int): List<CalendarEvent>? {
+        if (!hasPermission(context)) return null
+        val now = System.currentTimeMillis()
+        val end = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            add(Calendar.DAY_OF_YEAR, days)
+        }.timeInMillis
+        return query(context, now - 86_400_000L, end).filter { it.endMs > now }.sortedBy { it.beginMs }
+    }
+
     /** Events from now until the end of today that haven't finished yet. */
     fun upcomingToday(context: Context): List<CalendarEvent>? {
         val now = System.currentTimeMillis()

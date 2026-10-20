@@ -42,6 +42,7 @@ import com.example.core.theme.AccentOption
 import com.example.data.photos.PhotoStore
 import com.example.data.prefs.PreferencesManager
 import com.example.data.shortcuts.ShortcutStore
+import com.example.widgets.collection.CollectionWidgets
 import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +54,8 @@ import java.util.Locale
 /** Widget ids that have editable content in the setup sheet. */
 fun hasEditableContent(widgetId: String): Boolean = widgetId in setOf(
     "prod.notes.pin", "prod.todo.3", "prod.todo.5", "prod.habit.dots",
-    "calendar.countdown.date", "prod.countdown.timer"
+    "calendar.countdown.date", "prod.countdown.timer",
+    CollectionWidgets.TODO, CollectionWidgets.SHOPPING, CollectionWidgets.HABITS
 ) || widgetId in ShortcutStore.WIDGETS || widgetId in PhotoStore.WIDGETS
 
 /**
@@ -103,7 +105,11 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
             )
         }
 
-        "prod.todo.3", "prod.todo.5" -> {
+        CollectionWidgets.SHOPPING -> ShoppingEditor(accent, changed)
+
+        CollectionWidgets.HABITS -> HabitListEditor(accent, changed)
+
+        "prod.todo.3", "prod.todo.5", CollectionWidgets.TODO -> {
             var todos by remember { mutableStateOf(prefs.getTodos()) }
             var newTask by remember { mutableStateOf("") }
             val save = { list: List<PreferencesManager.TodoItem> ->

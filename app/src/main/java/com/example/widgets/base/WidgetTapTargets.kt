@@ -12,6 +12,7 @@ import com.example.R
 import com.example.core.bitmap.SizeBucket
 import com.example.data.media.MediaRepository
 import com.example.data.shortcuts.ShortcutStore
+import com.example.widgets.catalogue.InteractiveRenderers
 import com.example.widgets.catalogue.ShortcutRenderers
 
 /** Tap behaviour for widgets with several buttons or a special single action. */
@@ -19,6 +20,11 @@ object WidgetTapTargets {
 
     const val ACTION_MEDIA_COMMAND = "com.aistudio.dotwidgets.ACTION_MEDIA_COMMAND"
     const val ACTION_STOPWATCH_RESET = "com.aistudio.dotwidgets.ACTION_STOPWATCH_RESET"
+    const val ACTION_TALLY = "com.aistudio.dotwidgets.ACTION_TALLY"
+    const val ACTION_MOOD = "com.aistudio.dotwidgets.ACTION_MOOD"
+    const val ACTION_TIMER_PRESET = "com.aistudio.dotwidgets.ACTION_TIMER_PRESET"
+    const val ACTION_VOLUME_STEP = "com.aistudio.dotwidgets.ACTION_VOLUME_STEP"
+    const val EXTRA_VALUE = "value"
     const val EXTRA_MEDIA_COMMAND = "media_command"
 
     private const val FLAGS = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -28,6 +34,17 @@ object WidgetTapTargets {
      * target. Applied with [applyRegions].
      */
     fun regions(context: Context, appWidgetId: Int, widgetId: String, size: SizeBucket): List<List<PendingIntent>>? {
+        // Multi-button widgets: one row of equal cells matching what InteractiveRenderers draws.
+        val buttons: List<Pair<String, Int>>? = when (widgetId) {
+            "prod.tally.counter" -> listOf(ACTION_TALLY to -1, ACTION_TALLY to 1)
+            "health.mood.log" -> (1..5).map { ACTION_MOOD to it }
+            "prod.timer.presets" -> InteractiveRenderers.TIMER_PRESETS.map { ACTION_TIMER_PRESET to it }
+            "toggle.volume.steps" -> InteractiveRenderers.VOLUME_STEPS.map { ACTION_VOLUME_STEP to it }
+            else -> null
+        }
+        if (buttons != null) {
+            return listOf(buttons.mapIndexed { i, (a, value) -> actionWithValue(context, appWidgetId, a, value, 70 + i) })
+        }
         if (widgetId == "sensor.stopwatch.chrono") {
             return listOf(
                 listOf(
@@ -96,6 +113,12 @@ object WidgetTapTargets {
         }
         return PendingIntent.getBroadcast(context, appWidgetId * 100 + 40 + command.ordinal, intent, FLAGS)
     }
+
+    private fun actionWithValue(context: Context, appWidgetId: Int, action: String, value: Int, slot: Int): PendingIntent =
+        PendingIntent.getBroadcast(
+            context, appWidgetId * 100 + slot,
+            Intent(action).setPackage(context.packageName).putExtra(EXTRA_VALUE, value), FLAGS
+        )
 
     private fun action(context: Context, appWidgetId: Int, action: String, slot: Int): PendingIntent =
         PendingIntent.getBroadcast(context, appWidgetId * 100 + slot, Intent(action).setPackage(context.packageName), FLAGS)

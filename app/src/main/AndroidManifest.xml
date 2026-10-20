@@ -155,8 +155,18 @@
                 <action android:name="com.aistudio.dotwidgets.ACTION_COUNTDOWN_TOGGLE" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_MEDIA_COMMAND" />
                 <action android:name="com.aistudio.dotwidgets.ACTION_STOPWATCH_RESET" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_TALLY" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_MOOD" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_TIMER_PRESET" />
+                <action android:name="com.aistudio.dotwidgets.ACTION_VOLUME_STEP" />
             </intent-filter>
         </receiver>
+
+        <!-- Rows for the scrollable list widgets and cards for the Smart Stack -->
+        <service
+            android:name=".widgets.collection.CollectionWidgetService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
 
         <!-- Watches media sessions for the Now Playing widgets (needs notification access) -->
         <service

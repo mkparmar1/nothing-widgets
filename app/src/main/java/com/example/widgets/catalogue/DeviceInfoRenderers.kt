@@ -189,6 +189,8 @@ object DeviceInfoRenderers {
         val kit = RenderKit(spec, canvas)
         kit.background()
         kit.header("AMBIENT")
+        // On the home screen the moving ripple is drawn by the flipbook overlay (AnimatedOverlays).
+        if (spec.liveOverlays) return
 
         val cal = Calendar.getInstance()
         val phase = (cal.get(Calendar.HOUR_OF_DAY) * 60 + cal.get(Calendar.MINUTE)) / 60.0 * 2 * PI
