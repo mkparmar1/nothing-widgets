@@ -2,6 +2,7 @@ package com.example.widgets.base
 
 import android.content.Context
 import com.example.data.activity.StepRepository
+import com.example.data.system.DeviceStatsRepository
 import com.example.data.sensor.CompassRepository
 import com.example.data.usage.ScreenTimeRepository
 
@@ -16,6 +17,11 @@ object WidgetDataPrefetch {
     private const val COMPASS_WIDGET = "sensor.compass.heading"
 
     suspend fun prefetch(context: Context, placedTypeIds: Set<String>) {
+        // Cheap samples that build history over time; taken whenever their widget is placed.
+        if ("sys.network.speed" in placedTypeIds) DeviceStatsRepository.sampleNetwork(context)
+        if ("battery.history.24h" in placedTypeIds) DeviceStatsRepository.sampleBattery(context)
+        if ("sys.mobile.data" in placedTypeIds) runCatching { DeviceStatsRepository.refreshMobileData(context) }
+        if ("sys.top.apps" in placedTypeIds) runCatching { DeviceStatsRepository.refreshTopApps(context) }
         if (placedTypeIds.any { it in STEP_WIDGETS }) StepRepository.refresh(context)
         if (SCREEN_TIME_WIDGET in placedTypeIds) runCatching { ScreenTimeRepository.refresh(context) }
         if (COMPASS_WIDGET in placedTypeIds) runCatching { CompassRepository.refresh(context) }

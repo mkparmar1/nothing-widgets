@@ -14,6 +14,7 @@ import com.example.widgets.catalogue.DeviceInfoRenderers
 import com.example.widgets.catalogue.ExclusiveRenderers
 import com.example.widgets.catalogue.FinanceRenderers
 import com.example.widgets.catalogue.HealthRenderers
+import com.example.widgets.catalogue.InsightRenderers
 import com.example.widgets.catalogue.InteractiveRenderers
 import com.example.widgets.catalogue.LearnRenderers
 import com.example.core.config.WidgetOption
@@ -165,6 +166,18 @@ object WidgetRegistry {
         register(createDef("health.mood.log", Category.HEALTH, "Mood Log", "Tap how you feel today; see your week", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InteractiveRenderers.renderMood(c, s, cv) })
         register(createDef("prod.timer.presets", Category.PRODUCTIVITY, "Quick Timer", "One-tap 1, 5, 10 or 25 minute countdown", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InteractiveRenderers.renderTimerPresets(c, s, cv) })
         register(createDef("toggle.volume.steps", Category.TOGGLES, "Volume Steps", "Set media volume to mute, 33, 66 or 100% in one tap", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InteractiveRenderers.renderVolumeSteps(c, s, cv) })
+
+        // --- Phase 11: data widgets (no new permissions; data use + top apps use Usage access) ---
+        register(createDef("sys.next.alarm", Category.CLOCK, "Next Alarm", "Your next alarm and how long until it rings", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CLOCK, lockSafe = true) { c, s, cv -> InsightRenderers.renderNextAlarm(c, s, cv) })
+        register(createDef("sys.network.speed", Category.SYSTEM, "Network Speed", "Download and upload speed over the last minute", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InsightRenderers.renderNetworkSpeed(c, s, cv) })
+        register(createDef("sys.thermal.uptime", Category.SYSTEM, "Thermal & Uptime", "Phone temperature state and time since restart", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InsightRenderers.renderThermalUptime(c, s, cv) })
+        register(createDef("battery.history.24h", Category.BATTERY, "Battery History", "Your battery level over the last 24 hours", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY) { c, s, cv -> InsightRenderers.renderBatteryHistory(c, s, cv) })
+        register(createDef("weather.air.quality", Category.WEATHER, "Air Quality", "Live AQI with PM2.5 and PM10 for your city", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, requiresNetwork = true) { c, s, cv -> InsightRenderers.renderAirQuality(c, s, cv) })
+        register(createDef("weather.golden.hour", Category.WEATHER, "Golden Hour", "Golden and blue hour times for photos today", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER) { c, s, cv -> InsightRenderers.renderGoldenHour(c, s, cv) })
+        register(createDef("sys.top.apps", Category.SYSTEM, "Top Apps Today", "The apps you used most today", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN, requiredPermission = AppPermission.UsageAccess) { c, s, cv -> InsightRenderers.renderTopApps(c, s, cv) })
+        register(createDef("sys.mobile.data", Category.SYSTEM, "Mobile Data Today", "Mobile data used since midnight", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.UsageAccess) { c, s, cv -> InsightRenderers.renderMobileData(c, s, cv) })
+        register(createDef("calendar.india.festivals", Category.CALENDAR, "Festivals & Holidays", "Upcoming Indian festivals and national holidays", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_CALENDAR, lockSafe = true) { c, s, cv -> InsightRenderers.renderFestivals(c, s, cv) })
+        register(createDef("calendar.india.tithi", Category.CALENDAR, "Tithi", "Today's Hindu lunar day and paksha", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CALENDAR, lockSafe = true) { c, s, cv -> InsightRenderers.renderTithi(s, cv) })
         register(createDef("prod.step.counter", Category.PRODUCTIVITY, "Daily Step Counter", "Live step metrics with 20-dot progress run", setOf(SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.Activity, options = listOf(
             com.example.core.config.WidgetOption.Slider("goal", "Daily step goal", min = 1000, max = 30000, step = 1000, default = 10000, unit = "steps"),
             com.example.core.config.WidgetOption.Toggle("show_pct", "Show % of goal", default = true)
