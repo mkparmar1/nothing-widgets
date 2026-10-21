@@ -16,3 +16,9 @@
 local.properties
 .env
 debug.keystore
+
+# Release signing and outputs: never commit
+*.jks
+*.keystore.jks
+*.aab
+/release/

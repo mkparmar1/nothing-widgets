@@ -11,7 +11,7 @@ android {
   compileSdkMinor = 1
 
   defaultConfig {
-    applicationId = "com.dotwidgets.android"
+    applicationId = "com.dotwidgets.pro"
     minSdk = 24
     targetSdk = 35
     versionCode = 1
