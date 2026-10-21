@@ -162,7 +162,7 @@ fun WallpapersScreen(
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color(0xFF0A0A0A))
                     .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(24.dp))
-                    .padding(18.dp)
+                    .padding(16.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(
@@ -236,7 +236,7 @@ fun WallpapersScreen(
                         } else {
                             Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("SET AS WALLPAPER", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("SET AS WALLPAPER", style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -273,7 +273,7 @@ fun WallpaperThumb(
         Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(6.dp)
+                .padding(8.dp)
                 .clip(RoundedCornerShape(4.dp))
                 .background(Color(0xCC000000))
                 .padding(horizontal = 4.dp, vertical = 2.dp)
@@ -281,8 +281,7 @@ fun WallpaperThumb(
             Text(
                 text = item.tag,
                 color = Color.White,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.labelSmall
             )
         }
     }

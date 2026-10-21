@@ -200,13 +200,13 @@ private fun PermissionRow(
             .fillMaxWidth()
             .border(1.dp, if (granted) Color(0x338A8A8A) else accent.color, RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
-            .padding(18.dp)
+            .padding(16.dp)
             .testTag("permission_${permission.id}"),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(permission.icon, contentDescription = null, tint = accent.color, modifier = Modifier.size(22.dp))
             Text(
@@ -224,7 +224,7 @@ private fun PermissionRow(
         if (granted) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFFB8E000), modifier = Modifier.size(18.dp))
                 Text("ALLOWED", style = MaterialTheme.typography.labelLarge, color = Color(0xFFB8E000), fontWeight = FontWeight.Bold)

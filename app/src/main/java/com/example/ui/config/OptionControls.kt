@@ -85,8 +85,8 @@ fun AdvancedOptionsSection(
 
     AnimatedVisibility(visible = expanded) {
         Column(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("advanced_section"),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("advanced_section"),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             val switches = definition.options.filter { it is WidgetOption.Toggle || it is WidgetOption.ColorRule }
             if (switches.isNotEmpty()) {
@@ -194,7 +194,7 @@ private fun OptionSliderRow(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(accent.copy(alpha = 0.12f))
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
             )
         }
         SlimSlider(

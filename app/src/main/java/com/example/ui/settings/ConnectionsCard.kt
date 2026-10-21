@@ -61,7 +61,7 @@ fun ConnectionsCard(accent: AccentOption) {
             .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
             .testTag("connections_card")
     ) {
-        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Link, contentDescription = null, tint = accent.color)
                 Text("CONNECTIONS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)

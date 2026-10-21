@@ -135,14 +135,12 @@ fun TagPill(
             .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
             .background(accentColor.copy(alpha = 0.12f))
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
-            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
             text = text.uppercase(),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            color = accentColor,
-            style = MaterialTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall,
+            color = accentColor
         )
     }
 }
@@ -222,7 +220,7 @@ fun EmptyStateView(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = message,
@@ -244,7 +242,7 @@ fun EmptyStateView(
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = actionLabel.uppercase(),
                     style = MaterialTheme.typography.labelSmall,

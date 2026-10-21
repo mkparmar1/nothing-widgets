@@ -107,7 +107,7 @@ internal fun SectionHeader(title: String, modifier: Modifier = Modifier, trailin
             Text(trailing, style = MaterialTheme.typography.labelMedium, color = mutedText())
         }
     }
-    Spacer(Modifier.height(10.dp))
+    Spacer(Modifier.height(12.dp))
 }
 
 /** A titled block of controls; sections are separated by space, not borders. */
@@ -159,7 +159,7 @@ internal fun SelectChip(
             .background(fill)
             .border(1.dp, border, ChipShape)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -167,7 +167,7 @@ internal fun SelectChip(
         Text(
             label,
             style = MaterialTheme.typography.labelLarge,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1
         )
@@ -201,7 +201,7 @@ internal fun SelectCard(
             Text(
                 label,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -263,12 +263,12 @@ internal fun <T> SegmentedControl(
                 ) {
                     option.icon?.let {
                         Icon(it, contentDescription = null, tint = if (active) accent else tint, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(8.dp))
                     }
                     Text(
                         option.label,
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                        fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
                         color = tint,
                         maxLines = 1
                     )
@@ -394,7 +394,7 @@ internal fun RadioRow(title: String, selected: Boolean, accent: Color, onClick: 
         Text(
             title,
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
@@ -403,7 +403,7 @@ internal fun RadioRow(title: String, selected: Boolean, accent: Color, onClick: 
                 .size(22.dp)
                 .clip(CircleShape)
                 .border(2.dp, if (selected) accent else mutedText(), CircleShape)
-                .padding(5.dp)
+                .padding(4.dp)
                 .clip(CircleShape)
                 .background(if (selected) accent else Color.Transparent)
         )
@@ -419,7 +419,7 @@ internal fun PreviewStage(modifier: Modifier = Modifier, content: @Composable ()
             .padding(horizontal = PagePadding)
             .clip(RoundedCornerShape(24.dp))
             .background(controlFill())
-            .padding(vertical = 18.dp, horizontal = 18.dp),
+            .padding(vertical = 16.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) { content() }
 }

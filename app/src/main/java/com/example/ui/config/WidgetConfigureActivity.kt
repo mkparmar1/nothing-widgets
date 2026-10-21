@@ -259,7 +259,7 @@ private fun WidgetDesignPicker(
                     Text(
                         text = category.title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)
                     )
                 }
@@ -285,7 +285,7 @@ private fun WidgetDesignPicker(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Column(Modifier.padding(10.dp)) {
+                        Column(Modifier.padding(12.dp)) {
                             WidgetBitmapPreview(
                                 definition = definition,
                                 spec = spec,

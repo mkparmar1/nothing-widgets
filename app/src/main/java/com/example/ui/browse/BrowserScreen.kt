@@ -209,7 +209,7 @@ fun BrowserScreen(
                                 .fillMaxWidth()
                                 .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(14.dp))
                                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
-                                .padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+                                .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -242,9 +242,9 @@ fun BrowserScreen(
                                 text = "Designs no other widget app has",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color(0xFF8A8A8A),
-                                modifier = Modifier.padding(bottom = 6.dp)
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 items(FEATURED_EXCLUSIVE.mapNotNull { WidgetRegistry.getById(it) }, key = { "ex_${it.id}" }) { def ->
                                     Box(modifier = Modifier.width(120.dp)) {
                                         MinimalWidgetCard(
@@ -266,9 +266,9 @@ fun BrowserScreen(
                                 text = "RECOMMENDED",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = Color(0xFF8A8A8A),
-                                modifier = Modifier.padding(bottom = 6.dp)
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 items(RECOMMENDED.mapNotNull { WidgetRegistry.getById(it) }, key = { it.id }) { def ->
                                     Box(modifier = Modifier.width(120.dp)) {
                                         MinimalWidgetCard(
@@ -304,7 +304,7 @@ fun BrowserScreen(
                                         .background(Color(0x1A8A8A8A))
                                         .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(8.dp))
                                         .clickable { searchQuery = query }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
                                     Text(
                                         text = label,

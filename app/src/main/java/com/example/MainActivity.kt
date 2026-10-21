@@ -183,7 +183,7 @@ fun DotWidgetsApp(
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
                     .statusBarsPadding()
-                    .padding(horizontal = 18.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -198,7 +198,7 @@ fun DotWidgetsApp(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
@@ -222,7 +222,7 @@ fun DotWidgetsApp(
                                 .clip(CircleShape)
                                 .background(if (battery.isCharging) accentColor else Color(0xFFB8E000))
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "${battery.level}%",
                             style = MaterialTheme.typography.labelSmall,

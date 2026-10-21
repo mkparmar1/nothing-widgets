@@ -250,7 +250,7 @@ private fun Swatch(
             .semantics { contentDescription = description }
             .testTag(tag)
             .border(2.dp, ring, CircleShape)
-            .padding(5.dp)
+            .padding(4.dp)
             .clip(CircleShape)
             .then(if (brush != null) Modifier.background(brush) else Modifier.background(fill ?: Color.Gray))
             .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), CircleShape),
@@ -286,14 +286,14 @@ private fun CustomColorDialog(initial: Int, onDismiss: () -> Unit, onPick: (Int)
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL", color = mutedText()) } },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Box(
                         Modifier
                             .size(52.dp)
                             .clip(RoundedCornerShape(14.dp))
                             .background(Color.Black)
-                            .padding(10.dp)
+                            .padding(12.dp)
                             .clip(CircleShape)
                             .background(color)
                     )

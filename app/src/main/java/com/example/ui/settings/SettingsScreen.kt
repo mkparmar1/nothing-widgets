@@ -113,7 +113,7 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -134,7 +134,7 @@ fun SettingsScreen(
                     color = Color(0xFF8A8A8A)
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 AccentSelectorRow(
                     selected = globalAccent,
                     onSelect = { option ->
@@ -163,7 +163,7 @@ fun SettingsScreen(
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("REPAINT ALL PLACED WIDGETS", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("REPAINT ALL PLACED WIDGETS", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
@@ -180,7 +180,7 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
         ) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -209,7 +209,7 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
         ) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -288,11 +288,10 @@ fun AuditRow(title: String, status: String) {
                     .clip(CircleShape)
                     .background(Color(0xFFB8E000))
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = status,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelSmall,
                 color = Color(0xFF8A8A8A)
             )
         }

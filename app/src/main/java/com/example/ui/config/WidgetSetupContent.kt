@@ -385,7 +385,7 @@ fun WidgetSetupContent(
                     SetupSection("Size") {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = PagePadding),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             definition.sizes.forEach { size ->
                                 SelectCard(
@@ -421,7 +421,7 @@ fun WidgetSetupContent(
                         tagPrefix = "background"
                     ) { update(state.copy(background = it)) }
                     AnimatedVisibility(visible = state.background != BackgroundMode.TRANSPARENT) {
-                        Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 14.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("Opacity", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
                                 Text(
@@ -432,7 +432,7 @@ fun WidgetSetupContent(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
                                         .background(ui.copy(alpha = 0.12f))
-                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                        .padding(horizontal = 12.dp, vertical = 4.dp)
                                         .testTag("opacity_value")
                                 )
                             }
@@ -468,7 +468,7 @@ fun WidgetSetupContent(
                         accent = ui,
                         tagPrefix = "corner"
                     ) { update(state.copy(cornerRadius = it)) }
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(12.dp))
                     SettingsGroup {
                         ToggleRow(
                             title = "Show label",
@@ -549,7 +549,7 @@ private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(accentColor.copy(alpha = 0.10f))
-            .padding(14.dp),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -711,7 +711,7 @@ private fun StackItemsSection(state: WidgetSetupState, accent: Color, update: (W
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { update(state.copy(stackItems = state.stackItems + def.id)) }
-                        .padding(vertical = 10.dp)
+                        .padding(vertical = 12.dp)
                 )
             }
         }

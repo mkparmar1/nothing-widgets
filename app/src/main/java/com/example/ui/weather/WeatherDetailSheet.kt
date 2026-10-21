@@ -167,8 +167,7 @@ fun WeatherDetailSheet(
                                 )
                                 Text(
                                     text = if (data.isStale) "STALE (>90 MIN)" else "LIVE SYNC",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.labelSmall,
                                     color = if (data.isStale) Color(0xFFE02B2B) else Color(0xFFB8E000)
                                 )
                             }
@@ -226,7 +225,7 @@ fun WeatherMetricBox(title: String, value: String, modifier: Modifier = Modifier
             .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, Color(0x228A8A8A), RoundedCornerShape(14.dp))
-            .padding(14.dp)
+            .padding(16.dp)
     ) {
         Column {
             Text(

@@ -215,12 +215,12 @@ fun SetupCard(
             color = Color(0xFF8A8A8A)
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Visual Preview Row
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Wallpaper Thumbnail
             Box(
@@ -244,7 +244,7 @@ fun SetupCard(
                     .height(160.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "INCLUDED WIDGETS:",
                         style = MaterialTheme.typography.labelSmall,
@@ -260,7 +260,7 @@ fun SetupCard(
                                 modifier = Modifier.size(14.dp),
                                 tint = setup.accent.color
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = title.uppercase(),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -295,7 +295,7 @@ fun SetupCard(
                         CircularProgressIndicator(color = onAccent, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                     } else {
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text("APPLY SETUP", style = MaterialTheme.typography.labelLarge)
                     }
                 }
@@ -337,7 +337,7 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
             color = Color(0xFF8A8A8A)
         )
         Spacer(modifier = Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
                 onClick = {
                     scope.launch {
@@ -362,7 +362,7 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
                 ),
                 modifier = Modifier.weight(1f).height(42.dp).testTag("export_setup")
             ) {
-                Text("EXPORT", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("EXPORT", style = MaterialTheme.typography.labelLarge)
             }
             Button(
                 onClick = { importCode = ""; showImport = true },
@@ -373,7 +373,7 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
                 ),
                 modifier = Modifier.weight(1f).height(42.dp).testTag("import_setup")
             ) {
-                Text("IMPORT", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("IMPORT", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

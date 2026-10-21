@@ -211,7 +211,7 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
                             changed()
                         }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
                     }
-                    .padding(14.dp)
+                    .padding(16.dp)
                     .testTag("content_event_date")
             )
         }
@@ -253,6 +253,6 @@ private fun SectionLabel(text: String) {
 
 @Composable
 private fun Hint(text: String) {
-    Spacer(modifier = Modifier.height(6.dp))
+    Spacer(modifier = Modifier.height(8.dp))
     Text(text = text, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
 }
