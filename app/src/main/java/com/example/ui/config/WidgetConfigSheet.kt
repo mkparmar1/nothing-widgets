@@ -121,7 +121,7 @@ private suspend fun pinPreview(
         ThemeMode.AUTO -> systemDark
     }
     val dimensions = SizeResolver.resolveDimensions(context, state.size)
-    val accentColor = if (state.accent == AccentOption.DYNAMIC) MaterialYouPalette.resolve(context) else state.accent.hex
+    val accentColor = state.customAccent ?: if (state.accent == AccentOption.DYNAMIC) MaterialYouPalette.resolve(context) else state.accent.hex
     val spec = WidgetSpec(
         widthPx = dimensions.widthPx,
         heightPx = dimensions.heightPx,

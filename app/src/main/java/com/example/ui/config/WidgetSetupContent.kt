@@ -2,41 +2,41 @@ package com.example.ui.config
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.core.bitmap.SizeBucket
@@ -64,6 +65,7 @@ import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.MaterialYouPalette
 import com.example.core.theme.ThemeMode
+import com.example.core.theme.WidgetAccent
 import com.example.core.time.ClockOptions
 import com.example.core.time.ClockSupport
 import com.example.core.time.DateFormat
@@ -71,7 +73,6 @@ import com.example.core.time.DotStyle
 import com.example.core.time.TimeFormat
 import com.example.data.db.WidgetInstance
 import com.example.data.prefs.PreferencesManager
-import com.example.ui.components.AccentSelectorRow
 import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.permissions.AppPermission
 import com.example.widgets.base.TapAction
@@ -104,11 +105,14 @@ data class WidgetSetupState(
     /** IANA zone for world-clock widgets, null = phone's zone. */
     val timeZoneId: String? = null,
     /** Advanced-option values (Phase 8), stored under the `"opt"` config object. */
-    val optionValues: Map<String, Any> = emptyMap()
+    val optionValues: Map<String, Any> = emptyMap(),
+    /** A custom accent colour (ARGB); overrides [accent] when set. */
+    val customAccent: Int? = null
 ) {
     fun toConfigJson(widgetTypeId: String, existingConfigJson: String? = null): String {
         val base = (runCatching { JSONObject(existingConfigJson ?: "{}") }.getOrElse { JSONObject() }).apply {
             put("accent", accent.name)
+            if (customAccent != null) put(WidgetAccent.CUSTOM_KEY, WidgetAccent.toHex(customAccent)) else remove(WidgetAccent.CUSTOM_KEY)
             put("background", background.name)
             put("bg_alpha", (bgAlpha * 100).roundToInt())
             put("theme_mode", theme.name)
@@ -156,7 +160,8 @@ data class WidgetSetupState(
                 frame = Frame.fromName(json.optString(Frame.KEY)),
                 stackItems = CollectionWidgets.stackItems(importedConfigJson ?: "{}"),
                 timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}"),
-                optionValues = resolveOptions(definition, importedConfigJson)
+                optionValues = resolveOptions(definition, importedConfigJson),
+                customAccent = WidgetAccent.custom(importedConfigJson)
             )
         }
 
@@ -188,7 +193,8 @@ data class WidgetSetupState(
                 frame = Frame.fromName(json.optString(Frame.KEY)),
                 stackItems = CollectionWidgets.stackItems(instance.configJson),
                 timeZoneId = ClockOptions.timeZone(instance.configJson),
-                optionValues = resolveOptions(definition, instance.configJson)
+                optionValues = resolveOptions(definition, instance.configJson),
+                customAccent = WidgetAccent.custom(instance.configJson)
             )
         }
 
@@ -224,6 +230,12 @@ data class WidgetSetupState(
     }
 }
 
+
+/**
+ * The widget customization screen: a pinned live preview, the options in scrolling sections
+ * (content, format, style, size, colour, shape, advanced, tap) and a pinned save bar.
+ * Used by the in-app sheet and by the launcher's configure activity.
+ */
 @Composable
 fun WidgetSetupContent(
     definition: WidgetDefinition,
@@ -245,12 +257,11 @@ fun WidgetSetupContent(
         ThemeMode.AUTO -> isSystemInDarkTheme()
     }
     val dimensions = remember(state.size) { SizeResolver.resolveDimensions(context, state.size) }
-    val resolvedAccent = if (state.accent == AccentOption.DYNAMIC) {
+    val resolvedAccent = state.customAccent ?: if (state.accent == AccentOption.DYNAMIC) {
         MaterialYouPalette.resolve(context)
     } else {
         state.accent.hex
     }
-    val uiAccent = Color(resolvedAccent)
     val spec = WidgetSpec(
         widthPx = dimensions.widthPx,
         heightPx = dimensions.heightPx,
@@ -269,207 +280,255 @@ fun WidgetSetupContent(
         // So the preview reflects format and dot-style choices.
         configJson = state.toConfigJson(definition.id)
     )
+    // Controls use the app accent so the screen stays consistent whatever colour the widget gets.
+    val ui = MaterialTheme.colorScheme.primary
     val update: (WidgetSetupState) -> Unit = { next ->
         state = next
         onStateChange(next)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        Text(definition.title.uppercase(), style = MaterialTheme.typography.titleLarge)
-        Text(definition.description, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF8A8A8A))
-        definition.requiredPermission?.let { permission ->
-            Spacer(Modifier.height(16.dp))
-            PermissionBanner(permission = permission, accentColor = uiAccent)
-        }
-        Spacer(Modifier.height(16.dp))
-        WidgetBitmapPreview(
-            definition = definition,
-            spec = spec,
-            modifier = Modifier.fillMaxWidth().testTag("config_live_preview"),
-            refreshKey = contentVersion
-        )
-        Spacer(Modifier.height(24.dp))
-        WidgetContentEditor(definition.id, state.accent) { contentVersion++ }
-
-        if (CollectionWidgets.isStack(definition.id)) {
-            StackItemsSection(state, uiAccent, update)
-        }
-
-        ClockFormatSection(definition.id, state, update)
-
-        SetupSectionLabel("SKIN")
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Skin.entries.forEach { s ->
-                SetupChip(s == state.skin, s.label, uiAccent) {
-                    update(state.copy(skin = s))
-                }
-            }
-        }
-        Spacer(Modifier.height(20.dp))
-
-        SetupSectionLabel("FRAME")
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Frame.entries.forEach { f ->
-                SetupChip(f == state.frame, f.label, uiAccent) {
-                    update(state.copy(frame = f))
-                }
-            }
-        }
-        Spacer(Modifier.height(20.dp))
-
-        // Dot shapes only apply to the dot-based skins.
-        if (state.skin == Skin.DOT || state.skin == Skin.PAPER || state.skin == Skin.NEON) {
-            SetupSectionLabel("DOT STYLE")
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DotStyle.entries.forEach { style ->
-                    SetupChip(style == state.dotStyle, style.label, uiAccent) {
-                        update(state.copy(dotStyle = style))
-                    }
-                }
-            }
-            Spacer(Modifier.height(20.dp))
-        }
-
-        if (lockedSize == null && definition.sizes.size > 1) {
-            SetupSectionLabel("SIZE")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                definition.sizes.forEach { size ->
-                    SetupChip(size == state.size, "${size.label} (${size.cells})", uiAccent) {
-                        update(state.copy(size = size))
-                    }
-                }
-            }
-            Spacer(Modifier.height(16.dp))
-        }
-
-        SetupSectionLabel("ACCENT COLOR")
-        AccentSelectorRow(selected = state.accent, onSelect = { update(state.copy(accent = it)) })
-        Spacer(Modifier.height(20.dp))
-
-        SetupSectionLabel("BACKGROUND MODE")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BackgroundMode.entries.forEach { mode ->
-                SetupChip(mode == state.background, mode.displayName, uiAccent) {
-                    update(state.copy(background = mode))
-                }
-            }
-        }
-        if (state.background != BackgroundMode.TRANSPARENT) {
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("OPACITY", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8A8A8A))
-                Text("${(state.bgAlpha * 100).roundToInt()}%", style = MaterialTheme.typography.labelSmall, color = Color(0xFF8A8A8A))
-            }
-            Slider(
-                value = state.bgAlpha,
-                onValueChange = { update(state.copy(bgAlpha = it)) },
-                valueRange = 0.1f..1f,
-                colors = SliderDefaults.colors(
-                    thumbColor = uiAccent,
-                    activeTrackColor = uiAccent
+    // Pin the preview while scrolling on normal screens; on short ones (landscape, large text) it
+    // scrolls with the options so they always get the room.
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val pinPreview = constraints.hasBoundedHeight && maxHeight >= PIN_PREVIEW_MIN_HEIGHT
+        val header: @Composable () -> Unit = {
+            Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 4.dp, bottom = 12.dp)) {
+                Text(
+                    definition.title.uppercase(),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-            )
-        }
-        Spacer(Modifier.height(20.dp))
-
-        SetupSectionLabel("THEME OVERRIDE")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ThemeMode.entries.forEach { mode ->
-                SetupChip(mode == state.theme, mode.displayName, uiAccent) {
-                    update(state.copy(theme = mode))
-                }
+                Text(
+                    definition.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = mutedText(),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-        }
-        Spacer(Modifier.height(20.dp))
-
-        SetupSectionLabel("CORNER RADIUS")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // FULL_ROUND makes a pill (or a circle on square widgets).
-            listOf(0, 12, 20, 28, FULL_ROUND).forEach { radius ->
-                SetupChip(radius == state.cornerRadius, if (radius == FULL_ROUND) "Full" else "${radius}dp", uiAccent) {
-                    update(state.copy(cornerRadius = radius))
-                }
-            }
-        }
-        Spacer(Modifier.height(20.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("SHOW UPPERCASE LABEL", style = MaterialTheme.typography.bodyLarge)
-            Switch(
-                checked = state.showLabel,
-                onCheckedChange = { update(state.copy(showLabel = it)) },
-                colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = uiAccent)
-            )
-        }
-        Spacer(Modifier.height(20.dp))
-
-        if (definition.options.isNotEmpty()) {
-            AdvancedOptionsSection(definition = definition, state = state, accent = uiAccent, update = update)
-            Spacer(Modifier.height(20.dp))
-        }
-
-        SetupSectionLabel("TAP ACTION")
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            listOf(
-                TapAction.DEFAULT, TapAction.OPEN_CLOCK, TapAction.OPEN_CALENDAR,
-                TapAction.OPEN_BATTERY, TapAction.OPEN_WEATHER, TapAction.NONE
-            ).forEach { action ->
-                val selected = action == state.tapAction
-                Row(
+            val aspect = spec.widthPx.toFloat() / spec.heightPx.coerceAtLeast(1)
+            PreviewStage {
+                WidgetBitmapPreview(
+                    definition = definition,
+                    spec = spec,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .border(1.dp, if (selected) uiAccent else Color(0x338A8A8A), RoundedCornerShape(8.dp))
-                        .background(if (selected) uiAccent.copy(alpha = 0.1f) else Color.Transparent)
-                        .clickable { update(state.copy(tapAction = action)) }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .heightIn(max = PREVIEW_MAX_HEIGHT)
+                        .widthIn(max = PREVIEW_MAX_HEIGHT * aspect)
+                        .testTag("config_live_preview"),
+                    refreshKey = contentVersion
+                )
+            }
+        }
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            if (pinPreview) header()
+
+            // ---- Scrolling options
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 16.dp)
+                    .testTag("setup_scroll")
+            ) {
+                if (!pinPreview) header()
+                definition.requiredPermission?.let { permission ->
+                    Spacer(Modifier.height(16.dp))
+                    Box(Modifier.padding(horizontal = PagePadding)) {
+                        PermissionBanner(permission = permission, accentColor = ui)
+                    }
+                }
+
+                // Notes, to-dos, shortcuts, photos... (only for widgets with their own content)
+                Box(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 16.dp)) {
+                    WidgetContentEditor(definition.id, state.accent) { contentVersion++ }
+                }
+
+                if (CollectionWidgets.isStack(definition.id)) {
+                    Box(Modifier.padding(horizontal = PagePadding)) { StackItemsSection(state, ui, update) }
+                }
+
+                ClockFormatSection(definition.id, state, ui, update)
+
+                SetupSection("Skin", trailing = state.skin.label) {
+                    SkinCarousel(definition, spec, state.skin, ui) { update(state.copy(skin = it)) }
+                }
+
+                SetupSection("Frame") {
+                    CarouselRow(spacing = 8.dp) {
+                        Frame.entries.forEach { f ->
+                            SelectChip(
+                                label = f.label,
+                                selected = f == state.frame,
+                                accent = ui,
+                                modifier = Modifier.testTag("frame_${f.name.lowercase()}"),
+                                leading = { FrameGlyph(f, Color(resolvedAccent)) }
+                            ) { update(state.copy(frame = f)) }
+                        }
+                    }
+                }
+
+                // Dot shapes only apply to the dot-based skins.
+                AnimatedVisibility(visible = state.skin == Skin.DOT || state.skin == Skin.PAPER || state.skin == Skin.NEON) {
+                    SetupSection("Dot style") {
+                        CarouselRow(spacing = 8.dp) {
+                            DotStyle.entries.forEach { style ->
+                                SelectChip(style.label, style == state.dotStyle, ui) { update(state.copy(dotStyle = style)) }
+                            }
+                        }
+                    }
+                }
+
+                if (lockedSize == null && definition.sizes.size > 1) {
+                    SetupSection("Size") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = PagePadding),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            definition.sizes.forEach { size ->
+                                SelectCard(
+                                    label = size.label,
+                                    caption = size.cells,
+                                    selected = size == state.size,
+                                    accent = ui,
+                                    modifier = Modifier.weight(1f).testTag("size_${size.name.lowercase()}"),
+                                    onClick = { update(state.copy(size = size)) }
+                                ) { SizeGlyph(size, size == state.size, ui) }
+                            }
+                        }
+                    }
+                }
+
+                SetupSection(
+                    "Accent colour",
+                    trailing = if (state.customAccent != null) WidgetAccent.toHex(state.customAccent!!) else state.accent.displayName
                 ) {
-                    Text(action.displayName, style = MaterialTheme.typography.bodyMedium)
-                    if (selected) Icon(Icons.Default.Check, contentDescription = "Selected", tint = uiAccent)
+                    AccentSwatches(
+                        selected = state.accent,
+                        customAccent = state.customAccent,
+                        onSelect = { update(state.copy(accent = it, customAccent = null)) },
+                        onCustom = { update(state.copy(customAccent = it)) }
+                    )
+                }
+
+                SetupSection("Background") {
+                    SegmentedControl(
+                        options = BackgroundMode.entries.map { SegmentOption(it, it.displayName) },
+                        selected = state.background,
+                        accent = ui,
+                        tagPrefix = "background"
+                    ) { update(state.copy(background = it)) }
+                    AnimatedVisibility(visible = state.background != BackgroundMode.TRANSPARENT) {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Opacity", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                                Text(
+                                    "${(state.bgAlpha * 100).roundToInt()}%",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ui,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(ui.copy(alpha = 0.12f))
+                                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                                        .testTag("opacity_value")
+                                )
+                            }
+                            SlimSlider(
+                                value = state.bgAlpha,
+                                onValueChange = { update(state.copy(bgAlpha = it)) },
+                                accent = ui,
+                                valueRange = 0.1f..1f,
+                                modifier = Modifier.testTag("opacity_slider")
+                            )
+                        }
+                    }
+                }
+
+                SetupSection("Theme") {
+                    SegmentedControl(
+                        options = listOf(
+                            SegmentOption(ThemeMode.AUTO, "System", Icons.Default.BrightnessAuto),
+                            SegmentOption(ThemeMode.FORCE_DARK, "Dark", Icons.Default.DarkMode),
+                            SegmentOption(ThemeMode.FORCE_LIGHT, "Light", Icons.Default.LightMode)
+                        ),
+                        selected = state.theme,
+                        accent = ui,
+                        tagPrefix = "theme"
+                    ) { update(state.copy(theme = it)) }
+                }
+
+                SetupSection("Corners") {
+                    SegmentedControl(
+                        // FULL_ROUND makes a pill (or a circle on square widgets).
+                        options = listOf(0, 12, 20, 28, FULL_ROUND).map { SegmentOption(it, if (it == FULL_ROUND) "Full" else "$it") },
+                        selected = state.cornerRadius,
+                        accent = ui,
+                        tagPrefix = "corner"
+                    ) { update(state.copy(cornerRadius = it)) }
+                    Spacer(Modifier.height(10.dp))
+                    SettingsGroup {
+                        ToggleRow(
+                            title = "Show label",
+                            subtitle = "The small uppercase title on the widget",
+                            checked = state.showLabel,
+                            accent = ui
+                        ) { update(state.copy(showLabel = it)) }
+                    }
+                }
+
+                if (definition.options.isNotEmpty()) {
+                    AdvancedOptionsSection(definition = definition, state = state, accent = ui, update = update)
+                }
+
+                SetupSection("Tap action") {
+                    SettingsGroup {
+                        val actions = listOf(
+                            TapAction.DEFAULT, TapAction.OPEN_CLOCK, TapAction.OPEN_CALENDAR,
+                            TapAction.OPEN_BATTERY, TapAction.OPEN_WEATHER, TapAction.NONE
+                        )
+                        actions.forEachIndexed { i, action ->
+                            RadioRow(action.displayName, action == state.tapAction, ui) { update(state.copy(tapAction = action)) }
+                            if (i < actions.lastIndex) GroupDivider()
+                        }
+                    }
+                }
+            }
+
+            // ---- Pinned save bar
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = PagePadding, vertical = 12.dp)
+            ) {
+                saveError?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(8.dp))
+                }
+                Button(
+                    onClick = {
+                        if (com.example.data.billing.Entitlements.hasFullAccess(context)) onSave(state)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(52.dp).testTag("pin_widget_button"),
+                    colors = ButtonDefaults.buttonColors(containerColor = ui, contentColor = Color.White),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(saveLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
         }
-        saveError?.let {
-            Spacer(Modifier.height(12.dp))
-            Text(it, color = MaterialTheme.colorScheme.error)
-        }
-        Spacer(Modifier.height(28.dp))
-        Button(
-            onClick = {
-                if (com.example.data.billing.Entitlements.hasFullAccess(context)) onSave(state)
-            },
-            modifier = Modifier.fillMaxWidth().height(52.dp).testTag("pin_widget_button"),
-            colors = ButtonDefaults.buttonColors(containerColor = uiAccent, contentColor = Color.White),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text(saveLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        }
-        Spacer(Modifier.height(24.dp))
     }
 }
+
+/** Tallest the pinned preview gets, so options stay reachable on short screens. */
+private val PREVIEW_MAX_HEIGHT = 168.dp
+
+/** Below this height the preview scrolls away instead of staying pinned. */
+private val PIN_PREVIEW_MIN_HEIGHT = 560.dp
 
 @Composable
 private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
@@ -488,8 +547,8 @@ private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, accentColor, RoundedCornerShape(14.dp))
-            .background(accentColor.copy(alpha = 0.08f), RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(accentColor.copy(alpha = 0.10f))
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -504,7 +563,7 @@ private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
             Text(
                 permission.description,
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF8A8A8A)
+                color = mutedText()
             )
         }
         Button(
@@ -517,7 +576,7 @@ private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
                 }
             },
             colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White),
-            shape = RoundedCornerShape(10.dp)
+            shape = RoundedCornerShape(12.dp)
         ) {
             Text("ALLOW", fontWeight = FontWeight.Bold)
         }
@@ -526,60 +585,36 @@ private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
 
 /** Time and date format choices for clock widgets; shows nothing for other widgets. */
 @Composable
-private fun ClockFormatSection(widgetId: String, state: WidgetSetupState, update: (WidgetSetupState) -> Unit) {
-    val context = LocalContext.current
-    val accentColor = Color(
-        if (state.accent == AccentOption.DYNAMIC) MaterialYouPalette.resolve(context) else state.accent.hex
-    )
+private fun ClockFormatSection(widgetId: String, state: WidgetSetupState, accent: Color, update: (WidgetSetupState) -> Unit) {
     val timeFormats = ClockSupport.timeFormats(widgetId)
     if (timeFormats.isNotEmpty()) {
         val selected = state.timeFormat?.takeIf { it in timeFormats } ?: ClockSupport.defaultTime(widgetId)
-        SetupSectionLabel("TIME FORMAT")
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            timeFormats.chunked(2).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    row.forEach { format ->
-                        SetupChip(format == selected, format.label, accentColor) {
-                            update(state.copy(timeFormat = format))
-                        }
-                    }
+        SetupSection("Time format", trailing = if (selected.hasSeconds) "Seconds tick live" else null) {
+            CarouselRow(spacing = 8.dp) {
+                timeFormats.forEach { format ->
+                    SelectChip(format.label, format == selected, accent) { update(state.copy(timeFormat = format)) }
                 }
             }
         }
-        if (selected.hasSeconds) {
-            Text(
-                "Seconds tick live on the home screen.",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF8A8A8A),
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-        Spacer(Modifier.height(20.dp))
     }
 
     if (ClockSupport.showsDate(widgetId)) {
         val selected = state.dateFormat ?: ClockSupport.defaultDate(widgetId, state.size == SizeBucket.S)
-        SetupSectionLabel("DATE FORMAT")
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            DateFormat.entries.forEach { format ->
-                SetupChip(format == selected, format.label, accentColor) {
-                    update(state.copy(dateFormat = format))
+        SetupSection("Date format") {
+            CarouselRow(spacing = 8.dp) {
+                DateFormat.entries.forEach { format ->
+                    SelectChip(format.label, format == selected, accent) { update(state.copy(dateFormat = format)) }
                 }
             }
         }
-        Spacer(Modifier.height(20.dp))
     }
 
     if (widgetId in ClockSupport.TIME_ZONE_PICKERS) {
         TimeZonePicker(
             selectedZone = state.timeZoneId,
-            accentColor = accentColor,
+            accentColor = accent,
             onPick = { update(state.copy(timeZoneId = it)) }
         )
-        Spacer(Modifier.height(20.dp))
     }
 }
 
@@ -596,14 +631,12 @@ private val COMMON_TIME_ZONES = listOf(
 @Composable
 private fun TimeZonePicker(selectedZone: String?, accentColor: Color, onPick: (String?) -> Unit) {
     var showDialog by remember { mutableStateOf(false) }
-    SetupSectionLabel("TIME ZONE")
-    val label = selectedZone?.substringAfterLast("/")?.replace("_", " ") ?: "Phone's time zone"
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        SetupChip(selectedZone == null, "PHONE", accentColor) { onPick(null) }
-        SetupChip(selectedZone != null, label.uppercase(), accentColor) { showDialog = true }
+    val label = selectedZone?.substringAfterLast("/")?.replace("_", " ") ?: "Pick a city"
+    SetupSection("Time zone") {
+        CarouselRow(spacing = 8.dp) {
+            SelectChip("Phone", selectedZone == null, accentColor) { onPick(null) }
+            SelectChip(label, selectedZone != null, accentColor) { showDialog = true }
+        }
     }
     if (showDialog) {
         AlertDialog(
@@ -622,13 +655,13 @@ private fun TimeZonePicker(selectedZone: String?, accentColor: Color, onPick: (S
                                     onPick(zone)
                                     showDialog = false
                                 }
-                                .padding(vertical = 10.dp)
+                                .padding(vertical = 12.dp)
                         ) {
                             Text(
                                 zone.substringAfterLast("/").replace("_", " "),
                                 modifier = Modifier.weight(1f)
                             )
-                            Text(zone, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
+                            Text(zone, style = MaterialTheme.typography.bodySmall, color = mutedText())
                         }
                     }
                 }
@@ -644,63 +677,46 @@ private fun StackItemsSection(state: WidgetSetupState, accent: Color, update: (W
         WidgetRegistry.getAll().filter { state.size in it.sizes && !CollectionWidgets.isCollection(it.id) }
     }
     var query by remember { mutableStateOf("") }
-    SetupSectionLabel("STACK CARDS • ${state.stackItems.size}/${CollectionWidgets.MAX_STACK}")
-    state.stackItems.forEachIndexed { i, id ->
-        val def = WidgetRegistry.getById(id) ?: return@forEachIndexed
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("${i + 1}. ${def.title}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-            IconButton(onClick = { update(state.copy(stackItems = state.stackItems - id)) }) {
-                Icon(Icons.Default.Close, contentDescription = "Remove card", tint = Color(0xFF8A8A8A))
+    Column(Modifier.fillMaxWidth().padding(top = 24.dp)) {
+        Text(
+            "STACK CARDS • ${state.stackItems.size}/${CollectionWidgets.MAX_STACK}",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = mutedText()
+        )
+        Spacer(Modifier.height(8.dp))
+        state.stackItems.forEachIndexed { i, id ->
+            val def = WidgetRegistry.getById(id) ?: return@forEachIndexed
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text("${i + 1}. ${def.title}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                IconButton(onClick = { update(state.copy(stackItems = state.stackItems - id)) }) {
+                    Icon(Icons.Default.Close, contentDescription = "Remove card", tint = mutedText())
+                }
+            }
+        }
+        if (state.stackItems.size < CollectionWidgets.MAX_STACK) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("Search a widget to add") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            val q = query.trim().lowercase()
+            candidates.filter { it.id !in state.stackItems && (q.isEmpty() || it.title.lowercase().contains(q)) }.take(6).forEach { def ->
+                Text(
+                    text = "+ ${def.title}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = accent,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { update(state.copy(stackItems = state.stackItems + def.id)) }
+                        .padding(vertical = 10.dp)
+                )
             }
         }
     }
-    if (state.stackItems.size < CollectionWidgets.MAX_STACK) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Search a widget to add") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-        val q = query.trim().lowercase()
-        candidates.filter { it.id !in state.stackItems && (q.isEmpty() || it.title.lowercase().contains(q)) }.take(6).forEach { def ->
-            Text(
-                text = "+ ${def.title}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = accent,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { update(state.copy(stackItems = state.stackItems + def.id)) }
-                    .padding(vertical = 8.dp)
-            )
-        }
-    }
-    Spacer(Modifier.height(20.dp))
 }
 
 /** Corner radius large enough to fully round any widget edge. */
 private const val FULL_ROUND = 999
-
-@Composable
-private fun SetupSectionLabel(text: String) {
-    Text(text, style = MaterialTheme.typography.labelSmall, color = Color(0xFF8A8A8A))
-    Spacer(Modifier.height(8.dp))
-}
-
-@Composable
-private fun SetupChip(
-    selected: Boolean,
-    label: String,
-    accentColor: Color,
-    onClick: () -> Unit
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label) },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = accentColor,
-            selectedLabelColor = Color.White
-        )
-    )
-}

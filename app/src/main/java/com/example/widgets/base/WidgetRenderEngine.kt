@@ -136,11 +136,7 @@ object WidgetRenderEngine {
         val prefs = PreferencesManager.getInstance(context)
         val accentStr = instance.getAccent(prefs.getSavedAccent().name)
         val accent = AccentOption.fromName(accentStr)
-        val accentColor = if (accent == AccentOption.DYNAMIC) {
-            MaterialYouPalette.resolve(context)
-        } else {
-            accent.hex
-        }
+        val accentColor = com.example.core.theme.WidgetAccent.resolve(context, accent, instance.configJson)
 
         val bgModeStr = instance.getBackground(prefs.getSavedBgMode().name)
         val bgMode = BackgroundMode.fromName(bgModeStr)

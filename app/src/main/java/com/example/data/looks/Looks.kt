@@ -57,6 +57,7 @@ object Looks {
                     .put(ClockOptions.KEY_DOT_STYLE, look.dotStyle.name)
                     .put("accent", look.accent.name)
                     .put("background", look.background.name)
+                json.remove(com.example.core.theme.WidgetAccent.CUSTOM_KEY)
                 dao.insertOrUpdate(instance.copy(configJson = json.toString()))
                 count++
             }

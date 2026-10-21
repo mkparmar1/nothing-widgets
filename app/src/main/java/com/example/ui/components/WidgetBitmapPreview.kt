@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.core.bitmap.SizeBucket
 import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRenderEngine
 import com.example.widgets.base.WidgetSpec
@@ -49,11 +48,8 @@ fun WidgetBitmapPreview(
         }
     }
 
-    val aspect = when (spec.sizeBucket) {
-        SizeBucket.S -> 1.0f
-        SizeBucket.M -> 2.1f
-        SizeBucket.L -> 1.0f
-    }
+    // The real proportions of the bitmap being drawn, so the preview matches the home screen.
+    val aspect = (spec.widthPx.toFloat() / spec.heightPx.coerceAtLeast(1)).coerceIn(0.5f, 3f)
 
     Box(
         modifier = modifier
