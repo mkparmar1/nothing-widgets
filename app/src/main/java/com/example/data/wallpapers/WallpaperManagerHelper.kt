@@ -57,15 +57,34 @@ object WallpaperManagerHelper {
         )
     }
 
-    fun renderWallpaperBitmap(item: WallpaperItem, width: Int = 1080, height: Int = 2400): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    /**
+     * The wallpaper a setup applies: one whose accent matches the setup's (white for White and
+     * Wallpaper). [variant] picks among the matching designs so setups don't all look alike.
+     */
+    fun forAccent(accent: com.example.core.theme.AccentOption, variant: Int): WallpaperItem {
+        val hex = if (accent == com.example.core.theme.AccentOption.DYNAMIC) 0xFFFFFFFF.toInt() else accent.hex
+        val matching = WALLPAPERS.filter { it.accentHex == hex && it.bgHex != 0xFFF2F2F2.toInt() }
+        return if (matching.isEmpty()) WALLPAPERS.first() else matching[Math.floorMod(variant, matching.size)]
+    }
+
+    /**
+     * Draws the design on a 1080px-wide canvas scaled to the output size, so a thumbnail is an exact
+     * miniature of the applied wallpaper (sizes used to be fixed pixels, so small renders differed).
+     */
+    fun renderWallpaperBitmap(item: WallpaperItem, pxWidth: Int = 1080, pxHeight: Int = 2400): Bitmap {
+        val bitmap = Bitmap.createBitmap(pxWidth, pxHeight, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
+        val scale = pxWidth / 1080f
+        canvas.scale(scale, scale)
+        val width = 1080
+        val height = (pxHeight / scale).toInt()
 
         val paintBg = Paint().apply { color = item.bgHex }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paintBg)
 
-        val isLight = item.bgHex != 0xFF0A0A0A.toInt()
-        val dotOffColor = if (isLight) Color.argb(20, 10, 10, 10) else Color.argb(25, 255, 255, 255)
+        // Only the paper variant is light (pure-black OLED backgrounds used to get dark dots on black).
+        val isLight = item.bgHex == 0xFFF2F2F2.toInt()
+        val dotOffColor = if (isLight) Color.argb(32, 10, 10, 10) else Color.argb(40, 255, 255, 255)
         val paintDotOff = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = dotOffColor }
         val paintAccent = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = item.accentHex }
 

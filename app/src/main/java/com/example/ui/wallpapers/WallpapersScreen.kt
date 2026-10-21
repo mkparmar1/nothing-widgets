@@ -270,6 +270,14 @@ fun WallpaperThumb(
             modifier = Modifier.fillMaxSize()
         )
 
+        // The designs are deliberately sparse, so show what they're for: a clock in the matching accent.
+        WallpaperSampleWidget(
+            item = item,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 32.dp, start = 8.dp, end = 8.dp)
+        )
+
         // Tag badge bottom
         Box(
             modifier = Modifier
@@ -286,4 +294,32 @@ fun WallpaperThumb(
             )
         }
     }
+}
+
+/** A wide dot clock in the wallpaper's accent, as it would sit on that wallpaper. */
+@Composable
+private fun WallpaperSampleWidget(item: WallpaperItem, modifier: Modifier = Modifier) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val definition = remember { com.example.widgets.base.WidgetRegistry.getById("clock.dotdigital.m") } ?: return
+    val dims = remember { com.example.core.bitmap.SizeResolver.resolveDimensions(context, com.example.core.bitmap.SizeBucket.M) }
+    val paper = item.bgHex == 0xFFF2F2F2.toInt()
+    val spec = remember(item.id) {
+        com.example.widgets.base.WidgetSpec(
+            widthPx = dims.widthPx,
+            heightPx = dims.heightPx,
+            density = dims.density,
+            sizeBucket = com.example.core.bitmap.SizeBucket.M,
+            accent = com.example.core.theme.AccentOption.PURE,
+            // Violet and rose have no named accent, so pass the colour itself.
+            accentColor = item.accentHex,
+            bgMode = com.example.core.theme.BackgroundMode.TRANSPARENT,
+            themeMode = if (paper) com.example.core.theme.ThemeMode.FORCE_LIGHT else com.example.core.theme.ThemeMode.FORCE_DARK,
+            isDark = !paper,
+            cornerRadiusDp = 16,
+            showLabel = false,
+            tapAction = definition.defaultTap,
+            configJson = org.json.JSONObject().put(com.example.core.theme.WidgetAccent.CUSTOM_KEY, com.example.core.theme.WidgetAccent.toHex(item.accentHex)).toString()
+        )
+    }
+    com.example.ui.components.WidgetBitmapPreview(definition = definition, spec = spec, modifier = modifier.fillMaxWidth())
 }

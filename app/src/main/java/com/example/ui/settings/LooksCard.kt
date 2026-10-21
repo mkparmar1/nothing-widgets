@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -82,9 +83,7 @@ fun LooksCard(accent: AccentOption) {
                         .padding(vertical = 8.dp, horizontal = 4.dp)
                         .testTag("look_${look.id}")
                 ) {
-                    Box(
-                        modifier = Modifier.size(14.dp).clip(CircleShape).background(look.accent.color)
-                    )
+                    LookThumbnail(look)
                     Column(modifier = Modifier.weight(1f)) {
                         Text(look.name.uppercase(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                         Text(look.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
@@ -94,4 +93,41 @@ fun LooksCard(accent: AccentOption) {
             }
         }
     }
+}
+
+/** A wide dot clock drawn in the Look (skin, accent, frame, dot style, background). */
+@Composable
+private fun LookThumbnail(look: com.example.data.looks.Look) {
+    val context = LocalContext.current
+    val definition = remember { com.example.widgets.base.WidgetRegistry.getById("clock.dotdigital.m") } ?: return
+    val dims = remember { com.example.core.bitmap.SizeResolver.resolveDimensions(context, com.example.core.bitmap.SizeBucket.M) }
+    val spec = remember(look.id) {
+        val config = org.json.JSONObject()
+            .put(com.example.core.render.Skin.KEY, look.skin.name)
+            .put(com.example.core.render.Frame.KEY, look.frame.name)
+            .put(com.example.core.time.ClockOptions.KEY_DOT_STYLE, look.dotStyle.name)
+            .put("accent", look.accent.name)
+            .put("background", look.background.name)
+            .toString()
+        com.example.widgets.base.WidgetSpec(
+            widthPx = dims.widthPx,
+            heightPx = dims.heightPx,
+            density = dims.density,
+            sizeBucket = com.example.core.bitmap.SizeBucket.M,
+            accent = look.accent,
+            accentColor = com.example.core.theme.WidgetAccent.resolve(context, look.accent, config),
+            bgMode = look.background,
+            themeMode = com.example.core.theme.ThemeMode.FORCE_DARK,
+            isDark = look.skin.resolveDark(true),
+            cornerRadiusDp = 16,
+            showLabel = false,
+            tapAction = definition.defaultTap,
+            configJson = config
+        )
+    }
+    com.example.ui.components.WidgetBitmapPreview(
+        definition = definition,
+        spec = spec,
+        modifier = Modifier.width(88.dp).testTag("look_preview_${look.id}")
+    )
 }

@@ -42,6 +42,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -75,9 +77,7 @@ fun SetupsScreen(
         { setup ->
             scope.launch {
                 prefs.setGlobalAccent(setup.accent)
-                val wpItem = WallpaperManagerHelper.WALLPAPERS.getOrElse(setup.wallpaperIndex) {
-                    WallpaperManagerHelper.WALLPAPERS.first()
-                }
+                val wpItem = WallpaperManagerHelper.forAccent(setup.accent, setup.wallpaperIndex)
                 WallpaperManagerHelper.applyWallpaper(context, wpItem)
                 Toast.makeText(
                     context,
@@ -166,11 +166,8 @@ fun SetupCard(
 ) {
     var isApplying by remember { mutableStateOf(false) }
 
-    val wallpaperThumbnail = remember(setup.wallpaperIndex) {
-        val wpItem = WallpaperManagerHelper.WALLPAPERS.getOrElse(setup.wallpaperIndex) {
-            WallpaperManagerHelper.WALLPAPERS.first()
-        }
-        WallpaperManagerHelper.renderWallpaperBitmap(wpItem, 360, 640)
+    val wallpaperThumbnail = remember(setup.id) {
+        WallpaperManagerHelper.renderWallpaperBitmap(WallpaperManagerHelper.forAccent(setup.accent, setup.wallpaperIndex), 360, 640)
     }
 
     Column(
@@ -217,26 +214,14 @@ fun SetupCard(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Wallpaper Thumbnail
-            Box(
-                modifier = Modifier
-                    .width(100.dp)
-                    .height(160.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(12.dp))
-            ) {
-                Image(
-                    bitmap = wallpaperThumbnail.asImageBitmap(),
-                    contentDescription = setup.title,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            // The setup as it will look: its wallpaper with its widgets on top, in its accent.
+            SetupPhonePreview(setup = setup, wallpaper = wallpaperThumbnail)
 
             // Included widgets column
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .height(160.dp),
+                    .height(184.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -413,5 +398,56 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
                 TextButton(onClick = { showImport = false }) { Text("CANCEL") }
             }
         )
+    }
+}
+
+/** A miniature phone: the setup's wallpaper with its widgets drawn on it in the setup's accent. */
+@Composable
+private fun SetupPhonePreview(setup: SetupBundle, wallpaper: android.graphics.Bitmap) {
+    val context = LocalContext.current
+    Box(
+        modifier = Modifier
+            .width(104.dp)
+            .height(184.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(16.dp))
+            .testTag("setup_preview_${setup.id}")
+    ) {
+        Image(
+            bitmap = wallpaper.asImageBitmap(),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize()
+        )
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            setup.widgetIds.mapNotNull { WidgetRegistry.getById(it) }.take(3).forEach { def ->
+                val size = def.sizes.first()
+                val dims = remember(size) { com.example.core.bitmap.SizeResolver.resolveDimensions(context, size) }
+                val spec = remember(def.id, setup.accent) {
+                    com.example.widgets.base.WidgetSpec(
+                        widthPx = dims.widthPx,
+                        heightPx = dims.heightPx,
+                        density = dims.density,
+                        sizeBucket = size,
+                        accent = setup.accent,
+                        bgMode = com.example.core.theme.BackgroundMode.SOLID,
+                        themeMode = com.example.core.theme.ThemeMode.FORCE_DARK,
+                        isDark = true,
+                        cornerRadiusDp = 20,
+                        showLabel = true,
+                        tapAction = def.defaultTap
+                    )
+                }
+                val aspect = dims.widthPx.toFloat() / dims.heightPx.coerceAtLeast(1)
+                com.example.ui.components.WidgetBitmapPreview(
+                    definition = def,
+                    spec = spec,
+                    modifier = Modifier.heightIn(max = 44.dp).widthIn(max = 44.dp * aspect)
+                )
+            }
+        }
     }
 }
