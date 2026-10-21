@@ -45,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -202,10 +201,6 @@ fun SetupCard(
                 )
             }
 
-            TagPill(
-                text = setup.accent.displayName,
-                accentColor = setup.accent.color
-            )
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -271,8 +266,9 @@ fun SetupCard(
                     }
                 }
 
-                // Black text on light accents (white, lime, amber, cyan) so the label stays readable.
-                val onAccent = if (setup.accent.color.luminance() > 0.4f) Color.Black else Color.White
+                // Tonal: the setup's accent as a soft tint with accent text, so a list of setups isn't
+                // a wall of full-colour buttons. Readable for every accent on the dark card.
+                val onAccent = setup.accent.color
                 Button(
                     onClick = {
                         if (!isApplying) {
@@ -283,7 +279,7 @@ fun SetupCard(
                     },
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = setup.accent.color,
+                        containerColor = setup.accent.color.copy(alpha = 0.14f),
                         contentColor = onAccent
                     ),
                     modifier = Modifier

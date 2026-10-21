@@ -168,10 +168,11 @@ fun BrowserScreen(
                     shape = RoundedCornerShape(8.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = globalAccent.color,
-                        selectedLabelColor = Color.White,
+                        selectedLabelColor = com.example.ui.theme.contentColorOn(globalAccent.color),
                         containerColor = MaterialTheme.colorScheme.surface,
                         labelColor = MaterialTheme.colorScheme.onSurface
                     ),
+                    border = null,
                     modifier = Modifier.testTag("category_chip_${category.name.lowercase()}")
                 )
             }
@@ -234,7 +235,7 @@ fun BrowserScreen(
                             Text(
                                 text = "ONLY IN DOT WIDGETS",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = globalAccent.color,
+                                color = Color(0xFF8A8A8A),
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 2.dp)
                             )
@@ -301,15 +302,14 @@ fun BrowserScreen(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0x1A8A8A8A))
-                                        .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surface)
                                         .clickable { searchQuery = query }
                                         .padding(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
                                     Text(
                                         text = label,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = globalAccent.color,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -415,7 +415,7 @@ fun MinimalWidgetCard(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             SizeBadge(size = previewSize)
-            if (exclusive) CardTag("EXCLUSIVE", accent.color)
+            if (exclusive) CardTag("EXCLUSIVE", MaterialTheme.colorScheme.onSurface)
             if (definition.lockSafe) {
                 CardTag("LOCK SCREEN", muted, Modifier.testTag("lock_badge_${definition.id}"))
             }
@@ -427,7 +427,7 @@ fun MinimalWidgetCard(
     }
 }
 
-/** Small neutral tag on a widget card; only "exclusive" uses the accent. */
+/** Small neutral tag on a widget card; "exclusive" is brighter than the rest. */
 @Composable
 private fun CardTag(text: String, color: Color, modifier: Modifier = Modifier) {
     Text(

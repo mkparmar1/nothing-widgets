@@ -118,7 +118,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Palette, contentDescription = null, tint = globalAccent.color)
+                    Icon(Icons.Default.Palette, contentDescription = null, tint = com.example.ui.components.headerIconTint())
                     Text(
                         text = "GLOBAL ACCENT REPAINT",
                         style = MaterialTheme.typography.titleMedium,
@@ -152,10 +152,7 @@ fun SettingsScreen(
                         }
                     },
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = globalAccent.color,
-                        contentColor = com.example.ui.theme.contentColorOn(globalAccent.color)
-                    ),
+                    colors = com.example.ui.components.tonalButtonColors(globalAccent.color),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp)
@@ -185,7 +182,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.BatteryChargingFull, contentDescription = null, tint = globalAccent.color)
+                    Icon(Icons.Default.BatteryChargingFull, contentDescription = null, tint = com.example.ui.components.headerIconTint())
                     Text(
                         text = "WIDGET STATUS",
                         style = MaterialTheme.typography.titleMedium,
@@ -214,7 +211,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = globalAccent.color)
+                    Icon(Icons.Default.Info, contentDescription = null, tint = com.example.ui.components.headerIconTint())
                     Text(
                         text = "DOT WIDGETS v1.0",
                         style = MaterialTheme.typography.titleMedium,
@@ -252,7 +249,7 @@ fun SettingsScreen(
                         }.onFailure { Toast.makeText(context, PRIVACY_POLICY_URL, Toast.LENGTH_LONG).show() }
                     },
                     modifier = Modifier.testTag("privacy_policy")
-                ) { Text("PRIVACY POLICY", color = globalAccent.color, fontWeight = FontWeight.Bold) }
+                ) { Text("PRIVACY POLICY", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) }
             }
         }
     }

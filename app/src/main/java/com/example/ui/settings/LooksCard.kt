@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.core.theme.AccentOption
+import com.example.ui.components.headerIconTint
 import com.example.data.looks.Looks
 import kotlinx.coroutines.launch
 
@@ -55,7 +56,7 @@ fun LooksCard(accent: AccentOption) {
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.Palette, contentDescription = null, tint = accent.color)
+                Icon(Icons.Default.Palette, contentDescription = null, tint = headerIconTint())
                 Text("LOOKS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
             Text(
@@ -88,7 +89,7 @@ fun LooksCard(accent: AccentOption) {
                         Text(look.name.uppercase(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                         Text(look.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
                     }
-                    Text("APPLY", color = accent.color, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text("APPLY", color = Color(0xFF8A8A8A), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 }
             }
         }

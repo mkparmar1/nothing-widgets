@@ -36,6 +36,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.core.theme.AccentOption
+import com.example.ui.components.headerIconTint
+import com.example.ui.components.tonalButtonColors
 import com.example.data.home.HomeAssistantRepository
 import com.example.data.sports.SportsRepository
 import com.example.widgets.base.WidgetRenderEngine
@@ -63,7 +65,7 @@ fun ConnectionsCard(accent: AccentOption) {
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.Link, contentDescription = null, tint = accent.color)
+                Icon(Icons.Default.Link, contentDescription = null, tint = headerIconTint())
                 Text("CONNECTIONS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 
@@ -111,7 +113,7 @@ fun ConnectionsCard(accent: AccentOption) {
                             Toast.makeText(context, "Home Assistant saved", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = accent.color),
+                    colors = tonalButtonColors(accent.color),
                     modifier = Modifier.testTag("ha_save")
                 ) { Text("SAVE") }
                 if (haConnected) {
@@ -143,7 +145,7 @@ fun ConnectionsCard(accent: AccentOption) {
                     redraw()
                     Toast.makeText(context, if (feedUrl.isBlank()) "Sports feed removed" else "Sports feed saved", Toast.LENGTH_SHORT).show()
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = accent.color)
+                colors = tonalButtonColors(accent.color)
             ) { Text("SAVE FEED") }
         }
     }

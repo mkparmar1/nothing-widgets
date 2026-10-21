@@ -252,3 +252,17 @@ fun EmptyStateView(
         }
     }
 }
+
+/**
+ * Secondary actions: a soft accent tint with accent text. Filled accent buttons are kept for the
+ * one main action on a screen, so red stays meaningful.
+ */
+@Composable
+fun tonalButtonColors(accent: Color) = androidx.compose.material3.ButtonDefaults.buttonColors(
+    containerColor = accent.copy(alpha = 0.14f),
+    contentColor = accent
+)
+
+/** Icon tint for card headers: neutral, so the accent is saved for actions and selection. */
+@Composable
+fun headerIconTint(): Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)

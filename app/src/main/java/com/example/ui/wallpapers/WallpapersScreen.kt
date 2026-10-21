@@ -114,10 +114,11 @@ fun WallpapersScreen(
                     shape = RoundedCornerShape(8.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = globalAccent.color,
-                        selectedLabelColor = Color.White,
+                        selectedLabelColor = com.example.ui.theme.contentColorOn(globalAccent.color),
                         containerColor = MaterialTheme.colorScheme.surface,
                         labelColor = MaterialTheme.colorScheme.onSurface
                     ),
+                    border = null,
                     modifier = Modifier.testTag("wallpaper_tag_$tag")
                 )
             }

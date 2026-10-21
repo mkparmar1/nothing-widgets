@@ -100,7 +100,7 @@ fun WeatherLocationCard(accent: AccentOption) {
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.LocationOn, contentDescription = null, tint = accent.color)
+                Icon(Icons.Default.LocationOn, contentDescription = null, tint = com.example.ui.components.headerIconTint())
                 Text("WEATHER LOCATION", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
             Text(
@@ -120,7 +120,7 @@ fun WeatherLocationCard(accent: AccentOption) {
                 },
                 enabled = !busy,
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = com.example.ui.theme.contentColorOn(accent.color)),
+                colors = com.example.ui.components.tonalButtonColors(accent.color),
                 modifier = Modifier.fillMaxWidth().height(44.dp).testTag("use_my_location")
             ) {
                 Icon(Icons.Default.MyLocation, contentDescription = null)
