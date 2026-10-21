@@ -168,7 +168,7 @@ fun SectionHeader(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8A8A8A)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
@@ -205,7 +205,7 @@ fun EmptyStateView(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color(0xFF8A8A8A),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 modifier = Modifier.size(32.dp)
             )
         }
@@ -225,7 +225,7 @@ fun EmptyStateView(
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF8A8A8A),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             textAlign = TextAlign.Center
         )
 

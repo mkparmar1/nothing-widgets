@@ -194,7 +194,7 @@ private fun ContactPickerDialog(
                                 .padding(vertical = 8.dp)
                         ) {
                             Text(contact.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                            Text(contact.number, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
+                            Text(contact.number, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         }
                     }
                 }
@@ -209,13 +209,13 @@ private fun SlotRow(label: String, filled: Boolean, accent: AccentOption, action
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, if (filled) accent.color else Color(0x338A8A8A), RoundedCornerShape(8.dp))
+            .border(1.dp, if (filled) MaterialTheme.colorScheme.primary else Color(0x338A8A8A), RoundedCornerShape(8.dp))
             .padding(start = 12.dp)
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = if (filled) MaterialTheme.colorScheme.onSurface else Color(0xFF8A8A8A), modifier = Modifier.weight(1f))
-        TextButton(onClick = onPick) { Text(actionText, color = accent.color) }
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = if (filled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.weight(1f))
+        TextButton(onClick = onPick) { Text(actionText, color = MaterialTheme.colorScheme.primary) }
         if (filled) {
-            IconButton(onClick = onClear) { Icon(Icons.Default.Close, contentDescription = "Clear", tint = Color(0xFF8A8A8A)) }
+            IconButton(onClick = onClear) { Icon(Icons.Default.Close, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
         }
     }
 }

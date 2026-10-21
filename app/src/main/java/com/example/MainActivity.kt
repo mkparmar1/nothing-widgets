@@ -169,9 +169,8 @@ fun DotWidgetsApp(
     val context = LocalContext.current
     val prefs = remember { PreferencesManager.getInstance(context) }
     val currentAccent by prefs.accent.collectAsState()
-    val accentColor = remember(currentAccent) {
-        if (currentAccent == AccentOption.DYNAMIC) Color(MaterialYouPalette.resolve(context)) else currentAccent.color
-    }
+    // The theme primary is the app accent, made readable on light backgrounds.
+    val accentColor = MaterialTheme.colorScheme.primary
 
     var selectedTab by remember { mutableIntStateOf(0) }
     val battery = remember { BatteryHelper.getBatteryStatus(context) }

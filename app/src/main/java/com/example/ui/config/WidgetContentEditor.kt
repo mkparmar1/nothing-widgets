@@ -81,9 +81,9 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
     }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = accent.color,
-        cursorColor = accent.color,
-        focusedLabelColor = accent.color
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        cursorColor = MaterialTheme.colorScheme.primary,
+        focusedLabelColor = MaterialTheme.colorScheme.primary
     )
 
     SectionLabel("CONTENT")
@@ -123,16 +123,16 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
                         Checkbox(
                             checked = item.done,
                             onCheckedChange = { checked -> save(todos.toMutableList().also { it[i] = item.copy(done = checked) }) },
-                            colors = CheckboxDefaults.colors(checkedColor = accent.color)
+                            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                         )
                         Text(
                             text = item.text,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (item.done) Color(0xFF8A8A8A) else MaterialTheme.colorScheme.onSurface,
+                            color = if (item.done) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = { save(todos.toMutableList().also { it.removeAt(i) }) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove task", tint = Color(0xFF8A8A8A))
+                            Icon(Icons.Default.Close, contentDescription = "Remove task", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                         }
                     }
                 }
@@ -155,7 +155,7 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
                         },
                         modifier = Modifier.testTag("content_add_task")
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add task", tint = accent.color)
+                        Icon(Icons.Default.Add, contentDescription = "Add task", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -199,10 +199,10 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
             Text(
                 text = "Date: $shown",
                 style = MaterialTheme.typography.bodyLarge,
-                color = accent.color,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, accent.color, RoundedCornerShape(8.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
                     .clickable {
                         val cal = Calendar.getInstance().apply { runCatching { time = fmt.parse(date)!! } }
                         DatePickerDialog(context, { _, y, m, d ->
@@ -233,7 +233,7 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
                         },
                         label = { Text("${m}m") },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = accent.color,
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = Color.White
                         )
                     )
@@ -247,12 +247,12 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
 
 @Composable
 private fun SectionLabel(text: String) {
-    Text(text = text, style = MaterialTheme.typography.labelSmall, color = Color(0xFF8A8A8A))
+    Text(text = text, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
     Spacer(modifier = Modifier.height(8.dp))
 }
 
 @Composable
 private fun Hint(text: String) {
     Spacer(modifier = Modifier.height(8.dp))
-    Text(text = text, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
+    Text(text = text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
 }

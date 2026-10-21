@@ -128,7 +128,7 @@ fun PermissionsScreen(
             Text(
                 text = "DOT WIDGETS",
                 style = MaterialTheme.typography.labelSmall,
-                color = accent.color
+                color = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = "Dot-matrix widgets for your home screen",
@@ -162,7 +162,7 @@ fun PermissionsScreen(
                 Icon(
                     if (granted) Icons.Default.CheckCircle else AppPermission.ExactAlarms.icon,
                     contentDescription = null,
-                    tint = if (granted) Color(0xFFB8E000) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    tint = if (granted) com.example.ui.theme.readableAccent(Color(0xFFB8E000)) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.size(24.dp)
                 )
                 Column(Modifier.weight(1f)) {
@@ -191,8 +191,8 @@ fun PermissionsScreen(
                 },
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = accent.color,
-                    contentColor = com.example.ui.theme.contentColorOn(accent.color)
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary)
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -340,7 +340,7 @@ private fun PermissionRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(permission.icon, contentDescription = null, tint = accent.color, modifier = Modifier.size(22.dp))
+            Icon(permission.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             Text(
                 text = permission.title.uppercase(),
                 style = MaterialTheme.typography.titleMedium,
@@ -351,21 +351,21 @@ private fun PermissionRow(
         Text(
             text = permission.description,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF8A8A8A)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
         if (granted) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFFB8E000), modifier = Modifier.size(18.dp))
-                Text("ALLOWED", style = MaterialTheme.typography.labelLarge, color = Color(0xFFB8E000), fontWeight = FontWeight.Bold)
+                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.example.ui.theme.readableAccent(Color(0xFFB8E000)), modifier = Modifier.size(18.dp))
+                Text("ALLOWED", style = MaterialTheme.typography.labelLarge, color = com.example.ui.theme.readableAccent(Color(0xFFB8E000)), fontWeight = FontWeight.Bold)
             }
         } else {
             Button(
                 onClick = onAllow,
                 shape = RoundedCornerShape(10.dp),
-                colors = com.example.ui.components.tonalButtonColors(accent.color),
+                colors = com.example.ui.components.tonalButtonColors(MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp)

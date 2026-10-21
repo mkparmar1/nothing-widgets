@@ -110,7 +110,7 @@ fun WeatherLocationCard(accent: AccentOption) {
                     if (!chosen) append(" (FROM TIME ZONE)")
                 },
                 style = MaterialTheme.typography.bodyLarge,
-                color = accent.color
+                color = MaterialTheme.colorScheme.primary
             )
 
             Button(
@@ -120,7 +120,7 @@ fun WeatherLocationCard(accent: AccentOption) {
                 },
                 enabled = !busy,
                 shape = RoundedCornerShape(10.dp),
-                colors = com.example.ui.components.tonalButtonColors(accent.color),
+                colors = com.example.ui.components.tonalButtonColors(MaterialTheme.colorScheme.primary),
                 modifier = Modifier.fillMaxWidth().height(44.dp).testTag("use_my_location")
             ) {
                 Icon(Icons.Default.MyLocation, contentDescription = null)
@@ -134,8 +134,8 @@ fun WeatherLocationCard(accent: AccentOption) {
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { search() }),
-                trailingIcon = { TextButton(onClick = { search() }, enabled = !busy) { Text("SEARCH", color = accent.color) } },
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accent.color, cursorColor = accent.color, focusedLabelColor = accent.color),
+                trailingIcon = { TextButton(onClick = { search() }, enabled = !busy) { Text("SEARCH", color = MaterialTheme.colorScheme.primary) } },
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, cursorColor = MaterialTheme.colorScheme.primary, focusedLabelColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.fillMaxWidth().testTag("city_search")
             )
 
@@ -152,7 +152,7 @@ fun WeatherLocationCard(accent: AccentOption) {
 
             if (chosen) {
                 TextButton(onClick = { choose(null) }) {
-                    Text("USE TIME ZONE INSTEAD", color = Color(0xFF8A8A8A))
+                    Text("USE TIME ZONE INSTEAD", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 }
             }
         }

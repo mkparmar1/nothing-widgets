@@ -105,7 +105,7 @@ fun WeatherDetailSheet(
                     Text(
                         text = "Real-time Open-Meteo telemetry with stale-guard",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF8A8A8A)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
                 IconButton(onClick = onDismiss) {
@@ -126,7 +126,7 @@ fun WeatherDetailSheet(
                         onClick = { selectedCity = city },
                         label = { Text((city ?: myPlaceName).uppercase()) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = accent.color,
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = Color.White
                         )
                     )
@@ -142,7 +142,7 @@ fun WeatherDetailSheet(
                         .height(200.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = accent.color)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
                 weatherData?.let { data ->
@@ -163,12 +163,12 @@ fun WeatherDetailSheet(
                                 Text(
                                     text = data.cityName.uppercase(),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = Color(0xFF8A8A8A)
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
                                 Text(
                                     text = if (data.isStale) "STALE (>90 MIN)" else "LIVE SYNC",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (data.isStale) Color(0xFFE02B2B) else Color(0xFFB8E000)
+                                    color = if (data.isStale) Color(0xFFE02B2B) else com.example.ui.theme.readableAccent(Color(0xFFB8E000))
                                 )
                             }
 
@@ -178,13 +178,13 @@ fun WeatherDetailSheet(
                                 text = if (data.isStale) "—°C" else "${data.temperatureC}°C",
                                 fontSize = 56.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Text(
                                 text = "${data.description.uppercase()} • HIGH: ${data.highC}°C  LOW: ${data.lowC}°C",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = accent.color,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -231,7 +231,7 @@ fun WeatherMetricBox(title: String, value: String, modifier: Modifier = Modifier
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF8A8A8A)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(

@@ -73,7 +73,7 @@ fun ConnectionsCard(accent: AccentOption) {
             Text(
                 "For the Smart Home widgets. Your token is stored encrypted on this phone, is sent only to your server, and is never backed up.",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF8A8A8A)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             OutlinedTextField(
                 value = haUrl,
@@ -113,7 +113,7 @@ fun ConnectionsCard(accent: AccentOption) {
                             Toast.makeText(context, "Home Assistant saved", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    colors = tonalButtonColors(accent.color),
+                    colors = tonalButtonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier.testTag("ha_save")
                 ) { Text("SAVE") }
                 if (haConnected) {
@@ -121,7 +121,7 @@ fun ConnectionsCard(accent: AccentOption) {
                         HomeAssistantRepository.clearServer(context)
                         haUrl = ""; haToken = ""; haConnected = false
                         redraw()
-                    }) { Text("DISCONNECT", color = accent.color) }
+                    }) { Text("DISCONNECT", color = MaterialTheme.colorScheme.primary) }
                 }
             }
 
@@ -129,7 +129,7 @@ fun ConnectionsCard(accent: AccentOption) {
             Text(
                 "For the Team Score, Fixture, Table, Form, Cricket and Tennis widgets. Dot Widgets has no built-in score service: add a URL that returns your team's data as JSON.",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF8A8A8A)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             OutlinedTextField(
                 value = feedUrl,
@@ -145,7 +145,7 @@ fun ConnectionsCard(accent: AccentOption) {
                     redraw()
                     Toast.makeText(context, if (feedUrl.isBlank()) "Sports feed removed" else "Sports feed saved", Toast.LENGTH_SHORT).show()
                 },
-                colors = tonalButtonColors(accent.color)
+                colors = tonalButtonColors(MaterialTheme.colorScheme.primary)
             ) { Text("SAVE FEED") }
         }
     }

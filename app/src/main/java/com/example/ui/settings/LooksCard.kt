@@ -63,7 +63,7 @@ fun LooksCard(accent: AccentOption) {
             Text(
                 "Restyle every widget on your home screen in one tap. Each widget keeps its content and settings.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF8A8A8A)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Looks.ALL.forEach { look ->
                 Row(
@@ -86,9 +86,9 @@ fun LooksCard(accent: AccentOption) {
                     LookThumbnail(look)
                     Column(modifier = Modifier.weight(1f)) {
                         Text(look.name.uppercase(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                        Text(look.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF8A8A8A))
+                        Text(look.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     }
-                    Text("APPLY", color = Color(0xFF8A8A8A), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text("APPLY", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 }
             }
         }

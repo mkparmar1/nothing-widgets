@@ -84,16 +84,16 @@ private fun EditableList(
                 Checkbox(
                     checked = checked,
                     onCheckedChange = { onToggle(id) },
-                    colors = CheckboxDefaults.colors(checkedColor = accent.color)
+                    colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
                 )
                 Text(
                     text = text,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (checked) Color(0xFF8A8A8A) else MaterialTheme.colorScheme.onSurface,
+                    color = if (checked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(onClick = { onRemove(id) }) {
-                    Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color(0xFF8A8A8A))
+                    Icon(Icons.Default.Close, contentDescription = "Remove", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 }
             }
         }
@@ -103,7 +103,7 @@ private fun EditableList(
                 onValueChange = { newText = it.take(40) },
                 label = { Text(placeholder) },
                 singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = accent.color, cursorColor = accent.color, focusedLabelColor = accent.color),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, cursorColor = MaterialTheme.colorScheme.primary, focusedLabelColor = MaterialTheme.colorScheme.primary),
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(8.dp))
@@ -113,7 +113,7 @@ private fun EditableList(
                     newText = ""
                 }
             }) {
-                Icon(Icons.Default.Add, contentDescription = "Add", tint = accent.color)
+                Icon(Icons.Default.Add, contentDescription = "Add", tint = MaterialTheme.colorScheme.primary)
             }
         }
     }

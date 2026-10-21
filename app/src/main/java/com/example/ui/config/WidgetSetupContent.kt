@@ -289,7 +289,8 @@ fun WidgetSetupContent(
 
     // Pin the preview while scrolling on normal screens; on short ones (landscape, large text) it
     // scrolls with the options so they always get the room.
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+    // Its own surface, so it reads correctly whatever window or sheet hosts it.
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
         val pinPreview = constraints.hasBoundedHeight && maxHeight >= PIN_PREVIEW_MIN_HEIGHT
         val header: @Composable () -> Unit = {
             Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 4.dp, bottom = 12.dp)) {

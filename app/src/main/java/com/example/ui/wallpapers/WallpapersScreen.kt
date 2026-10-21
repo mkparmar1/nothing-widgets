@@ -93,7 +93,7 @@ fun WallpapersScreen(
             Text(
                 text = "${wallpapers.size} dot-matrix designs, palette-matched to your widgets.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF8A8A8A)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
 
@@ -113,8 +113,8 @@ fun WallpapersScreen(
                     label = { Text(tag) },
                     shape = RoundedCornerShape(8.dp),
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = globalAccent.color,
-                        selectedLabelColor = com.example.ui.theme.contentColorOn(globalAccent.color),
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary),
                         containerColor = MaterialTheme.colorScheme.surface,
                         labelColor = MaterialTheme.colorScheme.onSurface
                     ),
@@ -181,7 +181,7 @@ fun WallpapersScreen(
                             Text(
                                 text = "TAG: ${item.tag}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF8A8A8A)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         }
                         IconButton(onClick = { selectedWallpaper = null }) {
@@ -224,8 +224,8 @@ fun WallpapersScreen(
                         enabled = !isApplying,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = globalAccent.color,
-                            contentColor = com.example.ui.theme.contentColorOn(globalAccent.color)
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary)
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -233,7 +233,7 @@ fun WallpapersScreen(
                             .testTag("apply_wallpaper_button")
                     ) {
                         if (isApplying) {
-                            CircularProgressIndicator(color = com.example.ui.theme.contentColorOn(globalAccent.color), strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                            CircularProgressIndicator(color = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary), strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                         } else {
                             Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))

@@ -104,7 +104,7 @@ fun SetupsScreen(
                 Text(
                     text = "Matching wallpaper + widget combination + accent in one tap.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8A8A8A)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         }
@@ -131,7 +131,7 @@ fun SetupsScreen(
                     Text(
                         text = "Ready-made home screen ideas, picked by Dot Widgets.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF8A8A8A)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
             }
@@ -189,6 +189,8 @@ fun SetupCard(
                         .size(10.dp)
                         .clip(CircleShape)
                         .background(setup.accent.color)
+                        // A hairline so the White setup's dot shows on the light theme.
+                        .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f), CircleShape)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -204,7 +206,7 @@ fun SetupCard(
         Text(
             text = setup.tagline,
             style = MaterialTheme.typography.bodyMedium,
-            color = Color(0xFF8A8A8A)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -228,7 +230,7 @@ fun SetupCard(
                     Text(
                         text = "INCLUDED WIDGETS:",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF8A8A8A)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     setup.widgetIds.forEach { widgetId ->
                         val widgetDef = WidgetRegistry.getById(widgetId)
@@ -238,7 +240,7 @@ fun SetupCard(
                                 Icons.Default.Check,
                                 contentDescription = null,
                                 modifier = Modifier.size(14.dp),
-                                tint = setup.accent.color
+                                tint = com.example.ui.theme.readableAccent(setup.accent.color)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
@@ -253,7 +255,7 @@ fun SetupCard(
 
                 // Tonal: the setup's accent as a soft tint with accent text, so a list of setups isn't
                 // a wall of full-colour buttons. Readable for every accent on the dark card.
-                val onAccent = setup.accent.color
+                val onAccent = com.example.ui.theme.readableAccent(setup.accent.color)
                 Button(
                     onClick = {
                         if (!isApplying) {
@@ -264,7 +266,7 @@ fun SetupCard(
                     },
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = setup.accent.color.copy(alpha = 0.14f),
+                        containerColor = onAccent.copy(alpha = 0.14f),
                         contentColor = onAccent
                     ),
                     modifier = Modifier
@@ -315,7 +317,7 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
         Text(
             text = "Export your placed widgets as a code, or import a friend's.",
             style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF8A8A8A)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
         Spacer(modifier = Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

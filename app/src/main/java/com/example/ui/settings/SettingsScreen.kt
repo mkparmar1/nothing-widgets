@@ -85,7 +85,7 @@ fun SettingsScreen(
             Text(
                 text = "Global accent repainting and live widget status.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF8A8A8A)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
 
@@ -100,7 +100,7 @@ fun SettingsScreen(
             Text(
                 text = "DATA ACCESS & PERMISSIONS",
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF8A8A8A)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             PermissionList(accent = globalAccent, showGranted = false)
         }
@@ -131,7 +131,7 @@ fun SettingsScreen(
                 Text(
                     text = "Instantly re-colors all active widgets placed on your home screen.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8A8A8A)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -152,7 +152,7 @@ fun SettingsScreen(
                         }
                     },
                     shape = RoundedCornerShape(10.dp),
-                    colors = com.example.ui.components.tonalButtonColors(globalAccent.color),
+                    colors = com.example.ui.components.tonalButtonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(44.dp)
@@ -224,23 +224,23 @@ fun SettingsScreen(
                 Text(
                     text = "A free, independent dot-matrix widget pack. No ads, no accounts, no analytics.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8A8A8A)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
                     text = "Dot Widgets is an independent app. It is not affiliated with, endorsed by, or sponsored by Nothing Technology Limited. Nothing, Nothing OS and Glyph are trademarks of their owner.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF8A8A8A),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.testTag("non_affiliation")
                 )
                 Text(
                     text = "Data sources: weather, air quality and geocoding by Open-Meteo.com (CC BY 4.0); crypto prices by CoinGecko; exchange rates by ExchangeRate-API (open.er-api.com); stock quotes by Stooq.",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF8A8A8A)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Text(
                     text = "Typography: Space Grotesk (OFL) & JetBrains Mono (OFL).",
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF8A8A8A)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 TextButton(
                     onClick = {
@@ -289,7 +289,7 @@ fun AuditRow(title: String, status: String) {
             Text(
                 text = status,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF8A8A8A)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }

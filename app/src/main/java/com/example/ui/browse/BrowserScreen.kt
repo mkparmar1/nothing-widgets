@@ -128,19 +128,19 @@ fun BrowserScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search widgets & sensors...", color = Color(0xFF8A8A8A)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF8A8A8A)) },
+            placeholder = { Text("Search widgets & sensors...", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color(0xFF8A8A8A))
+                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                     }
                 }
             },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = globalAccent.color,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = Color(0x338A8A8A),
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surface
@@ -167,8 +167,8 @@ fun BrowserScreen(
                     label = { Text(category.title.uppercase()) },
                     shape = RoundedCornerShape(8.dp),
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = globalAccent.color,
-                        selectedLabelColor = com.example.ui.theme.contentColorOn(globalAccent.color),
+                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                        selectedLabelColor = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary),
                         containerColor = MaterialTheme.colorScheme.surface,
                         labelColor = MaterialTheme.colorScheme.onSurface
                     ),
@@ -223,7 +223,7 @@ fun BrowserScreen(
                                 showTip = false
                                 prefs.setBrowseTipDismissed(true)
                             }) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss tip", tint = Color(0xFF8A8A8A))
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss tip", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                             }
                         }
                     }
@@ -235,14 +235,14 @@ fun BrowserScreen(
                             Text(
                                 text = "ONLY IN DOT WIDGETS",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF8A8A8A),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(bottom = 2.dp)
                             )
                             Text(
                                 text = "Designs no other widget app has",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF8A8A8A),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -266,7 +266,7 @@ fun BrowserScreen(
                             Text(
                                 text = "RECOMMENDED",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF8A8A8A),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -322,7 +322,7 @@ fun BrowserScreen(
                     Text(
                         text = if (showExtras) "ALL ${filteredWidgets.size} WIDGETS" else "${filteredWidgets.size} WIDGETS",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF8A8A8A)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
 
