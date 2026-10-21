@@ -7,7 +7,8 @@ plugins {
 
 android {
   namespace = "com.example"
-  compileSdk = 35
+  compileSdk = 36
+  compileSdkMinor = 1
 
   defaultConfig {
     applicationId = "com.dotwidgets.android"
