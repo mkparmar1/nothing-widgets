@@ -244,6 +244,8 @@ fun WidgetSetupContent(
     saveLabel: String,
     saveError: String? = null,
     onStateChange: (WidgetSetupState) -> Unit = {},
+    /** Shown as a second action for lock-safe widgets when set (the in-app sheet). */
+    onAddToLockScreen: ((WidgetSetupState) -> Unit)? = null,
     onSave: (WidgetSetupState) -> Unit
 ) {
     val context = LocalContext.current
@@ -519,6 +521,17 @@ fun WidgetSetupContent(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(saveLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                if (onAddToLockScreen != null && definition.lockSafe) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = { onAddToLockScreen(state) },
+                        modifier = Modifier.fillMaxWidth().height(48.dp).testTag("lock_screen_button"),
+                        colors = com.example.ui.components.tonalButtonColors(ui),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text("ADD TO LOCK SCREEN", style = MaterialTheme.typography.labelLarge)
+                    }
                 }
             }
         }

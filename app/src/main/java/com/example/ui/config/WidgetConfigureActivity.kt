@@ -86,10 +86,14 @@ class WidgetConfigureActivity : ComponentActivity() {
                 AppDatabase.getInstance(applicationContext).widgetInstanceDao().getById(appWidgetId)
             }
             val editInstance = existing?.takeIf { WidgetSetupState.isConfigured(it) }
+            // A new lock-screen widget: start from the design picked with "Add to lock screen".
+            val pending = if (editInstance == null && lockScreenOnly) LockScreenWidgets.takePending(applicationContext) else null
+            val pendingDefinition = pending?.let { WidgetRegistry.getById(it.first) }?.takeIf { size in it.sizes && it.lockSafe }
             val initialDefinition = editInstance
                 ?.let { WidgetRegistry.getById(it.widgetTypeId) }
                 ?.takeIf { size in it.sizes }
-            showConfiguration(appWidgetId, size, editInstance, initialDefinition)
+                ?: pendingDefinition
+            showConfiguration(appWidgetId, size, editInstance, initialDefinition, pending?.second?.takeIf { pendingDefinition != null })
         }
     }
 
@@ -100,11 +104,14 @@ class WidgetConfigureActivity : ComponentActivity() {
         appWidgetId: Int,
         size: SizeBucket,
         editInstance: WidgetInstance?,
-        initialDefinition: WidgetDefinition?
+        initialDefinition: WidgetDefinition?,
+        prefillConfig: String? = null
     ) {
         val preferences = PreferencesManager.getInstance(this)
         val initialState = if (editInstance != null && initialDefinition != null) {
             WidgetSetupState.fromInstance(editInstance, initialDefinition, preferences, size)
+        } else if (prefillConfig != null && initialDefinition != null) {
+            WidgetSetupState.defaults(initialDefinition, preferences, size, prefillConfig)
         } else {
             null
         }
@@ -149,7 +156,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                             com.example.data.setups.SetupShareRepository.importedConfig(this@WidgetConfigureActivity, selectedDefinition.id)?.toString()
                         ),
                         lockedSize = size,
-                        saveLabel = if (initialDefinition == null) "ADD WIDGET" else "SAVE CHANGES",
+                        saveLabel = if (editInstance == null) "ADD WIDGET" else "SAVE CHANGES",
                         saveError = saveError,
                         onStateChange = { setupState = it },
                         onSave = { state ->

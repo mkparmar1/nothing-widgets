@@ -13,6 +13,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import android.content.res.Configuration
 import android.graphics.Bitmap
@@ -44,6 +47,7 @@ fun WidgetConfigSheet(
     val prefs = remember { PreferencesManager.getInstance(context) }
     val initial = remember(definition.id) { WidgetSetupState.defaults(definition, prefs) }
     val scope = rememberCoroutineScope()
+    var lockGuideFor by remember { mutableStateOf<WidgetSetupState?>(null) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -56,12 +60,33 @@ fun WidgetConfigSheet(
             initial = initial,
             lockedSize = null,
             saveLabel = "ADD TO HOME SCREEN",
+            onAddToLockScreen = { state ->
+                if (LockScreenWidgets.isSupported(context)) {
+                    LockScreenWidgets.savePending(context, definition.id, state.toConfigJson(definition.id))
+                }
+                lockGuideFor = state
+            },
             onSave = { state ->
                 scope.launch {
                     pinWidgetToHomeScreen(context, definition, state)
                     onDismiss()
                 }
             }
+        )
+    }
+
+    lockGuideFor?.let { state ->
+        LockScreenGuideDialog(
+            definition = definition,
+            supported = remember { LockScreenWidgets.isSupported(context) },
+            onAddToHomeScreen = {
+                lockGuideFor = null
+                scope.launch {
+                    pinWidgetToHomeScreen(context, definition, state)
+                    onDismiss()
+                }
+            },
+            onDismiss = { lockGuideFor = null }
         )
     }
 }
