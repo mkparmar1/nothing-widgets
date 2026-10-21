@@ -154,7 +154,7 @@ fun SettingsScreen(
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = globalAccent.color,
-                        contentColor = Color.White
+                        contentColor = com.example.ui.theme.contentColorOn(globalAccent.color)
                     ),
                     modifier = Modifier
                         .fillMaxWidth()

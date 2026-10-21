@@ -120,7 +120,7 @@ fun WeatherLocationCard(accent: AccentOption) {
                 },
                 enabled = !busy,
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = Color.White),
+                colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = com.example.ui.theme.contentColorOn(accent.color)),
                 modifier = Modifier.fillMaxWidth().height(44.dp).testTag("use_my_location")
             ) {
                 Icon(Icons.Default.MyLocation, contentDescription = null)

@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -27,7 +29,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -51,7 +52,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.core.bitmap.SizeResolver
 import com.example.core.theme.AccentOption
@@ -290,7 +293,7 @@ fun BrowserScreen(
                             listOf(
                                 "✦ HARDWARE VITALS" to "sensor",
                                 "✦ LUNAR & SUN" to "moon",
-                                "✦ NOTHING GLYPH" to "glyph",
+                                "✦ LIGHT STRIP" to "glyph",
                                 "✦ DUAL WORLD TIME" to "world",
                                 "✦ CONCENTRIC RINGS" to "ring",
                                 "✦ PRODUCTIVITY" to "checklist"
@@ -344,6 +347,7 @@ fun BrowserScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MinimalWidgetCard(
     definition: WidgetDefinition,
@@ -371,105 +375,71 @@ fun MinimalWidgetCard(
         showLabel = true,
         tapAction = definition.defaultTap
     )
+    val muted = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
+    // The whole card is the tap target; no border, the surface tone separates it from the page.
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, Color(0x228A8A8A), RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .padding(14.dp)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(12.dp)
     ) {
-        // Live Bitmap Preview
         WidgetBitmapPreview(
             definition = definition,
             spec = spec,
             modifier = Modifier.fillMaxWidth()
         )
 
-        if (exclusive) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "★ EXCLUSIVE",
-                style = MaterialTheme.typography.labelSmall,
-                color = accent.color,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(accent.color.copy(alpha = 0.12f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            )
-        }
-
-        if (definition.lockSafe) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "LOCK SCREEN READY",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color(0xFF8A8A8A),
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0x1A8A8A8A))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                    .testTag("lock_badge_${definition.id}")
-            )
-        }
-
-        // Widgets with their own advanced options (beyond the universal text size / corner dot).
-        if (definition.options.count { it.key !in UniversalOptions.KEYS } >= 2) {
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "ADVANCED OPTIONS",
-                style = MaterialTheme.typography.labelSmall,
-                color = accent.color,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(accent.color.copy(alpha = 0.12f))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                    .testTag("advanced_badge_${definition.id}")
-            )
-        }
-
         Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            // Title case: uppercase words are too wide for the narrow 3-up cards and break mid-word.
+            text = definition.title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = definition.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = muted,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
 
-        // Info Row - Sleek & Minimal without extra buttons
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Spacer(modifier = Modifier.height(8.dp))
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = definition.title.uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    SizeBadge(size = previewSize)
-                }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = definition.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF8A8A8A),
-                    maxLines = 1
-                )
+            SizeBadge(size = previewSize)
+            if (exclusive) CardTag("EXCLUSIVE", accent.color)
+            if (definition.lockSafe) {
+                CardTag("LOCK SCREEN", muted, Modifier.testTag("lock_badge_${definition.id}"))
             }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = "Configure",
-                tint = accent.color,
-                modifier = Modifier.size(20.dp)
-            )
+            // Widgets with their own advanced options (beyond the universal text size / corner dot).
+            if (definition.options.count { it.key !in UniversalOptions.KEYS } >= 2) {
+                CardTag("OPTIONS", muted, Modifier.testTag("advanced_badge_${definition.id}"))
+            }
         }
     }
+}
+
+/** Small neutral tag on a widget card; only "exclusive" uses the accent. */
+@Composable
+private fun CardTag(text: String, color: Color, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+        maxLines = 1,
+        softWrap = false,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+    )
 }

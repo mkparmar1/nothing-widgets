@@ -514,7 +514,7 @@ fun WidgetSetupContent(
                         if (com.example.data.billing.Entitlements.hasFullAccess(context)) onSave(state)
                     },
                     modifier = Modifier.fillMaxWidth().height(52.dp).testTag("pin_widget_button"),
-                    colors = ButtonDefaults.buttonColors(containerColor = ui, contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = ui, contentColor = com.example.ui.theme.contentColorOn(ui)),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Text(saveLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -575,7 +575,7 @@ private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
                     }
                 }
             },
-            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White),
+            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = com.example.ui.theme.contentColorOn(accentColor)),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text("ALLOW", fontWeight = FontWeight.Bold)

@@ -233,7 +233,7 @@ private fun PermissionRow(
             Button(
                 onClick = onAllow,
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = Color.White),
+                colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = com.example.ui.theme.contentColorOn(accent.color)),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp)

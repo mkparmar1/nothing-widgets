@@ -97,14 +97,12 @@ fun SizeBadge(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(4.dp))
-            .background(Color(0x1A8A8A8A))
-            .padding(horizontal = 6.dp, vertical = 2.dp)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
         Text(
             text = size.cells,
             color = MaterialTheme.colorScheme.onSurface,
-            fontSize = 10.sp,
             style = MaterialTheme.typography.labelSmall
         )
     }

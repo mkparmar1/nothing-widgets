@@ -7,6 +7,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import com.example.core.theme.AccentOption
 import com.example.core.theme.MaterialYouPalette
@@ -43,6 +44,9 @@ private val LightColorScheme = lightColorScheme(
     outline = Fog
 )
 
+/** Readable text/icon colour on an accent fill: black on light accents (white, lime, amber, cyan). */
+fun contentColorOn(background: Color): Color = if (background.luminance() > 0.4f) Color.Black else Color.White
+
 @Composable
 fun DotWidgetsTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -59,7 +63,8 @@ fun DotWidgetsTheme(
     }
     val baseScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val colorScheme = baseScheme.copy(
-        primary = accent
+        primary = accent,
+        onPrimary = contentColorOn(accent)
     )
 
     MaterialTheme(

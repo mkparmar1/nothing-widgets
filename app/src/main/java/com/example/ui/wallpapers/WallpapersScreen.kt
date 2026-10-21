@@ -224,7 +224,7 @@ fun WallpapersScreen(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = globalAccent.color,
-                            contentColor = Color.White
+                            contentColor = com.example.ui.theme.contentColorOn(globalAccent.color)
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -232,7 +232,7 @@ fun WallpapersScreen(
                             .testTag("apply_wallpaper_button")
                     ) {
                         if (isApplying) {
-                            CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                            CircularProgressIndicator(color = com.example.ui.theme.contentColorOn(globalAccent.color), strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                         } else {
                             Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))

@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -270,6 +271,8 @@ fun SetupCard(
                     }
                 }
 
+                // Black text on light accents (white, lime, amber, cyan) so the label stays readable.
+                val onAccent = if (setup.accent.color.luminance() > 0.4f) Color.Black else Color.White
                 Button(
                     onClick = {
                         if (!isApplying) {
@@ -281,7 +284,7 @@ fun SetupCard(
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = setup.accent.color,
-                        contentColor = Color.White
+                        contentColor = onAccent
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -289,11 +292,11 @@ fun SetupCard(
                         .testTag("apply_setup_${setup.id}")
                 ) {
                     if (isApplying) {
-                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
+                        CircularProgressIndicator(color = onAccent, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                     } else {
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("APPLY SETUP", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("APPLY SETUP", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
