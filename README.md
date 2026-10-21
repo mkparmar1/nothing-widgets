@@ -13,17 +13,17 @@ productivity, finance, health, smart home, sports, learning, travel and more —
 
 ## Highlights
 
-- **217 widgets across 17 categories** — from clocks and weather to crypto, sleep, thermostats,
-  cricket scores, flashcards and flight countdowns.
-- **Skinnable** — 8 render skins (Dot, Glyph, Segment, Pixel, Terminal, Paper, Neon, Nothing NDot)
+- **223 widgets across 17 categories** — from clocks and weather to crypto, sleep, thermostats,
+  Home Assistant controls, flashcards and flight countdowns.
+- **Skinnable** — 8 render skins (Dot, Light Strip, Segment, Pixel, Terminal, Paper, Neon, Native Dot)
   plus 4 frame styles, applied centrally so any widget can be restyled without changing its code.
-- **One-tap Looks** — 10 preset restyles (Nothing Classic, Glyph Night, Retro LCD, Terminal, Paper,
+- **One-tap Looks** — 10 preset restyles (Dot Classic, Light Strip Night, Retro LCD, Terminal, Paper,
   Neon, 8-Bit, Material You, Glass, …) that repaint every placed widget at once.
 - **Options on every widget** — every widget ships at least two universal controls (text size,
   corner accent dot) *plus* its own advanced options (toggle, choice, slider, text, colour rule)
   stored per widget, so the *same* widget can be reshaped without adding another catalogue entry.
 - **112 generated wallpapers** matched to the app's accent palette (7 accents × 16 patterns).
-- **Curated setups** — one-tap setups plus a community feed of shared looks.
+- **Curated setups** — one-tap setups plus a set of curated looks.
 - **Free forever** — every widget, size and theme is unlocked. No billing dependency is shipped.
 - **Offline-first** — network data (weather, crypto, FX, stocks) is cached and degrades gracefully;
   most widgets work with no network at all.
@@ -39,7 +39,7 @@ The app has four bottom-nav tabs:
 | Tab | What it does |
 | --- | --- |
 | **WIDGETS** | Browse the full catalogue by category, preview each widget live, configure it, and pin it to the home screen. |
-| **SETUPS** | Apply curated widget setups, export/import your own as a shareable code (`DWSET1:`), and browse the community feed. |
+| **SETUPS** | Apply curated widget setups, export/import your own as a shareable code (`DWSET1:`), and browse curated looks. |
 | **WALLPAPERS** | Browse the 112 generated wallpapers and set one with a tap. |
 | **SETTINGS** | One-tap **Looks** (restyle all widgets), global accent repaint, weather location & data access, permission status, widget status, and about info. |
 
@@ -68,7 +68,7 @@ sensitive feature explains why it needs access before it is granted.
 | **Finance** | Crypto tick/spark/portfolio, stocks, FX, budget ring, savings, payday |
 | **Health** | Steps ring/week, hydration, sleep, heart rate, calories, weight, mindfulness |
 | **Smart Home** | Device toggle, room status, lights, thermostat, scenes, energy, sensors |
-| **Sports** | Live score, fixtures, tables, form, F1 next race, cricket, tennis |
+| **Sports** | Team score, fixtures, tables, form, cricket and tennis from a sports feed you add; F1 next race (bundled) |
 | **Learning** | Pomodoro, study sessions, word of the day, reading goal, quiz, exam countdown |
 | **Travel** | Multi-city clock, world city, city weather, sun times, flight/trip countdown, packing |
 
