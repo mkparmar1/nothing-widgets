@@ -1,21 +1,26 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ProGuard & R8 Optimization Rules for Dot Widgets
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Retain line numbers for crash reporting
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Retain Room database classes, entities, and DAOs
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keep @androidx.room.Entity class * { *; }
+-keep @androidx.room.Dao interface * { *; }
+-dontwarn androidx.room.paging.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Retain AppWidget providers and RemoteViews receivers
+-keep class com.example.widgets.base.DotWidgetProvider** { *; }
+-keep class com.example.widgets.base.WidgetUpdateReceiver { *; }
+-keep class com.example.widgets.collection.CollectionWidgetService { *; }
+-keep class com.example.data.media.MediaListenerService { *; }
+
+# Retain Data models and JSON configurations
+-keepclassmembers class com.example.data.db.** { *; }
+-keepclassmembers class com.example.widgets.base.** { *; }
+
+# Retain Kotlin Reflection / Coroutines annotations
+-keepclassmembers class * {
+    @kotlin.jvm.JvmField <fields>;
+}
