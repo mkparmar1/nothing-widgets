@@ -1,5 +1,7 @@
 package com.example.ui.settings
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +32,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,6 +55,9 @@ import com.example.ui.permissions.allPermissionsGranted
 import com.example.widgets.base.WidgetAlarmScheduler
 import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.launch
+
+/** Public copy of docs/PRIVACY_POLICY.md; also the URL to enter in Play Console. */
+const val PRIVACY_POLICY_URL = "https://github.com/mkparmar1/nothing-widgets/blob/main/docs/PRIVACY_POLICY.md"
 
 @Composable
 fun SettingsScreen(
@@ -87,6 +93,8 @@ fun SettingsScreen(
         LooksCard(accent = globalAccent)
 
         WeatherLocationCard(accent = globalAccent)
+
+        ConnectionsCard(accent = globalAccent)
 
         if (!allPermissionsGranted(context)) {
             Text(
@@ -217,8 +225,19 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Crafted with Nothing OS dot-matrix aesthetics, Jetpack Compose, and Open-Meteo weather APIs.",
+                    text = "A free, independent dot-matrix widget pack. No ads, no accounts, no analytics.",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF8A8A8A)
+                )
+                Text(
+                    text = "Dot Widgets is an independent app. It is not affiliated with, endorsed by, or sponsored by Nothing Technology Limited. Nothing, Nothing OS and Glyph are trademarks of their owner.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF8A8A8A),
+                    modifier = Modifier.testTag("non_affiliation")
+                )
+                Text(
+                    text = "Data sources: weather, air quality and geocoding by Open-Meteo.com (CC BY 4.0); crypto prices by CoinGecko; exchange rates by ExchangeRate-API (open.er-api.com); stock quotes by Stooq.",
+                    style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFF8A8A8A)
                 )
                 Text(
@@ -226,6 +245,14 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFF8A8A8A)
                 )
+                TextButton(
+                    onClick = {
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)))
+                        }.onFailure { Toast.makeText(context, PRIVACY_POLICY_URL, Toast.LENGTH_LONG).show() }
+                    },
+                    modifier = Modifier.testTag("privacy_policy")
+                ) { Text("PRIVACY POLICY", color = globalAccent.color, fontWeight = FontWeight.Bold) }
             }
         }
     }

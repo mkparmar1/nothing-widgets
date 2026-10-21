@@ -71,7 +71,7 @@ object WidgetRegistry {
         register(createDef("clock.text.words", Category.CLOCK, "Text Matrix Clock", "Spelled out time representation", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockStyleRenderers.renderWordClock(s, cv) })
         register(createDef("clock.seconds.live", Category.CLOCK, "Precision Seconds", "Live hh:mm:ss second-accurate clock", setOf(SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv, defaultTime = TimeFormat.H24_SECONDS) })
         register(createDef("clock.minimal.pill", Category.CLOCK, "Capsule Time Pill", "Ultra-condensed dot time badge", setOf(SizeBucket.S), TapAction.OPEN_CLOCK) { c, s, cv -> ClockStyleRenderers.renderCapsulePill(s, cv) })
-        register(createDef("clock.glyph.ring", Category.CLOCK, "Glyph-Reactive Clock", "Dot time inside a segmented accent ring that lights up while charging", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ExclusiveRenderers.renderGlyphClock(c, s, cv) })
+        register(createDef("clock.glyph.ring", Category.CLOCK, "Light-Strip Clock", "Dot time inside a segmented accent ring that lights up while charging", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CLOCK) { c, s, cv -> ExclusiveRenderers.renderGlyphClock(c, s, cv) })
 
         // --- 2. DATE & CALENDAR (10 widgets) ---
         register(createDef("calendar.day.date", Category.CALENDAR, "Day & Date Card", "Bold day number with weekday tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_CALENDAR, lockSafe = true, options = listOf(
@@ -129,7 +129,7 @@ object WidgetRegistry {
         register(createDef("sensor.lunar.moon", Category.SYSTEM, "Lunar Phase Matrix", "Dot matrix moon phase with illumination readout", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER) { c, s, cv -> UniqueSensorRenderers.renderLunarMoonPhase(s, cv) })
         register(createDef("sensor.fitness.rings", Category.SYSTEM, "Concentric Activity Rings", "Dual dot rings for Steps and Active Calories", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, requiredPermission = AppPermission.Activity) { c, s, cv -> UniqueSensorRenderers.renderFitnessActivityRings(c, s, cv) })
         register(createDef("sensor.stopwatch.chrono", Category.SYSTEM, "Dot Chronometer", "Precision split chronometer with lap tag", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> UniqueSensorRenderers.renderChronographStopwatch(c, s, cv) })
-        register(createDef("sensor.glyph.lights", Category.SYSTEM, "Glyph Battery", "Nothing-style segmented glyph ring showing battery level", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> DeviceInfoRenderers.renderGlyphBattery(c, s, cv) })
+        register(createDef("sensor.glyph.lights", Category.SYSTEM, "Light-Strip Battery", "Segmented light-strip ring showing battery level", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> DeviceInfoRenderers.renderGlyphBattery(c, s, cv) })
         register(createDef("sensor.compass.heading", Category.SYSTEM, "Compass", "Dot ring with cardinal marks and a needle at the last sampled heading", setOf(SizeBucket.S, SizeBucket.M, SizeBucket.L), TapAction.DEFAULT) { c, s, cv -> UniqueSensorRenderers.renderCompass(c, s, cv) })
         register(createDef("sensor.crypto.ticker", Category.SYSTEM, "Crypto Market Ticker", "BTC real-time price with 16-dot trend sparkline", setOf(SizeBucket.M), TapAction.DEFAULT) { c, s, cv -> LiveDataRenderers.renderCrypto(c, s, cv) })
         register(createDef("sensor.battery.quad", Category.SYSTEM, "Ecosystem Quad Dock", "4-up battery matrix for Phone, Ear(2), Watch, CMF", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY, requiredPermission = AppPermission.NearbyDevices) { c, s, cv -> LiveDataRenderers.renderDeviceBatteries(c, s, cv, 4) })
@@ -362,23 +362,23 @@ object WidgetRegistry {
         )) { c, s, cv -> SmartHomeRenderers.renderPresence(c, s, cv) })
 
         // --- 14. SPORTS & LIVE (10 widgets) ---
-        register(createDef("sports.score.live", Category.SPORTS, "Live Score", "Followed team's live or final score", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+        register(createDef("sports.score.live", Category.SPORTS, "Team Score", "Your team's latest score, from your sports feed", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
             com.example.core.config.WidgetOption.Text("team", "Team", default = ""),
             com.example.core.config.WidgetOption.Text("league", "League", default = "LIVE SCORE")
         )) { c, s, cv -> SportsRenderers.renderLiveScore(c, s, cv) })
-        register(createDef("sports.fixture.next", Category.SPORTS, "Next Fixture", "Next match with kickoff time", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+        register(createDef("sports.fixture.next", Category.SPORTS, "Next Fixture", "Next match with kickoff time, from your sports feed", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
             com.example.core.config.WidgetOption.Text("team", "Team", default = ""),
             com.example.core.config.WidgetOption.Toggle("show_time", "Show kickoff time", default = true)
         )) { c, s, cv -> SportsRenderers.renderNextFixture(c, s, cv) })
-        register(createDef("sports.table.mini", Category.SPORTS, "Mini League Table", "Compact league standings", setOf(SizeBucket.L), TapAction.DEFAULT, options = listOf(
+        register(createDef("sports.table.mini", Category.SPORTS, "Mini League Table", "Compact league standings, from your sports feed", setOf(SizeBucket.L), TapAction.DEFAULT, options = listOf(
             com.example.core.config.WidgetOption.Text("league", "League", default = "LEAGUE"),
             com.example.core.config.WidgetOption.Slider("rows", "Rows shown", min = 3, max = 12, step = 1, default = 8, unit = "rows")
         )) { c, s, cv -> SportsRenderers.renderMiniTable(c, s, cv) })
-        register(createDef("sports.form.guide", Category.SPORTS, "Form Guide", "Recent W/D/L results as dots", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+        register(createDef("sports.form.guide", Category.SPORTS, "Form Guide", "Recent W/D/L results as dots, from your sports feed", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
             com.example.core.config.WidgetOption.Text("team", "Team", default = ""),
             com.example.core.config.WidgetOption.Slider("games", "Games shown", min = 3, max = 10, step = 1, default = 6, unit = "games")
         )) { c, s, cv -> SportsRenderers.renderFormGuide(c, s, cv) })
-        register(createDef("sports.countdown.match", Category.SPORTS, "Match Countdown", "Days until the next match", setOf(SizeBucket.S), TapAction.DEFAULT, options = listOf(
+        register(createDef("sports.countdown.match", Category.SPORTS, "Match Countdown", "Days until the next match, from your sports feed", setOf(SizeBucket.S), TapAction.DEFAULT, options = listOf(
             com.example.core.config.WidgetOption.Text("team", "Team", default = ""),
             com.example.core.config.WidgetOption.Toggle("show_opponent", "Show opponent", default = true)
         )) { c, s, cv -> SportsRenderers.renderMatchCountdown(c, s, cv) })
@@ -386,15 +386,15 @@ object WidgetRegistry {
             com.example.core.config.WidgetOption.Choice.of("series", "Series", listOf("F1", "F2", "MotoGP"), "F1"),
             com.example.core.config.WidgetOption.Toggle("show_circuit", "Show circuit", default = true)
         )) { c, s, cv -> SportsRenderers.renderF1NextRace(c, s, cv) })
-        register(createDef("sports.cricket.overs", Category.SPORTS, "Cricket Score", "Runs/wickets with overs context", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+        register(createDef("sports.cricket.overs", Category.SPORTS, "Cricket Score", "Runs/wickets with overs, from your sports feed", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
             com.example.core.config.WidgetOption.Text("match", "Match id", default = ""),
             com.example.core.config.WidgetOption.Slider("overs", "Overs", min = 5, max = 50, step = 5, default = 20, unit = "ov")
         )) { c, s, cv -> SportsRenderers.renderCricketOvers(c, s, cv) })
-        register(createDef("sports.tennis.sets", Category.SPORTS, "Tennis Sets", "Current sets score", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
+        register(createDef("sports.tennis.sets", Category.SPORTS, "Tennis Sets", "Sets score, from your sports feed", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, options = listOf(
             com.example.core.config.WidgetOption.Text("match", "Match id", default = ""),
             com.example.core.config.WidgetOption.Choice.of("best_of", "Best of", listOf("3", "5"), "3")
         )) { c, s, cv -> SportsRenderers.renderTennisSets(c, s, cv) })
-        register(createDef("sports.standings.dot", Category.SPORTS, "Standings Dots", "League table as dot bars", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
+        register(createDef("sports.standings.dot", Category.SPORTS, "Standings Dots", "League table as dot bars, from your sports feed", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
             com.example.core.config.WidgetOption.Text("league", "League", default = "LEAGUE"),
             com.example.core.config.WidgetOption.Slider("rows", "Rows shown", min = 3, max = 10, step = 1, default = 6, unit = "rows")
         )) { c, s, cv -> SportsRenderers.renderStandingsDots(c, s, cv) })

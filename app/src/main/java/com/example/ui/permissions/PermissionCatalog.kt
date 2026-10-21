@@ -121,7 +121,7 @@ sealed class AppPermission(
 
     object UsageAccess : SettingsPage(
         "usage", "Usage access",
-        "Measures today's screen-on time for the Screen-On Time widget.", Icons.Default.PhoneAndroid
+        "Reads today's app usage on this phone for the Screen-On Time, Top Apps Today and Mobile Data Today widgets. It never leaves your phone.", Icons.Default.PhoneAndroid
     ) {
         override fun isGranted(context: Context): Boolean {
             val ops = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager

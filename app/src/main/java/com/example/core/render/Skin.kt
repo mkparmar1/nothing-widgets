@@ -10,7 +10,7 @@ enum class Skin(val label: String) {
     /** Classic 5×7 dot matrix. */
     DOT("Dot"),
     /** Nothing-style thin glowing light strips. */
-    GLYPH("Glyph"),
+    GLYPH("Light Strip"),
     /** Retro 7-segment LCD. */
     SEGMENT("Segment"),
     /** Chunky square pixels, no gaps. */
@@ -22,7 +22,7 @@ enum class Skin(val label: String) {
     /** Glowing dots on black, always dark. */
     NEON("Neon"),
     /** Nothing OS's own NDot and Lettera fonts (Nothing phones; others fall back to Dot). */
-    NOTHING("Nothing");
+    NOTHING("Native Dot");
 
     /** Skins with a fixed light/dark look override the theme. */
     fun resolveDark(isDark: Boolean): Boolean = when (this) {

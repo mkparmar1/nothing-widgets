@@ -29,9 +29,9 @@ data class Look(
 object Looks {
 
     val ALL = listOf(
-        Look("classic", "Nothing Classic", "Red-dot dot matrix on black", Skin.DOT, AccentOption.RED, Frame.HAIRLINE, DotStyle.ROUND, BackgroundMode.SOLID),
-        Look("nothing", "Nothing Native", "Nothing OS's own NDot font", Skin.NOTHING, AccentOption.RED, Frame.NONE, DotStyle.ROUND, BackgroundMode.SOLID),
-        Look("glyph", "Glyph Night", "Thin glowing light strips", Skin.GLYPH, AccentOption.PURE, Frame.NONE, DotStyle.ROUND, BackgroundMode.SOLID),
+        Look("classic", "Dot Classic", "Red-dot dot matrix on black", Skin.DOT, AccentOption.RED, Frame.HAIRLINE, DotStyle.ROUND, BackgroundMode.SOLID),
+        Look("nothing", "Native Dot", "Your phone's own dot font, where it has one", Skin.NOTHING, AccentOption.RED, Frame.NONE, DotStyle.ROUND, BackgroundMode.SOLID),
+        Look("glyph", "Light Strip Night", "Thin glowing light strips", Skin.GLYPH, AccentOption.PURE, Frame.NONE, DotStyle.ROUND, BackgroundMode.SOLID),
         Look("lcd", "Retro LCD", "7-segment calculator display", Skin.SEGMENT, AccentOption.AMBER, Frame.HAIRLINE, DotStyle.ROUND, BackgroundMode.SOLID),
         Look("terminal", "Terminal", "Monospace console with scan lines", Skin.TERMINAL, AccentOption.LIME, Frame.NONE, DotStyle.ROUND, BackgroundMode.SOLID),
         Look("paper", "Paper", "Ink on warm paper", Skin.PAPER, AccentOption.RED, Frame.DOTTED, DotStyle.ROUND, BackgroundMode.SOLID),

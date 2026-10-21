@@ -107,12 +107,12 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_nothing_glyph",
-            title = "Nothing Glyph Studio",
-            tagline = "Iconic glyph light matrix, 4-up ecosystem dock, and activity rings",
+            title = "Light Strip Studio",
+            tagline = "Light-strip battery ring, 4-up device dock and activity rings",
             accent = AccentOption.RED,
             wallpaperIndex = 0,
             widgetIds = listOf("sensor.glyph.lights", "sensor.battery.quad", "sensor.fitness.rings"),
-            description = "Signature Nothing Phone interface aesthetic with glyph lighting and device battery hub."
+            description = "Minimal dot-matrix look with light-strip lighting and a device battery hub."
         ),
         SetupBundle(
             id = "setup_high_output",

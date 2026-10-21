@@ -2,6 +2,7 @@ package com.example.data.home
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.core.security.SecretBox
 import com.example.core.bitmap.BitmapCache
 import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.CoroutineScope
@@ -41,11 +42,15 @@ object HomeAssistantRepository {
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun baseUrl(context: Context): String = prefs(context).getString("base_url", "") ?: ""
-    fun token(context: Context): String = prefs(context).getString("token", "") ?: ""
+    /** Stored encrypted with a Keystore key ([SecretBox]); also excluded from backups. */
+    fun token(context: Context): String = SecretBox.decrypt(prefs(context).getString("token", "") ?: "")
     fun isConfigured(context: Context): Boolean = baseUrl(context).isNotBlank() && token(context).isNotBlank()
 
     fun setServer(context: Context, baseUrl: String, token: String) =
-        prefs(context).edit().putString("base_url", baseUrl.trim().trimEnd('/')).putString("token", token.trim()).apply()
+        prefs(context).edit().putString("base_url", baseUrl.trim().trimEnd('/')).putString("token", SecretBox.encrypt(token.trim())).apply()
+
+    fun clearServer(context: Context) =
+        prefs(context).edit().remove("base_url").remove("token").remove(CACHE).apply()
 
     /** Cached entity, or null if it has never been fetched. */
     fun entity(context: Context, entityId: String): HomeEntity? = cache(context)[entityId]

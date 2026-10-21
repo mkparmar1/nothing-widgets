@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Every built-in data service is reached over HTTPS. Plain HTTP is allowed only so a
+     Home Assistant server (or sports feed) on the user's own home network keeps working:
+     those are typically http://homeassistant.local:8123 or http://192.168.x.x:8123, and
+     network-security-config can't match private IP ranges. The URL is entered by the user,
+     and the setup screen warns that http:// is unencrypted. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

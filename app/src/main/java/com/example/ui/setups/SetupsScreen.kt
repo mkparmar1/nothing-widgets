@@ -123,13 +123,13 @@ fun SetupsScreen(
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     Text(
-                        text = "COMMUNITY PICKS",
+                        text = "CURATED LOOKS",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Setups shared by the r/NothingTech and Nothing Playground community.",
+                        text = "Ready-made home screen ideas, picked by Dot Widgets.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF8A8A8A)
                     )
@@ -141,7 +141,7 @@ fun SetupsScreen(
                     SetupBundle(
                         id = pick.id,
                         title = pick.title,
-                        tagline = "${pick.tagline}  — ${pick.author}",
+                        tagline = pick.tagline,
                         accent = pick.accent,
                         wallpaperIndex = pick.wallpaperIndex,
                         widgetIds = pick.widgetIds,
@@ -329,7 +329,7 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Export your placed widgets as a code, or import a friend's. Great for r/NothingTech.",
+            text = "Export your placed widgets as a code, or import a friend's.",
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF8A8A8A)
         )
