@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -75,13 +78,37 @@ fun onPermissionsChanged(context: Context, scope: CoroutineScope) {
     scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context.applicationContext) }
 }
 
-/** Shown on launch while permissions are missing; every row can also be granted later in Settings. */
+/**
+ * First launch (and while exact alarms are off): a welcome with live widgets, then the one
+ * permission every clock needs, with the action in the bottom third of the screen. Everything else
+ * is asked for later, only when a widget needs it.
+ */
 @Composable
 fun PermissionsScreen(
     accent: AccentOption,
     onDone: () -> Unit
 ) {
-    Box(
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var version by remember { mutableIntStateOf(0) }
+    LifecycleResumeEffect(Unit) {
+        version++
+        onPauseOrDispose { }
+    }
+    val granted = remember(version) { AppPermission.ExactAlarms.isGranted(context) }
+    var wasGranted by remember { mutableStateOf<Boolean?>(null) }
+    // Coming back from the system page with access granted: reschedule and move on.
+    LaunchedEffect(granted) {
+        val before = wasGranted
+        wasGranted = granted
+        if (before == false && granted) {
+            onPermissionsChanged(context, scope)
+            onDone()
+        }
+    }
+    val muted = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
@@ -89,38 +116,144 @@ fun PermissionsScreen(
             .navigationBarsPadding()
             .testTag("permissions_screen")
     ) {
+        // ---- Welcome: what the app makes, shown live
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 28.dp),
+                .padding(horizontal = 24.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "BEFORE YOU START",
+                text = "DOT WIDGETS",
+                style = MaterialTheme.typography.labelSmall,
+                color = accent.color
+            )
+            Text(
+                text = "Dot-matrix widgets for your home screen",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Dot Widgets needs one permission to keep clock widgets ticking on the minute. Weather, calendar and other data are asked for only when you choose a widget that uses them.",
+                text = "Clocks, weather, battery, calendar and 200 more. All free, and most work offline.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF8A8A8A)
+                color = muted
             )
-            PermissionList(
-                accent = accent,
-                showGranted = true,
-                permissions = listOf(AppPermission.ExactAlarms),
-                onAllGranted = onDone
-            )
-            TextButton(
-                onClick = onDone,
+            WelcomePreview(accent)
+        }
+
+        // ---- Thumb zone: the one permission and the main action
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .testTag("permissions_skip")
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+                    .testTag("permission_${AppPermission.ExactAlarms.id}")
             ) {
-                Text("CONTINUE", color = Color(0xFF8A8A8A), fontWeight = FontWeight.Bold)
+                Icon(
+                    if (granted) Icons.Default.CheckCircle else AppPermission.ExactAlarms.icon,
+                    contentDescription = null,
+                    tint = if (granted) Color(0xFFB8E000) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.size(24.dp)
+                )
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = if (granted) "Clocks stay on the minute" else "Keep clocks on the minute",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = if (granted) "Alarms & reminders access is on."
+                        else "Needs Alarms & reminders access. Weather, calendar and other data are asked for only when a widget uses them.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
             }
+            Button(
+                onClick = {
+                    if (granted) {
+                        onDone()
+                    } else {
+                        val intent = AppPermission.ExactAlarms.intent(context)
+                        if (intent == null) onDone()
+                        else try { context.startActivity(intent) } catch (_: Exception) { onDone() }
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = accent.color,
+                    contentColor = com.example.ui.theme.contentColorOn(accent.color)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .testTag("permissions_primary")
+            ) {
+                Text(if (granted) "GET STARTED" else "ALLOW AND CONTINUE", style = MaterialTheme.typography.titleMedium)
+            }
+            if (!granted) {
+                TextButton(
+                    onClick = onDone,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("permissions_skip")
+                ) {
+                    Text("Not now", color = muted, style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+    }
+}
+
+/** Two live widgets in the app accent, so the first screen shows what the app makes. */
+@Composable
+private fun WelcomePreview(accent: AccentOption) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        listOf("clock.dotdigital.m", "battery.ring").forEach { id ->
+            val def = remember(id) { com.example.widgets.base.WidgetRegistry.getById(id) } ?: return@forEach
+            val size = def.sizes.first()
+            val dims = remember(size) { com.example.core.bitmap.SizeResolver.resolveDimensions(context, size) }
+            val spec = remember(id, accent) {
+                com.example.widgets.base.WidgetSpec(
+                    widthPx = dims.widthPx,
+                    heightPx = dims.heightPx,
+                    density = dims.density,
+                    sizeBucket = size,
+                    accent = accent,
+                    accentColor = com.example.core.theme.WidgetAccent.resolve(context, accent, null),
+                    bgMode = com.example.core.theme.BackgroundMode.SOLID,
+                    themeMode = com.example.core.theme.ThemeMode.FORCE_DARK,
+                    isDark = true,
+                    cornerRadiusDp = 24,
+                    showLabel = true,
+                    tapAction = def.defaultTap
+                )
+            }
+            val aspect = dims.widthPx.toFloat() / dims.heightPx.coerceAtLeast(1)
+            com.example.ui.components.WidgetBitmapPreview(
+                definition = def,
+                spec = spec,
+                modifier = Modifier
+                    .heightIn(max = 160.dp)
+                    .widthIn(max = 160.dp * aspect)
+                    .testTag("welcome_preview_$id")
+            )
         }
     }
 }
@@ -198,7 +331,6 @@ private fun PermissionRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, if (granted) Color(0x338A8A8A) else accent.color, RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
             .padding(16.dp)
             .testTag("permission_${permission.id}"),
@@ -233,7 +365,7 @@ private fun PermissionRow(
             Button(
                 onClick = onAllow,
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accent.color, contentColor = com.example.ui.theme.contentColorOn(accent.color)),
+                colors = com.example.ui.components.tonalButtonColors(accent.color),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp)
