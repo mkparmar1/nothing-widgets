@@ -13,6 +13,19 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.os.Bundle
+import android.widget.RemoteViews
+import com.example.R
+import com.example.core.bitmap.SizeResolver
+import com.example.core.theme.AccentOption
+import com.example.core.theme.MaterialYouPalette
+import com.example.core.theme.ThemeMode
+import com.example.widgets.base.WidgetRenderEngine
+import com.example.widgets.base.WidgetSpec
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import com.example.core.bitmap.SizeBucket
 import com.example.data.prefs.PreferencesManager
@@ -30,6 +43,7 @@ fun WidgetConfigSheet(
     val context = LocalContext.current
     val prefs = remember { PreferencesManager.getInstance(context) }
     val initial = remember(definition.id) { WidgetSetupState.defaults(definition, prefs) }
+    val scope = rememberCoroutineScope()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -43,14 +57,16 @@ fun WidgetConfigSheet(
             lockedSize = null,
             saveLabel = "ADD TO HOME SCREEN",
             onSave = { state ->
-                pinWidgetToHomeScreen(context, definition, state)
-                onDismiss()
+                scope.launch {
+                    pinWidgetToHomeScreen(context, definition, state)
+                    onDismiss()
+                }
             }
         )
     }
 }
 
-fun pinWidgetToHomeScreen(
+suspend fun pinWidgetToHomeScreen(
     context: Context,
     definition: WidgetDefinition,
     state: WidgetSetupState
@@ -76,12 +92,59 @@ fun pinWidgetToHomeScreen(
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
             )
 
-            appWidgetManager.requestPinAppWidget(provider, null, successPendingIntent)
+            // Without a preview the launcher's "add widget" dialog shows the provider's generic
+            // placeholder image, not the design being placed.
+            val extras = runCatching { pinPreview(context, definition, state) }.getOrNull()?.let { preview ->
+                Bundle().apply { putParcelable(AppWidgetManager.EXTRA_APPWIDGET_PREVIEW, preview) }
+            }
+            appWidgetManager.requestPinAppWidget(provider, extras, successPendingIntent)
             Toast.makeText(context, "Placing ${definition.title}...", Toast.LENGTH_SHORT).show()
         } else {
             Toast.makeText(context, "Launcher does not support direct widget pinning. Add from launcher widget drawer.", Toast.LENGTH_LONG).show()
         }
     } else {
         Toast.makeText(context, "Add widget from your home screen widget menu.", Toast.LENGTH_LONG).show()
+    }
+}
+
+/** The chosen design drawn as the launcher's pin-dialog preview, small enough to cross Binder. */
+private suspend fun pinPreview(
+    context: Context,
+    definition: WidgetDefinition,
+    state: WidgetSetupState
+): RemoteViews {
+    val systemDark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+        Configuration.UI_MODE_NIGHT_YES
+    val isDark = when (state.theme) {
+        ThemeMode.FORCE_DARK -> true
+        ThemeMode.FORCE_LIGHT -> false
+        ThemeMode.AUTO -> systemDark
+    }
+    val dimensions = SizeResolver.resolveDimensions(context, state.size)
+    val accentColor = if (state.accent == AccentOption.DYNAMIC) MaterialYouPalette.resolve(context) else state.accent.hex
+    val spec = WidgetSpec(
+        widthPx = dimensions.widthPx,
+        heightPx = dimensions.heightPx,
+        density = dimensions.density,
+        sizeBucket = state.size,
+        accent = state.accent,
+        accentColor = accentColor,
+        bgMode = state.background,
+        bgAlpha = state.bgAlpha,
+        themeMode = state.theme,
+        isDark = state.skin.resolveDark(isDark),
+        cornerRadiusDp = state.cornerRadius,
+        showLabel = state.showLabel,
+        tapAction = state.tapAction,
+        configJson = state.toConfigJson(definition.id)
+    )
+    var bitmap = WidgetRenderEngine.renderBitmap(context, definition, spec, 0)
+    val maxSide = 480
+    if (bitmap.width > maxSide || bitmap.height > maxSide) {
+        val scale = maxSide.toFloat() / maxOf(bitmap.width, bitmap.height)
+        bitmap = Bitmap.createScaledBitmap(bitmap, (bitmap.width * scale).toInt(), (bitmap.height * scale).toInt(), true)
+    }
+    return RemoteViews(context.packageName, R.layout.widget_canvas_layout).apply {
+        setImageViewBitmap(R.id.widget_image_view, bitmap)
     }
 }
