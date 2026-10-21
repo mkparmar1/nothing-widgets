@@ -107,8 +107,9 @@
                 android:resource="@xml/dot_widget_info_l" />
         </receiver>
 
-        <!-- Lock-screen / Always-On Display providers (Android 14+). Pre-14 launchers ignore the
-             keyguard category, so these stay invisible on older devices. -->
+        <!-- Lock-screen-only providers (widgetCategory="keyguard"). They appear only where the lock
+             screen hosts standard widgets; launchers without a lock-screen widget host (e.g. Nothing
+             OS 4) never list them, so they no longer duplicate the home-screen providers. -->
         <receiver
             android:name=".widgets.base.DotWidgetProviderLockS"
             android:label="Dot Widgets • Lock (Small)"

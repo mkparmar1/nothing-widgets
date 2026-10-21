@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lock-safe wide provider (Android 14+ lock screen / Always-On Display). -->
+<!-- Lock-safe wide provider, lock screen only: phones whose lock screen hosts standard widgets
+     (e.g. Android 16 QPR2+ on Pixel) list it there. Not offered on the home screen, where the
+     regular providers already cover every design. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="250dp"
     android:minHeight="110dp"
@@ -14,4 +16,4 @@
     android:widgetFeatures="reconfigurable"
     android:previewImage="@drawable/widget_preview_m"
     android:description="@string/widget_lock_desc_m"
-    android:widgetCategory="home_screen|keyguard" />
+    android:widgetCategory="keyguard" />
