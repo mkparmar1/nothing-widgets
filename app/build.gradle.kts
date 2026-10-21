@@ -13,8 +13,8 @@ android {
   defaultConfig {
     applicationId = "com.dotwidgets.pro"
     minSdk = 24
-    targetSdk = 35
-    versionCode = 2
+    targetSdk = 36
+    versionCode = 3
     versionName = "1.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -43,6 +43,8 @@ android {
       isCrunchPngs = true
       isMinifyEnabled = true
       isShrinkResources = true
+      // Ship symbols for the AndroidX native libraries so Play can symbolicate native crashes.
+      ndk { debugSymbolLevel = "SYMBOL_TABLE" }
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }
