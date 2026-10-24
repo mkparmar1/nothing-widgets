@@ -1,0 +1,47 @@
+Dot Widgets Pro turns your home screen into a clean, minimal dot-matrix display. Pick a widget, style it your way, and place it. No widget maker, no extra apps, no setup scripts.
+
+223 WIDGETS, READY TO PLACE
+• Clocks: digital dot, analog ring, binary, flip, word clock, world clocks, stacked time and more
+• Calendar: day and date, agenda, month grid, week and year progress, life in dots, countdowns
+• Weather: current conditions, forecast strips, sunrise and sunset, moon phase, air quality, UV
+• Battery and system: battery rings and gauges, charging, connected-device battery, storage, RAM
+• Health and focus: steps, habits, mood log, hydration, focus timer, pomodoro, tally counter
+• Toggles: Wi-Fi, Bluetooth, torch, Do Not Disturb, rotation and quick-action grids
+• Plus finance, travel, learning, sports, media controls, photo frames, app shortcuts and smart-home widgets
+
+MAKE EVERY WIDGET YOURS
+• 8 skins: Dot, Light Strip, Segment, Pixel, Terminal, Paper, Neon and Native Dot
+• 4 frames, adjustable corners, background opacity and text size
+• Accent colours, a custom colour picker, or colours from your wallpaper (Material You)
+• Dark, light or system theme for each widget
+• Time and date formats, time zones and per-widget advanced options
+• A live preview shows every change before you place the widget
+
+RESTYLE EVERYTHING AT ONCE
+• 10 one-tap Looks repaint every widget on your home screen together
+• Curated setups combine widgets, an accent and a matching wallpaper
+• 112 dot-matrix wallpapers, palette-matched to your widgets
+• Export your setup as a code and share it, or import a friend's
+
+BUILT TO STAY OUT OF THE WAY
+• Live seconds and clocks that stay on the minute
+• Only widgets that changed are redrawn, which keeps updates light
+• Most widgets work offline; online data is cached for when you lose signal
+• Scrollable list widgets and a swipeable Smart Stack
+
+PRIVATE BY DESIGN
+• No ads, no accounts, no analytics, no crash reporting
+• Every permission is optional and asked for only when a widget needs it
+• Calendar, contacts, steps and usage data are read on your phone to draw your widgets and are not sent anywhere
+• Weather uses your approximate location, or a city you choose
+
+OPTIONAL CONNECTIONS
+• Connect your own Home Assistant server for smart-home widgets; your token stays encrypted on your phone
+• Add your own sports feed for team score and fixture widgets
+
+HOW TO ADD A WIDGET
+Open the app, choose a widget, customise it and tap Add to home screen. Or long-press your home screen, open Widgets and pick Dot Widgets.
+
+Works on Android 7.0 and later. Lock-screen widgets appear only on phones whose lock screen supports widgets from other apps.
+
+Dot Widgets Pro is an independent app. It is not affiliated with, endorsed by or sponsored by Nothing Technology Limited.
