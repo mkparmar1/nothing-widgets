@@ -11,7 +11,7 @@ app says it is independent. The colour values are this app's own tokens.
 | Measure | Before | After |
 |---|---|---|
 | Fonts | Space Grotesk, JetBrains Mono | Geist, Geist Mono (OFL) |
-| Hardcoded grey outlines and fills (`8A8A8A`) | 67 uses | 1 |
+| Hardcoded colours in screens | 60 | 22 (accent swatches and previews) |
 | Outline borders | 30 | 13 (selection rings and previews) |
 | Corner sizes in use | 9 | 5 (4, 8, 12, 16, 24) |
 | Text-field colour styles | Per screen | 1 (`dotFieldColors`) |
@@ -58,8 +58,9 @@ mobile design skill. Weights are Regular, Medium and SemiBold.
 
 ## 4. Verification
 
-See the release notes for the commit. Unit tests are the record of what passed; screens were checked
-as release-build screenshots on a Nothing Phone (3a) Pro in dark mode and as local renders in light mode.
+Commit 4e6afe7. All unit tests passed in a clean copy without the unrelated motion work. Screens were checked
+as release-build screenshots on a Nothing Phone (3a) Pro in dark mode (Settings and Widgets) and as local
+renders in light mode. That phone build predates the final text-field, tab crossfade and welcome changes.
 
 ## 5. Not finished
 
