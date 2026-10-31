@@ -34,6 +34,7 @@ object WidgetTapTargets {
      * target. Applied with [applyRegions].
      */
     fun regions(context: Context, appWidgetId: Int, widgetId: String, size: SizeBucket): List<List<PendingIntent>>? {
+        com.example.themes.ThemeWidgets.regions(context, appWidgetId, widgetId)?.let { return it }
         // Multi-button widgets: one row of equal cells matching what InteractiveRenderers draws.
         val buttons: List<Pair<String, Int>>? = when (widgetId) {
             "prod.tally.counter" -> listOf(ACTION_TALLY to -1, ACTION_TALLY to 1)
@@ -78,7 +79,7 @@ object WidgetTapTargets {
     }
 
     /** Special single tap action, or null to use the widget's normal tap action. */
-    fun single(context: Context, appWidgetId: Int, widgetId: String): PendingIntent? = when (widgetId) {
+    fun single(context: Context, appWidgetId: Int, widgetId: String): PendingIntent? = com.example.themes.ThemeWidgets.single(context, appWidgetId, widgetId) ?: when (widgetId) {
         "media.nowplaying.compact" -> mediaCommand(context, appWidgetId, MediaRepository.Command.PLAY_PAUSE)
         "media.nowplaying.art", "sensor.visualizer.eq" -> {
             val player = MediaRepository.nowPlaying(context)?.appPackage?.let { context.packageManager.getLaunchIntentForPackage(it) }

@@ -1,0 +1,10 @@
+{
+  "id": "clay_blue",
+  "name": "Clay Blue",
+  "description": "Puffy 3D clay in blue and ink",
+  "onTile": "#FFFFFF",
+  "onButtonOn": "#FFFFFF",
+  "onButtonOff": "#FFFFFF",
+  "muted": "#B6C2D6",
+  "accent": "#5AA2FF"
+}

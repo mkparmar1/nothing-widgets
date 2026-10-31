@@ -638,6 +638,8 @@ object WidgetRegistry {
             WidgetOption.Toggle("show_label", "Show label", default = true),
             WidgetOption.Toggle("show_state", "Show state", default = true)
         )) { c, s, cv -> DeepVariantRenderers.renderSensorNetSpeedTag(c, s, cv) })
+
+        com.example.themes.ThemeWidgets.ALL.forEach(::register)
     }
 
     private fun register(def: WidgetDefinition) {

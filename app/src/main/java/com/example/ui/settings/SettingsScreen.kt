@@ -90,6 +90,8 @@ fun SettingsScreen(
         }
 
         // --- 0. WEATHER LOCATION AND DATA ACCESS ---
+        com.example.themes.ui.ThemeStudioCard()
+
         LooksCard(accent = globalAccent)
 
         WeatherLocationCard(accent = globalAccent)

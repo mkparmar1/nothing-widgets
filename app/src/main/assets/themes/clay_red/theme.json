@@ -1,0 +1,10 @@
+{
+  "id": "clay_red",
+  "name": "Clay Red",
+  "description": "Puffy 3D clay in red and charcoal",
+  "onTile": "#FFFFFF",
+  "onButtonOn": "#FFFFFF",
+  "onButtonOff": "#FFFFFF",
+  "muted": "#C9BFBD",
+  "accent": "#FF4A44"
+}

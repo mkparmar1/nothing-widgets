@@ -49,6 +49,7 @@ enum class TapAction(val displayName: String) {
 
 enum class Category(val title: String, val iconName: String) {
     ALL("All", "widgets"),
+    THEMES("Themes", "palette"),
     CLOCK("Clock", "schedule"),
     CALENDAR("Calendar", "calendar_month"),
     BATTERY("Battery", "battery_charging_full"),
