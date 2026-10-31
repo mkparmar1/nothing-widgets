@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,6 +56,7 @@ fun ThemeStudioCard() {
     val scope = rememberCoroutineScope()
     val packs = remember { ThemeRepository.packs(context) }
     var selected by remember { mutableStateOf(ThemeRepository.selected(context).id) }
+    var animate by remember { mutableStateOf(ThemeRepository.animationsEnabled(context)) }
 
     Column(
         modifier = Modifier
@@ -70,6 +72,25 @@ fun ThemeStudioCard() {
                 "Add widgets from the Themes filter on the Widgets tab, then choose how they look here.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.weight(1f)) {
+                Text("Animations", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Light sweeps and pulses on theme widgets",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+            Switch(
+                checked = animate,
+                onCheckedChange = {
+                    animate = it
+                    ThemeRepository.setAnimationsEnabled(context, it)
+                    scope.launch { refresh(context) }
+                },
+                modifier = Modifier.testTag("theme_animations")
             )
         }
         packs.forEach { pack ->
@@ -147,6 +168,10 @@ private fun PackPreview(pack: ThemePack, widgetId: String, size: SizeBucket, mod
 
 private suspend fun use(context: Context, pack: ThemePack) = withContext(Dispatchers.IO) {
     ThemeRepository.select(context, pack)
+    refresh(context)
+}
+
+private suspend fun refresh(context: Context) = withContext(Dispatchers.IO) {
     BitmapCache.clear()
     WidgetRenderEngine.updateAllPlacedWidgets(context.applicationContext, force = true)
 }

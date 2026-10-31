@@ -30,10 +30,12 @@ object AnimatedOverlays {
     private val ANIMATED = setOf(SOUNDWAVE, GLYPH_BATTERY, WEATHER_NOW, AMBIENT)
 
     /** Main-bitmap budget, leaving room for animation frames in the same update. */
-    fun mainBudget(widgetId: String): Long = if (widgetId in ANIMATED) 650_000L else 1_000_000L
+    fun mainBudget(widgetId: String): Long =
+        com.example.themes.ThemeAnimations.budget(widgetId) ?: if (widgetId in ANIMATED) 650_000L else 1_000_000L
 
     /** Frames for the widget right now, or null when it shouldn't animate (paused music, not charging, no rain). */
     fun frames(context: Context, widgetId: String, spec: WidgetSpec): Animation? {
+        com.example.themes.ThemeAnimations.frames(context, widgetId, spec)?.let { return it }
         val onColor = if (spec.isDark) Color.WHITE else 0xFF0A0A0A.toInt()
         return when (widgetId) {
             SOUNDWAVE -> MediaRenderers.soundwaveFrames(context, spec)?.let { Animation(it, onColor) }

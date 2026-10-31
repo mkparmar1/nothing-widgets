@@ -31,6 +31,7 @@ object ThemeRepository {
     private const val ROOT = "themes"
     private const val PREFS = "dot_widgets_themes"
     private const val KEY_SELECTED = "selected_pack"
+    private const val KEY_ANIMATIONS = "animations"
 
     /** Bundled packs, in gallery order. */
     private val PACK_IDS = listOf("clay_red", "clay_blue")
@@ -72,6 +73,13 @@ object ThemeRepository {
 
     fun select(context: Context, pack: ThemePack) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_SELECTED, pack.id).apply()
+    }
+
+    fun animationsEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_ANIMATIONS, true)
+
+    fun setAnimationsEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_ANIMATIONS, enabled).apply()
     }
 
     /** The pack a widget draws with: pinned in its config, otherwise the selected one. */

@@ -136,7 +136,7 @@ fun PermissionsScreen(
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Clocks, weather, battery, calendar and 200 more. All free, and most work offline.",
+                text = "Clocks, weather, battery, calendar and 200 more. Most work offline.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = muted
             )
