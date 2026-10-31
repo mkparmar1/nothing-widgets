@@ -59,6 +59,19 @@
             </intent-filter>
         </activity>
 
+        <!-- Lists this app in launchers' icon-pack pickers (ADW/GO convention); see res/xml/appfilter.xml -->
+        <activity-alias
+            android:name=".IconPack"
+            android:exported="true"
+            android:label="Dot Widgets Clay"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="org.adw.launcher.THEMES" />
+                <action android:name="com.gau.go.launcherex.theme" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
+
         <activity
             android:name=".ui.config.WidgetConfigureActivity"
             android:exported="true"

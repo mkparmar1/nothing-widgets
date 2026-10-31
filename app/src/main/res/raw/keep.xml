@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icon-pack drawables are referenced by name from appfilter.xml, so R8 cannot see them. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@xml/appfilter,@drawable/iconback,@drawable/icon_*" />
