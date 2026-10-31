@@ -34,6 +34,10 @@ import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Tune
+import androidx.compose.material.icons.outlined.Wallpaper
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
@@ -162,6 +166,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** Outlined when idle and filled when selected, so state doesn't depend on colour alone. */
+private enum class MainTab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector) {
+    WIDGETS("Widgets", Icons.Outlined.Widgets, Icons.Filled.Widgets),
+    SETUPS("Setups", Icons.Outlined.AutoAwesome, Icons.Filled.AutoAwesome),
+    WALLPAPERS("Wallpapers", Icons.Outlined.Wallpaper, Icons.Filled.Wallpaper),
+    SETTINGS("Settings", Icons.Outlined.Tune, Icons.Filled.Tune)
+}
+
 @Composable
 fun DotWidgetsApp(
     onOpenWeather: () -> Unit
@@ -177,116 +189,67 @@ fun DotWidgetsApp(
 
     Scaffold(
         topBar = {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
                     .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Dot Widgets",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Box(modifier = Modifier.padding(top = 8.dp).size(6.dp).clip(CircleShape).background(accentColor))
+                }
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier
+                        .clip(com.example.ui.theme.DotShape.small)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    // Minimal Brand title with accent dot
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "DOT WIDGETS",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(accentColor)
-                        )
-                    }
-
-                    // Live Battery Chip
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(6.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(if (battery.isCharging) accentColor else Color(0xFFB8E000))
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "${battery.level}%",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(if (battery.isCharging) accentColor else com.example.ui.theme.DotTheme.colors.success)
+                    )
+                    Text(
+                        text = "${battery.level}%",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .border(width = 0.5.dp, color = Color(0x228A8A8A))
-            ) {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.Widgets, contentDescription = "Widgets") },
-                    label = { Text("WIDGETS", style = MaterialTheme.typography.labelSmall) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = accentColor,
-                        selectedTextColor = accentColor,
-                        indicatorColor = accentColor.copy(alpha = 0.15f)
-                    ),
-                    modifier = Modifier.testTag("nav_widgets")
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.AutoAwesome, contentDescription = "Setups") },
-                    label = { Text("SETUPS", style = MaterialTheme.typography.labelSmall) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = accentColor,
-                        selectedTextColor = accentColor,
-                        indicatorColor = accentColor.copy(alpha = 0.15f)
-                    ),
-                    modifier = Modifier.testTag("nav_setups")
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.Wallpaper, contentDescription = "Wallpapers") },
-                    label = { Text("WALLPAPERS", style = MaterialTheme.typography.labelSmall) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = accentColor,
-                        selectedTextColor = accentColor,
-                        indicatorColor = accentColor.copy(alpha = 0.15f)
-                    ),
-                    modifier = Modifier.testTag("nav_wallpapers")
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 },
-                    icon = { Icon(Icons.Default.Tune, contentDescription = "Settings") },
-                    label = { Text("SETTINGS", style = MaterialTheme.typography.labelSmall) },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = accentColor,
-                        selectedTextColor = accentColor,
-                        indicatorColor = accentColor.copy(alpha = 0.15f)
-                    ),
-                    modifier = Modifier.testTag("nav_settings")
-                )
+            Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
+                androidx.compose.material3.HorizontalDivider(thickness = 0.5.dp, color = com.example.ui.theme.DotTheme.colors.divider)
+                NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
+                    MainTab.entries.forEachIndexed { i, tab ->
+                        val selected = selectedTab == i
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { selectedTab = i },
+                            icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
+                            label = { Text(tab.label, style = MaterialTheme.typography.bodySmall) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = accentColor,
+                                selectedTextColor = MaterialTheme.colorScheme.onBackground,
+                                unselectedIconColor = com.example.ui.theme.DotTheme.colors.textMuted,
+                                unselectedTextColor = com.example.ui.theme.DotTheme.colors.textMuted,
+                                indicatorColor = accentColor.copy(alpha = 0.12f)
+                            ),
+                            modifier = Modifier.testTag("nav_${tab.name.lowercase()}")
+                        )
+                    }
+                }
             }
         }
     ) { innerPadding ->
@@ -296,11 +259,13 @@ fun DotWidgetsApp(
                 .padding(innerPadding),
             color = MaterialTheme.colorScheme.background
         ) {
-            when (selectedTab) {
-                0 -> BrowserScreen(onSelectWidget = {})
-                1 -> SetupsScreen()
-                2 -> WallpapersScreen()
-                3 -> SettingsScreen()
+            androidx.compose.animation.Crossfade(selectedTab, label = "tabs") { tab ->
+                when (tab) {
+                    0 -> BrowserScreen(onSelectWidget = {})
+                    1 -> SetupsScreen()
+                    2 -> WallpapersScreen()
+                    else -> SettingsScreen()
+                }
             }
         }
     }

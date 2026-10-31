@@ -11,7 +11,7 @@ val Fog = Color(0xFFD4D4D4)
 val Paper = Color(0xFFF2F2F2)
 val White = Color(0xFFFFFFFF)
 
-val AccentRed = Color(0xFFE02B2B)
+val AccentRed = Color(0xFFD71920)
 val AccentAmber = Color(0xFFF2A516)
 val AccentLime = Color(0xFFB8E000)
 val AccentCyan = Color(0xFF00C2D1)

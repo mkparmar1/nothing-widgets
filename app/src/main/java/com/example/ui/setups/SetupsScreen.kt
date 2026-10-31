@@ -96,7 +96,7 @@ fun SetupsScreen(
         item {
             Column(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                 Text(
-                    text = "CURATED SETUPS",
+                    text = "Curated setups",
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -104,7 +104,7 @@ fun SetupsScreen(
                 Text(
                     text = "Matching wallpaper + widget combination + accent in one tap.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = com.example.ui.theme.DotTheme.colors.textSecondary
                 )
             }
         }
@@ -123,7 +123,7 @@ fun SetupsScreen(
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
                     Text(
-                        text = "CURATED LOOKS",
+                        text = "Curated looks",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -131,7 +131,7 @@ fun SetupsScreen(
                     Text(
                         text = "Ready-made home screen ideas, picked by Dot Widgets.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = com.example.ui.theme.DotTheme.colors.textSecondary
                     )
                 }
             }
@@ -173,9 +173,8 @@ fun SetupCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
             .padding(16.dp)
     ) {
         Row(
@@ -194,7 +193,7 @@ fun SetupCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = setup.title.uppercase(),
+                    text = setup.title,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -206,7 +205,7 @@ fun SetupCard(
         Text(
             text = setup.tagline,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = com.example.ui.theme.DotTheme.colors.textSecondary
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -230,7 +229,7 @@ fun SetupCard(
                     Text(
                         text = "INCLUDED WIDGETS:",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = com.example.ui.theme.DotTheme.colors.textSecondary
                     )
                     setup.widgetIds.forEach { widgetId ->
                         val widgetDef = WidgetRegistry.getById(widgetId)
@@ -244,7 +243,7 @@ fun SetupCard(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = title.uppercase(),
+                                text = title,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1
@@ -264,7 +263,7 @@ fun SetupCard(
                             isApplying = false
                         }
                     },
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = onAccent.copy(alpha = 0.14f),
                         contentColor = onAccent
@@ -279,7 +278,7 @@ fun SetupCard(
                     } else {
                         Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("APPLY SETUP", style = MaterialTheme.typography.labelLarge)
+                        Text("Apply setup", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -302,13 +301,12 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
             .padding(16.dp)
     ) {
         Text(
-            text = "SHARE YOUR SETUP",
+            text = "Share your setup",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -317,7 +315,7 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
         Text(
             text = "Export your placed widgets as a code, or import a friend's.",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = com.example.ui.theme.DotTheme.colors.textSecondary
         )
         Spacer(modifier = Modifier.height(12.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -338,25 +336,25 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
                         }
                     }
                 },
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier.weight(1f).height(42.dp).testTag("export_setup")
             ) {
-                Text("EXPORT", style = MaterialTheme.typography.labelLarge)
+                Text("Export", style = MaterialTheme.typography.labelLarge)
             }
             Button(
                 onClick = { importCode = ""; showImport = true },
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier.weight(1f).height(42.dp).testTag("import_setup")
             ) {
-                Text("IMPORT", style = MaterialTheme.typography.labelLarge)
+                Text("Import", style = MaterialTheme.typography.labelLarge)
             }
         }
     }
@@ -364,9 +362,10 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
     if (showImport) {
         AlertDialog(
             onDismissRequest = { showImport = false },
-            title = { Text("IMPORT SETUP CODE") },
+            title = { Text("Import setup code") },
             text = {
                 OutlinedTextField(
+                    colors = com.example.ui.components.dotFieldColors(),
                     value = importCode,
                     onValueChange = { importCode = it },
                     singleLine = false,
@@ -394,10 +393,10 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
                         }
                     },
                     enabled = importCode.isNotBlank()
-                ) { Text("IMPORT") }
+                ) { Text("Import") }
             },
             dismissButton = {
-                TextButton(onClick = { showImport = false }) { Text("CANCEL") }
+                TextButton(onClick = { showImport = false }) { Text("Cancel") }
             }
         )
     }
@@ -412,7 +411,6 @@ private fun SetupPhonePreview(setup: SetupBundle, wallpaper: android.graphics.Bi
             .width(104.dp)
             .height(184.dp)
             .clip(RoundedCornerShape(16.dp))
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(16.dp))
             .testTag("setup_preview_${setup.id}")
     ) {
         Image(

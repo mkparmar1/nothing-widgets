@@ -61,6 +61,14 @@ import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.ThemeMode
 import com.example.data.prefs.PreferencesManager
+import com.example.ui.components.DotBadge
+import com.example.ui.components.DotCard
+import com.example.ui.components.DotCardStyle
+import com.example.ui.components.DotChip
+import com.example.ui.components.DotLabel
+import com.example.ui.components.dotFieldColors
+import com.example.ui.theme.DotShape
+import com.example.ui.theme.DotTheme
 import com.example.ui.components.EmptyStateView
 import com.example.core.config.UniversalOptions
 import com.example.ui.components.SizeBadge
@@ -124,34 +132,27 @@ fun BrowserScreen(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Minimal Search Bar
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search widgets & sensors...", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) },
+            placeholder = { Text("Search widgets") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
                     IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
                     }
                 }
             },
             singleLine = true,
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color(0x338A8A8A),
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-            ),
+            shape = DotShape.medium,
+            colors = dotFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .testTag("search_widgets_input")
         )
 
-        // Category Filter Chips
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -160,19 +161,10 @@ fun BrowserScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Category.entries.forEach { category ->
-                val isSelected = category == selectedCategory
-                FilterChip(
-                    selected = isSelected,
+                DotChip(
+                    label = category.title,
+                    selected = category == selectedCategory,
                     onClick = { selectedCategory = category },
-                    label = { Text(category.title.uppercase()) },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary),
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = null,
                     modifier = Modifier.testTag("category_chip_${category.name.lowercase()}")
                 )
             }
@@ -205,25 +197,23 @@ fun BrowserScreen(
 
                 if (showExtras && showTip) {
                     item(key = "tip", span = fullWidth) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(14.dp))
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(14.dp))
-                                .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Add a widget: long-press your home screen → Widgets → Dot Widgets.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
-                            IconButton(onClick = {
-                                showTip = false
-                                prefs.setBrowseTipDismissed(true)
-                            }) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss tip", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        DotCard(style = DotCardStyle.Information, padding = 0.dp, modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Add a widget: long-press your home screen, then Widgets, then Dot Widgets.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = DotTheme.colors.textSecondary,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                IconButton(onClick = {
+                                    showTip = false
+                                    prefs.setBrowseTipDismissed(true)
+                                }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Dismiss tip", tint = DotTheme.colors.textMuted)
+                                }
                             }
                         }
                     }
@@ -232,18 +222,12 @@ fun BrowserScreen(
                 if (showExtras) {
                     item(key = "exclusive", span = fullWidth) {
                         Column {
+                            Text("Only in Dot Widgets", style = MaterialTheme.typography.headlineSmall, color = DotTheme.colors.textPrimary)
                             Text(
-                                text = "ONLY IN DOT WIDGETS",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(bottom = 2.dp)
-                            )
-                            Text(
-                                text = "Designs no other widget app has",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                text = "Designs you won't find elsewhere",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = DotTheme.colors.textSecondary,
+                                modifier = Modifier.padding(bottom = 12.dp)
                             )
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 items(FEATURED_EXCLUSIVE.mapNotNull { WidgetRegistry.getById(it) }, key = { "ex_${it.id}" }) { def ->
@@ -264,10 +248,10 @@ fun BrowserScreen(
                     item(key = "recommended", span = fullWidth) {
                         Column {
                             Text(
-                                text = "RECOMMENDED",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                modifier = Modifier.padding(bottom = 8.dp)
+                                "Recommended",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = DotTheme.colors.textPrimary,
+                                modifier = Modifier.padding(bottom = 12.dp)
                             )
                             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 items(RECOMMENDED.mapNotNull { WidgetRegistry.getById(it) }, key = { it.id }) { def ->
@@ -292,38 +276,24 @@ fun BrowserScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             listOf(
-                                "✦ HARDWARE VITALS" to "sensor",
-                                "✦ LUNAR & SUN" to "moon",
-                                "✦ LIGHT STRIP" to "glyph",
-                                "✦ DUAL WORLD TIME" to "world",
-                                "✦ CONCENTRIC RINGS" to "ring",
-                                "✦ PRODUCTIVITY" to "checklist"
+                                "Hardware" to "sensor",
+                                "Moon & sun" to "moon",
+                                "Light strip" to "glyph",
+                                "World time" to "world",
+                                "Rings" to "ring",
+                                "Productivity" to "checklist"
                             ).forEach { (label, query) ->
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .clickable { searchQuery = query }
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    Text(
-                                        text = label,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                                DotChip(label, selected = false, onClick = { searchQuery = query })
                             }
                         }
                     }
                 }
 
                 item(key = "count", span = fullWidth) {
-                    Text(
-                        text = if (showExtras) "ALL ${filteredWidgets.size} WIDGETS" else "${filteredWidgets.size} WIDGETS",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(if (showExtras) "All widgets" else "Results", style = MaterialTheme.typography.headlineSmall, color = DotTheme.colors.textPrimary)
+                        DotLabel("${filteredWidgets.size}", modifier = Modifier.padding(bottom = 5.dp))
+                    }
                 }
 
                 gridItems(filteredWidgets, key = { it.id }) { widget ->
@@ -375,15 +345,13 @@ fun MinimalWidgetCard(
         showLabel = true,
         tapAction = definition.defaultTap
     )
-    val muted = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
 
-    // The whole card is the tap target; no border, the surface tone separates it from the page.
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(12.dp)
+    // The whole card is the tap target; the surface tone separates it from the page.
+    DotCard(
+        modifier = modifier,
+        style = DotCardStyle.Interactive,
+        padding = 12.dp,
+        onClick = onClick
     ) {
         WidgetBitmapPreview(
             definition = definition,
@@ -393,10 +361,9 @@ fun MinimalWidgetCard(
 
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            // Title case: uppercase words are too wide for the narrow 3-up cards and break mid-word.
             text = definition.title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.titleSmall,
+            color = DotTheme.colors.textPrimary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -404,7 +371,7 @@ fun MinimalWidgetCard(
         Text(
             text = definition.description,
             style = MaterialTheme.typography.bodySmall,
-            color = muted,
+            color = DotTheme.colors.textSecondary,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -415,31 +382,12 @@ fun MinimalWidgetCard(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             SizeBadge(size = previewSize)
-            if (exclusive) CardTag("EXCLUSIVE", MaterialTheme.colorScheme.onSurface)
-            if (definition.lockSafe) {
-                CardTag("LOCK SCREEN", muted, Modifier.testTag("lock_badge_${definition.id}"))
-            }
+            if (exclusive) DotBadge("EXCLUSIVE", color = DotTheme.colors.textPrimary)
+            if (definition.lockSafe) DotBadge("LOCK", modifier = Modifier.testTag("lock_badge_${definition.id}"))
             // Widgets with their own advanced options (beyond the universal text size / corner dot).
             if (definition.options.count { it.key !in UniversalOptions.KEYS } >= 2) {
-                CardTag("OPTIONS", muted, Modifier.testTag("advanced_badge_${definition.id}"))
+                DotBadge("OPTIONS", modifier = Modifier.testTag("advanced_badge_${definition.id}"))
             }
         }
     }
-}
-
-/** Small neutral tag on a widget card; "exclusive" is brighter than the rest. */
-@Composable
-private fun CardTag(text: String, color: Color, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = color,
-        maxLines = 1,
-        softWrap = false,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
-            .padding(horizontal = 4.dp, vertical = 2.dp)
-    )
 }

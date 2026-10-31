@@ -128,11 +128,11 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
                         Text(
                             text = item.text,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = if (item.done) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
+                            color = if (item.done) com.example.ui.theme.DotTheme.colors.textSecondary else MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = { save(todos.toMutableList().also { it.removeAt(i) }) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove task", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            Icon(Icons.Default.Close, contentDescription = "Remove task", tint = com.example.ui.theme.DotTheme.colors.textSecondary)
                         }
                     }
                 }
@@ -247,12 +247,12 @@ fun WidgetContentEditor(widgetId: String, accent: AccentOption, onChanged: () ->
 
 @Composable
 private fun SectionLabel(text: String) {
-    Text(text = text, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+    Text(text = text, style = MaterialTheme.typography.labelSmall, color = com.example.ui.theme.DotTheme.colors.textSecondary)
     Spacer(modifier = Modifier.height(8.dp))
 }
 
 @Composable
 private fun Hint(text: String) {
     Spacer(modifier = Modifier.height(8.dp))
-    Text(text = text, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+    Text(text = text, style = MaterialTheme.typography.bodySmall, color = com.example.ui.theme.DotTheme.colors.textSecondary)
 }

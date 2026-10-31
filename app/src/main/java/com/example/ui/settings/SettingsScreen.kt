@@ -115,14 +115,14 @@ fun SettingsScreen(
 private fun SettingsMenu(onOpen: (SettingsPage) -> Unit) {
     val context = LocalContext.current
     Text(
-        text = "SETTINGS",
+        text = "Settings",
         style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.onBackground
     )
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
     ) {
         SettingsPage.entries.forEachIndexed { i, page ->
@@ -142,13 +142,13 @@ private fun SettingsMenu(onOpen: (SettingsPage) -> Unit) {
                     Text(
                         text = if (missing > 0) "$missing not allowed yet" else page.subtitle,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = com.example.ui.theme.DotTheme.colors.textSecondary
                     )
                 }
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    tint = com.example.ui.theme.DotTheme.colors.textSecondary
                 )
             }
             if (i < SettingsPage.entries.lastIndex) {
@@ -168,7 +168,7 @@ private fun SettingsPageHeader(title: String, onBack: () -> Unit) {
         IconButton(onClick = onBack, modifier = Modifier.testTag("settings_back")) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
         }
-        Text(title.uppercase(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
+        Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
     }
 }
 
@@ -196,7 +196,7 @@ private fun PermissionsPage() {
     Text(
         text = "Every permission is optional. Allow only what your widgets need.",
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        color = com.example.ui.theme.DotTheme.colors.textSecondary
     )
     PermissionList(accent = globalAccent, showGranted = true)
 }
@@ -209,11 +209,10 @@ private fun AccentCard() {
     val globalAccent by prefs.accent.collectAsState()
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -222,7 +221,7 @@ private fun AccentCard() {
             ) {
                 Icon(Icons.Default.Palette, contentDescription = null, tint = com.example.ui.components.headerIconTint())
                 Text(
-                    text = "GLOBAL ACCENT REPAINT",
+                    text = "Global accent repaint",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -233,7 +232,7 @@ private fun AccentCard() {
             Text(
                 text = "Instantly re-colors all active widgets placed on your home screen.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -253,7 +252,7 @@ private fun AccentCard() {
                         Toast.makeText(context, "Repainted all placed widgets with ${globalAccent.displayName}!", Toast.LENGTH_SHORT).show()
                     }
                 },
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = com.example.ui.components.tonalButtonColors(MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -262,7 +261,7 @@ private fun AccentCard() {
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("REPAINT ALL PLACED WIDGETS", style = MaterialTheme.typography.labelLarge)
+                Text("Repaint all placed widgets", style = MaterialTheme.typography.labelLarge)
             }
         }
     }
@@ -278,11 +277,10 @@ private fun WidgetStatusCard() {
     val lastRefresh = prefs.getLastWidgetRefresh()
     val nextRefresh = if (widgetCount == 0) "Paused — no widgets" else "In 1 min"
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(
@@ -291,7 +289,7 @@ private fun WidgetStatusCard() {
             ) {
                 Icon(Icons.Default.BatteryChargingFull, contentDescription = null, tint = com.example.ui.components.headerIconTint())
                 Text(
-                    text = "WIDGET STATUS",
+                    text = "Widget status",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -311,11 +309,10 @@ private fun AboutCard() {
     val context = LocalContext.current
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
@@ -335,23 +332,23 @@ private fun AboutCard() {
             Text(
                 text = "An independent dot-matrix widget pack. No ads, no accounts, no analytics.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
             Text(
                 text = "Dot Widgets is an independent app. It is not affiliated with, endorsed by, or sponsored by Nothing Technology Limited. Nothing, Nothing OS and Glyph are trademarks of their owner.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                color = com.example.ui.theme.DotTheme.colors.textSecondary,
                 modifier = Modifier.testTag("non_affiliation")
             )
             Text(
                 text = "Data sources: weather, air quality and geocoding by Open-Meteo.com (CC BY 4.0); crypto prices by CoinGecko; exchange rates by ExchangeRate-API (open.er-api.com); stock quotes by Stooq.",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
             Text(
-                text = "Typography: Space Grotesk (OFL) & JetBrains Mono (OFL).",
+                text = "Typography: Geist and Geist Mono (OFL).",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
             TextButton(
                 onClick = {
@@ -360,7 +357,7 @@ private fun AboutCard() {
                     }.onFailure { Toast.makeText(context, PRIVACY_POLICY_URL, Toast.LENGTH_LONG).show() }
                 },
                 modifier = Modifier.testTag("privacy_policy")
-            ) { Text("PRIVACY POLICY", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) }
+            ) { Text("Privacy policy", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold) }
         }
     }
 }
@@ -393,13 +390,13 @@ fun AuditRow(title: String, status: String) {
                 modifier = Modifier
                     .size(6.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFB8E000))
+                    .background(com.example.ui.theme.DotTheme.colors.success)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = status,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
         }
     }

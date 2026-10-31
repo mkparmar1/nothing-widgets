@@ -61,17 +61,17 @@ fun ThemeStudioCard() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
             .padding(16.dp)
             .testTag("theme_studio_card"),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Column {
-            Text("THEME STUDIO", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Themes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
                 "Add widgets from the Themes filter on the Widgets tab, then choose how they look here.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -80,7 +80,7 @@ fun ThemeStudioCard() {
                 Text(
                     "Light sweeps and pulses on theme widgets",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = com.example.ui.theme.DotTheme.colors.textSecondary
                 )
             }
             Switch(
@@ -120,11 +120,11 @@ private fun PackRow(pack: ThemePack, isSelected: Boolean, onUse: () -> Unit, onW
             PackPreview(pack, "toggle.theme.quick", SizeBucket.S, Modifier.width(88.dp))
             PackPreview(pack, "prod.focus.timer.theme", SizeBucket.M, Modifier.weight(1f))
         }
-        Text(pack.name.uppercase(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+        Text(pack.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
         Text(
             pack.description,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = com.example.ui.theme.DotTheme.colors.textSecondary
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Button(
@@ -133,9 +133,9 @@ private fun PackRow(pack: ThemePack, isSelected: Boolean, onUse: () -> Unit, onW
                 colors = tonalButtonColors(accent),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.height(44.dp).testTag("theme_use_${pack.id}")
-            ) { Text(if (isSelected) "IN USE" else "USE THEME", style = MaterialTheme.typography.labelLarge) }
+            ) { Text(if (isSelected) "In use" else "Use theme", style = MaterialTheme.typography.labelLarge) }
             TextButton(onClick = onWallpaper, colors = ButtonDefaults.textButtonColors(contentColor = accent)) {
-                Text("SET WALLPAPER", style = MaterialTheme.typography.labelLarge)
+                Text("Set wallpaper", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

@@ -59,7 +59,7 @@ fun WidgetConfigSheet(
             definition = definition,
             initial = initial,
             lockedSize = null,
-            saveLabel = "ADD TO HOME SCREEN",
+            saveLabel = "Add to home screen",
             onAddToLockScreen = { state ->
                 if (LockScreenWidgets.isSupported(context)) {
                     LockScreenWidgets.savePending(context, definition.id, state.toConfigJson(definition.id))

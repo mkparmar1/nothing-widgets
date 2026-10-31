@@ -91,21 +91,20 @@ fun WeatherLocationCard(accent: AccentOption) {
     }
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
             .testTag("weather_location_card")
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.LocationOn, contentDescription = null, tint = com.example.ui.components.headerIconTint())
-                Text("WEATHER LOCATION", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Weather location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
             Text(
                 text = buildString {
-                    append(place.name.uppercase())
+                    append(place.name)
                     if (place.region.isNotBlank()) append(" • ${place.region.uppercase()}")
                     if (!chosen) append(" (FROM TIME ZONE)")
                 },
@@ -119,7 +118,7 @@ fun WeatherLocationCard(accent: AccentOption) {
                     else locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
                 },
                 enabled = !busy,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = com.example.ui.components.tonalButtonColors(MaterialTheme.colorScheme.primary),
                 modifier = Modifier.fillMaxWidth().height(44.dp).testTag("use_my_location")
             ) {
@@ -134,8 +133,8 @@ fun WeatherLocationCard(accent: AccentOption) {
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { search() }),
-                trailingIcon = { TextButton(onClick = { search() }, enabled = !busy) { Text("SEARCH", color = MaterialTheme.colorScheme.primary) } },
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, cursorColor = MaterialTheme.colorScheme.primary, focusedLabelColor = MaterialTheme.colorScheme.primary),
+                trailingIcon = { TextButton(onClick = { search() }, enabled = !busy) { Text("Search", color = MaterialTheme.colorScheme.primary) } },
+                colors = com.example.ui.components.dotFieldColors(),
                 modifier = Modifier.fillMaxWidth().testTag("city_search")
             )
 
@@ -152,7 +151,7 @@ fun WeatherLocationCard(accent: AccentOption) {
 
             if (chosen) {
                 TextButton(onClick = { choose(null) }) {
-                    Text("USE TIME ZONE INSTEAD", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Text("Use time zone instead", color = com.example.ui.theme.DotTheme.colors.textSecondary)
                 }
             }
         }

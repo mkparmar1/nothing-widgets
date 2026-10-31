@@ -98,14 +98,14 @@ fun WeatherDetailSheet(
             ) {
                 Column {
                     Text(
-                        text = "ATMOSPHERIC METRICS",
+                        text = "Atmospheric metrics",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Real-time Open-Meteo telemetry with stale-guard",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = com.example.ui.theme.DotTheme.colors.textSecondary
                     )
                 }
                 IconButton(onClick = onDismiss) {
@@ -124,7 +124,7 @@ fun WeatherDetailSheet(
                     FilterChip(
                         selected = city == selectedCity,
                         onClick = { selectedCity = city },
-                        label = { Text((city ?: myPlaceName).uppercase()) },
+                        label = { Text(city ?: myPlaceName) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = Color.White
@@ -150,9 +150,8 @@ fun WeatherDetailSheet(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .background(Color(0xFF000000))
-                            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
                             .padding(24.dp)
                     ) {
                         Column {
@@ -161,14 +160,14 @@ fun WeatherDetailSheet(
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(
-                                    text = data.cityName.uppercase(),
+                                    text = data.cityName,
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                    color = com.example.ui.theme.DotTheme.colors.textSecondary
                                 )
                                 Text(
-                                    text = if (data.isStale) "STALE (>90 MIN)" else "LIVE SYNC",
+                                    text = if (data.isStale) "STALE (>90 MIN)" else "Live sync",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = if (data.isStale) Color(0xFFE02B2B) else com.example.ui.theme.readableAccent(Color(0xFFB8E000))
+                                    color = if (data.isStale) Color(0xFFE02B2B) else com.example.ui.theme.DotTheme.colors.success
                                 )
                             }
 
@@ -182,7 +181,7 @@ fun WeatherDetailSheet(
                             )
 
                             Text(
-                                text = "${data.description.uppercase()} • HIGH: ${data.highC}°C  LOW: ${data.lowC}°C",
+                                text = "${data.description} • HIGH: ${data.highC}°C  LOW: ${data.lowC}°C",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
@@ -222,16 +221,15 @@ fun WeatherDetailSheet(
 fun WeatherMetricBox(title: String, value: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, Color(0x228A8A8A), RoundedCornerShape(14.dp))
             .padding(16.dp)
     ) {
         Column {
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(

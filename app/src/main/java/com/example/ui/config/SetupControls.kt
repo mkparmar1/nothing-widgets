@@ -71,7 +71,7 @@ private val ChipShape = RoundedCornerShape(12.dp)
 private const val ANIM_MS = 180
 
 @Composable
-internal fun mutedText(): Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+internal fun mutedText(): Color = com.example.ui.theme.DotTheme.colors.textSecondary
 
 /** Faint fill for unselected controls; reads on both the light and dark theme. */
 @Composable
@@ -232,7 +232,7 @@ internal fun <T> SegmentedControl(
             .fillMaxWidth()
             .padding(horizontal = PagePadding)
             .height(48.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(controlFill())
             .padding(4.dp)
     ) {
@@ -240,7 +240,7 @@ internal fun <T> SegmentedControl(
         val offset by animateDpAsState(segment * index, tween(220), label = "thumb")
         Surface(
             modifier = Modifier.offset(x = offset).width(segment).fillMaxHeight(),
-            shape = RoundedCornerShape(10.dp),
+            shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surface,
             border = BorderStroke(1.dp, accent.copy(alpha = 0.7f)),
             shadowElevation = 1.dp
@@ -255,7 +255,7 @@ internal fun <T> SegmentedControl(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .selectable(selected = active, role = Role.Tab) { onSelect(option.value) }
                         .testTag("${tagPrefix}_${option.label.lowercase()}"),
                     horizontalArrangement = Arrangement.Center,

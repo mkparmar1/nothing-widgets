@@ -116,17 +116,18 @@ fun PermissionsScreen(
             .navigationBarsPadding()
             .testTag("permissions_screen")
     ) {
-        // ---- Welcome: what the app makes, shown live
+        // ---- Welcome: what the app makes, shown live, on the faint dot grid
+        Box(Modifier.weight(1f).fillMaxWidth()) {
+        com.example.ui.components.DotMatrixBackdrop(Modifier.fillMaxSize())
         Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "DOT WIDGETS",
+                text = "Dot Widgets",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -141,6 +142,7 @@ fun PermissionsScreen(
                 color = muted
             )
             WelcomePreview(accent)
+        }
         }
 
         // ---- Thumb zone: the one permission and the main action
@@ -162,7 +164,7 @@ fun PermissionsScreen(
                 Icon(
                     if (granted) Icons.Default.CheckCircle else AppPermission.ExactAlarms.icon,
                     contentDescription = null,
-                    tint = if (granted) com.example.ui.theme.readableAccent(Color(0xFFB8E000)) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    tint = if (granted) com.example.ui.theme.DotTheme.colors.success else com.example.ui.theme.DotTheme.colors.textSecondary,
                     modifier = Modifier.size(24.dp)
                 )
                 Column(Modifier.weight(1f)) {
@@ -175,7 +177,7 @@ fun PermissionsScreen(
                         text = if (granted) "Alarms & reminders access is on."
                         else "Needs Alarms & reminders access. Weather, calendar and other data are asked for only when a widget uses them.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = com.example.ui.theme.DotTheme.colors.textSecondary
                     )
                 }
             }
@@ -199,7 +201,7 @@ fun PermissionsScreen(
                     .height(56.dp)
                     .testTag("permissions_primary")
             ) {
-                Text(if (granted) "GET STARTED" else "ALLOW AND CONTINUE", style = MaterialTheme.typography.titleMedium)
+                Text(if (granted) "Get started" else "Allow and continue", style = MaterialTheme.typography.titleMedium)
             }
             if (!granted) {
                 TextButton(
@@ -331,7 +333,7 @@ private fun PermissionRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
             .padding(16.dp)
             .testTag("permission_${permission.id}"),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -342,7 +344,7 @@ private fun PermissionRow(
         ) {
             Icon(permission.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             Text(
-                text = permission.title.uppercase(),
+                text = permission.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -351,26 +353,26 @@ private fun PermissionRow(
         Text(
             text = permission.description,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = com.example.ui.theme.DotTheme.colors.textSecondary
         )
         if (granted) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.example.ui.theme.readableAccent(Color(0xFFB8E000)), modifier = Modifier.size(18.dp))
-                Text("ALLOWED", style = MaterialTheme.typography.labelLarge, color = com.example.ui.theme.readableAccent(Color(0xFFB8E000)), fontWeight = FontWeight.Bold)
+                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.example.ui.theme.DotTheme.colors.success, modifier = Modifier.size(18.dp))
+                Text("Allowed", style = MaterialTheme.typography.labelLarge, color = com.example.ui.theme.DotTheme.colors.success, fontWeight = FontWeight.Bold)
             }
         } else {
             Button(
                 onClick = onAllow,
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = com.example.ui.components.tonalButtonColors(MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp)
             ) {
-                Text("ALLOW", fontWeight = FontWeight.Bold)
+                Text("Allow", fontWeight = FontWeight.Bold)
             }
         }
     }

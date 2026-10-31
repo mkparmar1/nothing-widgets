@@ -131,14 +131,14 @@ fun TagPill(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
-            .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(8.dp))
+            .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
             .background(accentColor.copy(alpha = 0.12f))
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
-            text = text.uppercase(),
+            text = text,
             style = MaterialTheme.typography.labelSmall,
             color = accentColor
         )
@@ -159,7 +159,7 @@ fun SectionHeader(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = title.uppercase(),
+                text = title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -168,7 +168,7 @@ fun SectionHeader(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = com.example.ui.theme.DotTheme.colors.textSecondary
                 )
             }
         }
@@ -199,13 +199,13 @@ fun EmptyStateView(
                 .size(64.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, Color(0x338A8A8A), CircleShape),
+                .border(1.dp, com.example.ui.theme.DotTheme.colors.surfaceSecondary, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                tint = com.example.ui.theme.DotTheme.colors.textSecondary,
                 modifier = Modifier.size(32.dp)
             )
         }
@@ -213,7 +213,7 @@ fun EmptyStateView(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = title.uppercase(),
+            text = title,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -225,7 +225,7 @@ fun EmptyStateView(
         Text(
             text = message,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            color = com.example.ui.theme.DotTheme.colors.textSecondary,
             textAlign = TextAlign.Center
         )
 
@@ -233,8 +233,8 @@ fun EmptyStateView(
             Spacer(modifier = Modifier.height(16.dp))
             OutlinedButton(
                 onClick = onAction,
-                shape = RoundedCornerShape(10.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x338A8A8A))
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, com.example.ui.theme.DotTheme.colors.surfaceSecondary)
             ) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
@@ -244,7 +244,7 @@ fun EmptyStateView(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = actionLabel.uppercase(),
+                    text = actionLabel,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -260,9 +260,9 @@ fun EmptyStateView(
 @Composable
 fun tonalButtonColors(accent: Color) = androidx.compose.material3.ButtonDefaults.buttonColors(
     containerColor = accent.copy(alpha = 0.14f),
-    contentColor = accent
+    contentColor = com.example.ui.theme.readableAccent(accent)
 )
 
 /** Icon tint for card headers: neutral, so the accent is saved for actions and selection. */
 @Composable
-fun headerIconTint(): Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+fun headerIconTint(): Color = com.example.ui.theme.DotTheme.colors.textSecondary

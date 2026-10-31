@@ -99,6 +99,7 @@ fun ShortcutEditor(widgetId: String, accent: AccentOption, onChanged: () -> Unit
                         save(i, if (url.isBlank()) null else Shortcut(Shortcut.Kind.WEB, label.ifBlank { url.removePrefix("https://").removePrefix("www.").substringBefore('/') }, url.trim()))
                     }
                     OutlinedTextField(value = url, onValueChange = { url = it; update() }, label = { Text("Link (e.g. github.com)") }, singleLine = true,
+                        colors = com.example.ui.components.dotFieldColors(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = label, onValueChange = { label = it.take(20); update() }, label = { Text("Name (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 }
@@ -124,6 +125,7 @@ fun ShortcutEditor(widgetId: String, accent: AccentOption, onChanged: () -> Unit
         if (widgetId == "shortcut.direct.dial") {
             var number by remember { mutableStateOf(slots.firstOrNull()?.value ?: "") }
             OutlinedTextField(
+                colors = com.example.ui.components.dotFieldColors(),
                 value = number,
                 onValueChange = {
                     number = it.filter { ch -> ch.isDigit() || ch == '+' }
@@ -174,14 +176,14 @@ private fun ContactPickerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
         title = { Text("Pick a contact") },
         text = {
             if (contacts.isEmpty()) {
                 Column {
                     Text("No contacts found.", style = MaterialTheme.typography.bodyMedium)
                     Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(onClick = onSystemPicker) { Text("USE SYSTEM PICKER") }
+                    TextButton(onClick = onSystemPicker) { Text("Use system picker") }
                 }
             } else {
                 LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
@@ -194,7 +196,7 @@ private fun ContactPickerDialog(
                                 .padding(vertical = 8.dp)
                         ) {
                             Text(contact.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                            Text(contact.number, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                            Text(contact.number, style = MaterialTheme.typography.bodySmall, color = com.example.ui.theme.DotTheme.colors.textSecondary)
                         }
                     }
                 }
@@ -209,13 +211,13 @@ private fun SlotRow(label: String, filled: Boolean, accent: AccentOption, action
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, if (filled) MaterialTheme.colorScheme.primary else Color(0x338A8A8A), RoundedCornerShape(8.dp))
+            .border(1.dp, if (filled) MaterialTheme.colorScheme.primary else com.example.ui.theme.DotTheme.colors.surfaceSecondary, RoundedCornerShape(8.dp))
             .padding(start = 12.dp)
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = if (filled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), modifier = Modifier.weight(1f))
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = if (filled) MaterialTheme.colorScheme.onSurface else com.example.ui.theme.DotTheme.colors.textSecondary, modifier = Modifier.weight(1f))
         TextButton(onClick = onPick) { Text(actionText, color = MaterialTheme.colorScheme.primary) }
         if (filled) {
-            IconButton(onClick = onClear) { Icon(Icons.Default.Close, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
+            IconButton(onClick = onClear) { Icon(Icons.Default.Close, contentDescription = "Clear", tint = com.example.ui.theme.DotTheme.colors.textSecondary) }
         }
     }
 }
@@ -235,7 +237,7 @@ private fun AppPickerDialog(onPick: (String, String) -> Unit, onDismiss: () -> U
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
         title = { Text("Pick an app") },
         text = {
             LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {

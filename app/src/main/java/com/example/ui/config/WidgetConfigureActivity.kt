@@ -156,7 +156,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                             com.example.data.setups.SetupShareRepository.importedConfig(this@WidgetConfigureActivity, selectedDefinition.id)?.toString()
                         ),
                         lockedSize = size,
-                        saveLabel = if (editInstance == null) "ADD WIDGET" else "SAVE CHANGES",
+                        saveLabel = if (editInstance == null) "Add widget" else "Save changes",
                         saveError = saveError,
                         onStateChange = { setupState = it },
                         onSave = { state ->
@@ -250,7 +250,7 @@ private fun WidgetDesignPicker(
 
     Column(Modifier.fillMaxSize()) {
         Text(
-            text = "CHOOSE A ${size.label.uppercase()} WIDGET",
+            text = "Choose a ${size.label.lowercase()} widget",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)

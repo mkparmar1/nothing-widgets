@@ -85,7 +85,7 @@ fun WallpapersScreen(
     Column(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
-                text = "WALLPAPERS",
+                text = "Wallpapers",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -93,7 +93,7 @@ fun WallpapersScreen(
             Text(
                 text = "${wallpapers.size} dot-matrix designs, palette-matched to your widgets.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
         }
 
@@ -162,7 +162,6 @@ fun WallpapersScreen(
                     .fillMaxWidth(0.92f)
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color(0xFF0A0A0A))
-                    .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(24.dp))
                     .padding(16.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -173,7 +172,7 @@ fun WallpapersScreen(
                     ) {
                         Column {
                             Text(
-                                text = item.name.uppercase(),
+                                text = item.name,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -181,7 +180,7 @@ fun WallpapersScreen(
                             Text(
                                 text = "TAG: ${item.tag}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                color = com.example.ui.theme.DotTheme.colors.textSecondary
                             )
                         }
                         IconButton(onClick = { selectedWallpaper = null }) {
@@ -196,7 +195,6 @@ fun WallpapersScreen(
                             .fillMaxWidth()
                             .height(340.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(16.dp))
                     ) {
                         Image(
                             bitmap = previewBitmap.asImageBitmap(),
@@ -237,7 +235,7 @@ fun WallpapersScreen(
                         } else {
                             Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("SET AS WALLPAPER", style = MaterialTheme.typography.labelLarge)
+                            Text("Set as wallpaper", style = MaterialTheme.typography.labelLarge)
                         }
                     }
                 }
@@ -261,7 +259,6 @@ fun WallpaperThumb(
             .aspectRatio(9f / 16f)
             .clip(RoundedCornerShape(12.dp))
             .background(Color(item.bgHex))
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(12.dp))
             .clickable { onClick() }
     ) {
         Image(

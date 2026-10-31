@@ -297,7 +297,7 @@ fun WidgetSetupContent(
         val header: @Composable () -> Unit = {
             Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 4.dp, bottom = 12.dp)) {
                 Text(
-                    definition.title.uppercase(),
+                    definition.title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -530,7 +530,7 @@ fun WidgetSetupContent(
                         colors = com.example.ui.components.tonalButtonColors(ui),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("ADD TO LOCK SCREEN", style = MaterialTheme.typography.labelLarge)
+                        Text("Add to lock screen", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -570,7 +570,7 @@ private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
         Icon(permission.icon, contentDescription = null, tint = accentColor, modifier = Modifier.width(22.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "${permission.title.uppercase()} NEEDED",
+                "${permission.title} needed",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -592,7 +592,7 @@ private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
             colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = com.example.ui.theme.contentColorOn(accentColor)),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Text("ALLOW", fontWeight = FontWeight.Bold)
+            Text("Allow", fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -656,7 +656,7 @@ private fun TimeZonePicker(selectedZone: String?, accentColor: Color, onPick: (S
         AlertDialog(
             onDismissRequest = { showDialog = false },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { showDialog = false }) { Text("CANCEL") } },
+            dismissButton = { TextButton(onClick = { showDialog = false }) { Text("Cancel") } },
             title = { Text("Pick a time zone") },
             text = {
                 LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
@@ -710,6 +710,7 @@ private fun StackItemsSection(state: WidgetSetupState, accent: Color, update: (W
         }
         if (state.stackItems.size < CollectionWidgets.MAX_STACK) {
             OutlinedTextField(
+                colors = com.example.ui.components.dotFieldColors(),
                 value = query,
                 onValueChange = { query = it },
                 label = { Text("Search a widget to add") },

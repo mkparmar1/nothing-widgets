@@ -96,7 +96,7 @@ fun LockScreenGuideDialog(
                     Text(
                         "Saved for the next 30 minutes.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        color = com.example.ui.theme.DotTheme.colors.textSecondary
                     )
                 } else {
                     Text(
@@ -115,18 +115,18 @@ fun LockScreenGuideDialog(
         confirmButton = {
             if (supported) {
                 TextButton(onClick = onDismiss, modifier = Modifier.testTag("lock_guide_ok")) {
-                    Text("GOT IT", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text("Got it", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             } else {
                 TextButton(onClick = onAddToHomeScreen, modifier = Modifier.testTag("lock_guide_home")) {
-                    Text("ADD TO HOME SCREEN", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    Text("Add to home screen", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
         },
         dismissButton = if (supported) null else {
             {
                 TextButton(onClick = onDismiss) {
-                    Text("CLOSE", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                    Text("Close", color = com.example.ui.theme.DotTheme.colors.textSecondary)
                 }
             }
         }

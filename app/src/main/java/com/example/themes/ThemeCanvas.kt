@@ -105,7 +105,7 @@ private object ThemeFonts {
     fun get(context: Context, mono: Boolean, bold: Boolean): Typeface? = synchronized(cache) {
         cache.getOrPut("$mono/$bold") {
             val base = runCatching {
-                ResourcesCompat.getFont(context, if (mono) R.font.jetbrains_mono else R.font.space_grotesk)
+                ResourcesCompat.getFont(context, if (mono) R.font.geist_mono_medium else R.font.geist_medium)
             }.getOrNull()
             Typeface.create(base ?: Typeface.DEFAULT, if (bold) Typeface.BOLD else Typeface.NORMAL)
         }

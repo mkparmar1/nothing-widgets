@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
@@ -13,37 +14,31 @@ import androidx.compose.ui.platform.LocalContext
 import com.example.core.theme.AccentOption
 import com.example.core.theme.MaterialYouPalette
 
-private val DarkColorScheme = darkColorScheme(
+private fun scheme(dark: Boolean, c: DotColors) = (if (dark) darkColorScheme() else lightColorScheme()).copy(
     primary = AccentRed,
     onPrimary = White,
-    primaryContainer = Ink700,
-    onPrimaryContainer = White,
-    secondary = Ash,
-    onSecondary = Black,
-    background = Black,
-    onBackground = White,
-    surface = Ink900,
-    onSurface = White,
-    surfaceVariant = Ink700,
-    onSurfaceVariant = Fog,
-    outline = Ink500
+    primaryContainer = c.surfaceSecondary,
+    onPrimaryContainer = c.textPrimary,
+    secondary = c.textSecondary,
+    onSecondary = c.background,
+    background = c.background,
+    onBackground = c.textPrimary,
+    surface = c.surface,
+    onSurface = c.textPrimary,
+    surfaceVariant = c.surfaceSecondary,
+    onSurfaceVariant = c.textSecondary,
+    outline = c.border,
+    outlineVariant = c.divider,
+    error = c.danger,
+    surfaceContainerLowest = c.background,
+    surfaceContainerLow = c.surface,
+    surfaceContainer = c.surface,
+    surfaceContainerHigh = c.surfaceElevated,
+    surfaceContainerHighest = c.surfaceElevated
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = AccentRed,
-    onPrimary = White,
-    primaryContainer = Fog,
-    onPrimaryContainer = Black,
-    secondary = Ash,
-    onSecondary = White,
-    background = Paper,
-    onBackground = Ink900,
-    surface = White,
-    onSurface = Ink900,
-    surfaceVariant = Fog,
-    onSurfaceVariant = Ink700,
-    outline = Fog
-)
+private val DarkColorScheme = scheme(true, DarkDotColors)
+private val LightColorScheme = scheme(false, LightDotColors)
 
 /** WCAG contrast ratio between two colours (1..21). */
 fun contrastRatio(a: Color, b: Color): Float {
@@ -92,15 +87,18 @@ fun DotWidgetsTheme(
     val baseScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     // The accent is used for text, icons and selection on the theme background, so on the light
     // theme light accents (white, lime, amber, cyan) are darkened until they read.
-    val readable = readableAgainst(accent, baseScheme.background)
+    // Fills and selection need 3:1 on dark, so brand red stays true; text uses readableAccent().
+    val readable = readableAgainst(accent, baseScheme.background, if (darkTheme) 3f else 4.5f)
     val colorScheme = baseScheme.copy(
         primary = readable,
         onPrimary = contentColorOn(readable)
     )
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+    CompositionLocalProvider(LocalDotColors provides if (darkTheme) DarkDotColors else LightDotColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content
+        )
+    }
 }

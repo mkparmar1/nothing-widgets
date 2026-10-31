@@ -57,7 +57,7 @@ fun WidgetBitmapPreview(
             .aspectRatio(aspect)
             .clip(RoundedCornerShape(spec.cornerRadiusDp.dp))
             .background(if (spec.isDark) Color(0xFF000000) else Color(0xFFF2F2F2))
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(spec.cornerRadiusDp.dp)),
+            .border(1.dp, com.example.ui.theme.DotTheme.colors.surfaceSecondary, RoundedCornerShape(spec.cornerRadiusDp.dp)),
         contentAlignment = Alignment.Center
     ) {
         val currentBitmap = bitmap

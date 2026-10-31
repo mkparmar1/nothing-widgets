@@ -63,7 +63,7 @@ fun AdvancedOptionsSection(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "ADVANCED OPTIONS",
+            text = "Advanced options",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.2.sp,
@@ -225,10 +225,11 @@ private fun OptionTextRow(
         OptionLabel(option.label)
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
+            colors = com.example.ui.components.dotFieldColors(),
             value = value,
             onValueChange = onChange,
             singleLine = true,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
             placeholder = option.hint.ifEmpty { null }?.let { { Text(it) } },
             modifier = Modifier.fillMaxWidth().padding(horizontal = PagePadding).testTag("opt_${option.key}")
         )

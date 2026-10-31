@@ -120,7 +120,7 @@ private fun SkinThumbnail(definition: WidgetDefinition, spec: WidgetSpec, skin: 
         // A distinct instance id keeps thumbnails out of the full-size preview's cache slot.
         bitmap = runCatching { WidgetRenderEngine.renderBitmap(context, definition, thumbSpec, -1000 - skin.ordinal) }.getOrNull()
     }
-    Box(modifier.clip(RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+    Box(modifier.clip(RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
         bitmap?.takeIf { !it.isRecycled }?.let {
             Image(it.asImageBitmap(), contentDescription = "${skin.label} skin preview", modifier = Modifier.fillMaxSize())
         } ?: Box(Modifier.fillMaxSize().background(controlFill()))
@@ -281,23 +281,24 @@ private fun CustomColorDialog(initial: Int, onDismiss: () -> Unit, onPick: (Int)
         title = { Text("Custom colour", fontWeight = FontWeight.Bold) },
         confirmButton = {
             TextButton(onClick = { onPick(color.toArgb()) }, modifier = Modifier.testTag("custom_color_apply")) {
-                Text("APPLY", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text("Apply", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("CANCEL", color = mutedText()) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = mutedText()) } },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Box(
                         Modifier
                             .size(52.dp)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(Color.Black)
                             .padding(12.dp)
                             .clip(CircleShape)
                             .background(color)
                     )
                     OutlinedTextField(
+                        colors = com.example.ui.components.dotFieldColors(),
                         value = hexText,
                         onValueChange = { text ->
                             hexText = text
@@ -346,7 +347,7 @@ private fun CustomColorDialog(initial: Int, onDismiss: () -> Unit, onPick: (Int)
 
 @Composable
 private fun PickerLabel(text: String) {
-    Text(text.uppercase(), style = MaterialTheme.typography.labelSmall, color = mutedText(), modifier = Modifier.fillMaxWidth())
+    Text(text, style = MaterialTheme.typography.labelSmall, color = mutedText(), modifier = Modifier.fillMaxWidth())
 }
 
 private const val MIN_BRIGHTNESS = 0.4f

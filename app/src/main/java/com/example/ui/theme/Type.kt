@@ -8,45 +8,59 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.R
 
-val SpaceGrotesk = FontFamily(
-    Font(R.font.space_grotesk, FontWeight.Normal),
-    Font(R.font.space_grotesk, FontWeight.Bold)
+val GeistSans = FontFamily(
+    Font(R.font.geist_regular, FontWeight.Normal),
+    Font(R.font.geist_medium, FontWeight.Medium),
+    Font(R.font.geist_semibold, FontWeight.SemiBold),
+    Font(R.font.geist_semibold, FontWeight.Bold)
 )
 
-val JetBrainsMono = FontFamily(
-    Font(R.font.jetbrains_mono, FontWeight.Normal),
-    Font(R.font.jetbrains_mono, FontWeight.Bold)
+val GeistMono = FontFamily(
+    Font(R.font.geist_mono_regular, FontWeight.Normal),
+    Font(R.font.geist_mono_medium, FontWeight.Medium),
+    Font(R.font.geist_mono_semibold, FontWeight.SemiBold),
+    Font(R.font.geist_mono_semibold, FontWeight.Bold)
 )
+
+private fun sans(size: Int, line: Int, weight: FontWeight, tracking: Double = 0.0) = TextStyle(
+    fontFamily = GeistSans, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, letterSpacing = tracking.sp
+)
+
+private fun mono(size: Int, line: Int, weight: FontWeight, tracking: Double) = TextStyle(
+    fontFamily = GeistMono, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, letterSpacing = tracking.sp
+)
+
+/** Named styles with no direct Material role. */
+object DotType {
+    /** Big technical numbers: battery level, temperature, stats. */
+    val NumericDisplay = mono(40, 44, FontWeight.Medium, -1.0)
+    val NumericSmall = mono(20, 24, FontWeight.Medium, -0.25)
+}
 
 /*
- * The whole app uses four sizes and two weights:
- *   24sp  screen titles            (headline*)
- *   16sp  card and section titles  (title*)
- *   14sp  body text and buttons    (body*, labelLarge)
- *   12sp  secondary text, tags     (bodySmall, labelMedium, labelSmall)
- * Space Grotesk for text; JetBrains Mono for small uppercase tags and numbers.
+ * The type scale. Geist for interface text; Geist Mono for small technical labels and numbers.
+ *   Display Large/Medium  displayLarge, displayMedium
+ *   Heading Large/Med/Small  headlineLarge, headlineMedium, headlineSmall
+ *   Card titles           titleLarge, titleMedium, titleSmall
+ *   Body Large/Med/Small  bodyLarge, bodyMedium, bodySmall
+ *   Label Large           labelLarge (buttons)
+ *   Label Small           labelMedium, labelSmall (mono technical labels)
  * Every Material role is defined so nothing falls back to the platform font.
  */
-private val Headline = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 32.sp, letterSpacing = 0.5.sp)
-private val Title = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 24.sp, letterSpacing = 0.5.sp)
-private val Body = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.25.sp)
-private val Small = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.25.sp)
-private val Tag = TextStyle(fontFamily = JetBrainsMono, fontWeight = FontWeight.Bold, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 1.sp)
-
 val Typography = Typography(
-    displayLarge = Headline,
-    displayMedium = Headline,
-    displaySmall = Headline,
-    headlineLarge = Headline,
-    headlineMedium = Headline,
-    headlineSmall = Headline,
-    titleLarge = Title,
-    titleMedium = Title,
-    titleSmall = Title,
-    bodyLarge = Body,
-    bodyMedium = Body,
-    bodySmall = Small,
-    labelLarge = Body.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp),
-    labelMedium = Tag,
-    labelSmall = Tag
+    displayLarge = sans(40, 48, FontWeight.SemiBold, -0.8),
+    displayMedium = sans(32, 40, FontWeight.SemiBold, -0.6),
+    displaySmall = sans(28, 36, FontWeight.SemiBold, -0.4),
+    headlineLarge = sans(28, 36, FontWeight.SemiBold, -0.4),
+    headlineMedium = sans(24, 32, FontWeight.SemiBold, -0.3),
+    headlineSmall = sans(20, 28, FontWeight.SemiBold, -0.2),
+    titleLarge = sans(18, 24, FontWeight.SemiBold, -0.1),
+    titleMedium = sans(16, 22, FontWeight.Medium),
+    titleSmall = sans(14, 20, FontWeight.Medium),
+    bodyLarge = sans(16, 24, FontWeight.Normal),
+    bodyMedium = sans(14, 20, FontWeight.Normal),
+    bodySmall = sans(12, 16, FontWeight.Normal, 0.1),
+    labelLarge = sans(14, 20, FontWeight.Medium, 0.1),
+    labelMedium = mono(12, 16, FontWeight.Medium, 0.4),
+    labelSmall = mono(11, 14, FontWeight.Medium, 0.6)
 )

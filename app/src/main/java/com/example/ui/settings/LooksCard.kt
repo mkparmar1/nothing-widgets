@@ -48,22 +48,21 @@ fun LooksCard(accent: AccentOption) {
     var busy by remember { mutableStateOf(false) }
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
             .testTag("looks_card")
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Palette, contentDescription = null, tint = headerIconTint())
-                Text("LOOKS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Looks", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
             Text(
                 "Restyle every widget on your home screen in one tap. Each widget keeps its content and settings.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
             Looks.ALL.forEach { look ->
                 Row(
@@ -71,7 +70,7 @@ fun LooksCard(accent: AccentOption) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable(enabled = !busy) {
                             busy = true
                             scope.launch {
@@ -85,10 +84,10 @@ fun LooksCard(accent: AccentOption) {
                 ) {
                     LookThumbnail(look)
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(look.name.uppercase(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                        Text(look.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        Text(look.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                        Text(look.description, style = MaterialTheme.typography.bodySmall, color = com.example.ui.theme.DotTheme.colors.textSecondary)
                     }
-                    Text("APPLY", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                    Text("Apply", color = com.example.ui.theme.DotTheme.colors.textSecondary, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
                 }
             }
         }

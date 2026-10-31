@@ -56,26 +56,26 @@ fun ConnectionsCard(accent: AccentOption) {
     fun redraw() = scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context.applicationContext, force = true) }
 
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0x338A8A8A), RoundedCornerShape(20.dp))
             .testTag("connections_card")
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Link, contentDescription = null, tint = headerIconTint())
-                Text("CONNECTIONS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text("Connections", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
 
-            Text("HOME ASSISTANT", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Text("Home Assistant", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             Text(
                 "For the Smart Home widgets. Your token is stored encrypted on this phone, is sent only to your server, and is never backed up.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
             OutlinedTextField(
+                colors = com.example.ui.components.dotFieldColors(),
                 value = haUrl,
                 onValueChange = { haUrl = it },
                 label = { Text("Server URL, e.g. http://homeassistant.local:8123") },
@@ -84,6 +84,7 @@ fun ConnectionsCard(accent: AccentOption) {
                 modifier = Modifier.fillMaxWidth().testTag("ha_url")
             )
             OutlinedTextField(
+                colors = com.example.ui.components.dotFieldColors(),
                 value = haToken,
                 onValueChange = { haToken = it },
                 label = { Text("Long-lived access token") },
@@ -115,23 +116,24 @@ fun ConnectionsCard(accent: AccentOption) {
                     },
                     colors = tonalButtonColors(MaterialTheme.colorScheme.primary),
                     modifier = Modifier.testTag("ha_save")
-                ) { Text("SAVE") }
+                ) { Text("Save") }
                 if (haConnected) {
                     TextButton(onClick = {
                         HomeAssistantRepository.clearServer(context)
                         haUrl = ""; haToken = ""; haConnected = false
                         redraw()
-                    }) { Text("DISCONNECT", color = MaterialTheme.colorScheme.primary) }
+                    }) { Text("Disconnect", color = MaterialTheme.colorScheme.primary) }
                 }
             }
 
-            Text("SPORTS FEED", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            Text("Sports feed", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
             Text(
                 "For the Team Score, Fixture, Table, Form, Cricket and Tennis widgets. Dot Widgets has no built-in score service: add a URL that returns your team's data as JSON.",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
             )
             OutlinedTextField(
+                colors = com.example.ui.components.dotFieldColors(),
                 value = feedUrl,
                 onValueChange = { feedUrl = it },
                 label = { Text("Feed URL (https://…)") },
@@ -146,7 +148,7 @@ fun ConnectionsCard(accent: AccentOption) {
                     Toast.makeText(context, if (feedUrl.isBlank()) "Sports feed removed" else "Sports feed saved", Toast.LENGTH_SHORT).show()
                 },
                 colors = tonalButtonColors(MaterialTheme.colorScheme.primary)
-            ) { Text("SAVE FEED") }
+            ) { Text("Save feed") }
         }
     }
 }
