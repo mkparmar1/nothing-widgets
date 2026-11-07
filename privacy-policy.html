@@ -116,7 +116,7 @@
 </head>
 <body>
     <h1>Dot Widgets — Privacy Policy</h1>
-    <p class="subtitle">Last updated: 21 October 2026</p>
+    <p class="subtitle">Last updated: 7 November 2026</p>
 
     <div class="summary">
         <strong>In short:</strong> the app has no accounts, no ads, no analytics and no crash reporting. It has no server of its own. Most of what it shows is read and drawn on your phone. A few widgets fetch public data (such as weather) from the third-party services listed below.
@@ -165,6 +165,16 @@
                 <td>Bluetooth, Do Not Disturb access (optional)</td>
             </tr>
             <tr>
+                <td>Contacts you choose for shortcut widgets (name and phone number)</td>
+                <td>Call and message shortcut widgets</td>
+                <td>Contacts (optional), or the system contact picker</td>
+            </tr>
+            <tr>
+                <td>Health entries you type in yourself (sleep, resting heart rate, weight, calories, workouts, meditation)</td>
+                <td>Health widgets</td>
+                <td>None</td>
+            </tr>
+            <tr>
                 <td>Notes, to-dos, habits, counters, photos you pick and other widget settings</td>
                 <td>The widgets you configure</td>
                 <td>None</td>
@@ -172,7 +182,7 @@
         </tbody>
     </table>
 
-    <p>This data is stored in the app's private storage on your phone. Widget settings may be included in your Android device backup (Google's backup service, if you have it turned on). Your Home Assistant server address and token are excluded from backups.</p>
+    <p>This data is stored in the app's private storage on your phone. If you have Android device backup turned on (Google's backup service), the app's data may be included in it, including widget settings, your saved weather place, contacts you chose for shortcuts, health entries you typed and photos you picked. Your Home Assistant server address and token are excluded from backups.</p>
 
     <h2>2. Data sent to third-party services</h2>
     <p>Some widgets need data from the internet. The app connects directly to these services. No account or identifier from the app is sent with these requests, but, as with any internet request, the service can see your IP address.</p>
@@ -193,7 +203,7 @@
             </tr>
             <tr>
                 <td><a href="https://www.coingecko.com/" target="_blank" rel="noopener">CoinGecko</a></td>
-                <td>The coin symbols you follow</td>
+                <td>The coins you choose in crypto widgets (Bitcoin by default) and your display currency</td>
                 <td>Crypto price widgets</td>
             </tr>
             <tr>
@@ -202,28 +212,23 @@
                 <td>Currency widgets</td>
             </tr>
             <tr>
-                <td><a href="https://stooq.com/" target="_blank" rel="noopener">Stooq</a></td>
-                <td>The stock symbols you follow</td>
-                <td>Stock widgets</td>
-            </tr>
-            <tr>
                 <td>Android's built-in geocoder (provided by Google on most phones)</td>
-                <td>Approximate coordinates, when you use "use my location"</td>
+                <td>Approximate coordinates, when the app reads your location</td>
                 <td>Turning your location into a place name</td>
             </tr>
         </tbody>
     </table>
 
     <h3>Location</h3>
-    <p>If you choose "use my location" for weather, the app reads your <strong>approximate</strong> (coarse) location and sends those coordinates to Open-Meteo to get your forecast, and to your phone's geocoder to name the place. The app does not use precise location and does not track your location in the background. You can instead search for a city, or let the app guess from your time zone.</p>
+    <p>The app reads your <strong>approximate</strong> (coarse) location only when you tap "use my location" for weather, or right after you allow location access during setup. It reads it once, saves the resulting place on your phone, and asks your phone's geocoder to name it. Those saved coordinates are then sent to Open-Meteo each time weather and air quality refresh, about every 15 to 30 minutes while weather widgets are on your home screen. The app does not use precise location and does not read your location again in the background. You can instead search for a city or let the app guess from your time zone, and you can clear the saved place at any time in Settings → Weather &amp; connections.</p>
 
     <p>Each service has its own privacy policy, which applies to the requests it receives.</p>
 
     <h2>3. Servers you add yourself</h2>
     <ul>
         <li><strong>Home Assistant.</strong> If you connect a Home Assistant server, the app sends your access token only to the server address you enter. The token is stored encrypted on your phone and is never backed up. You can disconnect at any time in Settings → Connections.</li>
-        <li><strong>Sports feed.</strong> If you add a sports feed URL, the app downloads data from that address.</li>
     </ul>
+    <p>The F1 race widget uses a calendar built into the app. The app does not download any sports feed.</p>
 
     <h2>4. What the app does not do</h2>
     <ul>
@@ -234,7 +239,7 @@
     </ul>
 
     <h2>5. Permissions are optional</h2>
-    <p>Every permission is asked for only when you turn on a feature that needs it, and the app works without it. You can revoke any permission in Android Settings → Apps → Dot Widgets → Permissions.</p>
+    <p>Permissions that need your approval are offered once on the first-launch screen (which you can skip) or when you turn on a feature that needs them, and the app works without them. A few basic permissions, such as setting a wallpaper or reading whether Bluetooth and Wi-Fi are on, are granted when you install the app. You can revoke any permission in Android Settings → Apps → Dot Widgets → Permissions.</p>
 
     <h2>6. Deleting your data</h2>
     <p>All app data is on your phone. To delete it, remove the widgets and either clear the app's storage (Android Settings → Apps → Dot Widgets → Storage → Clear storage) or uninstall the app.</p>
