@@ -28,7 +28,7 @@
 | P2  | Widget Builder (make your own)       | P2       | L      | Testing     |
 | P3  | Better weather widgets               | P3       | M      | Testing     |
 | P4  | Smarter Smart Stack (time of day)    | P4       | S–M    | Testing     |
-| P5  | Lock screen check (Android 16)       | P5       | S      | Not started |
+| P5  | Lock screen check (Android 16)       | P5       | S      | Testing     |
 | P6  | Share a design (code / QR)           | P6       | S      | Not started |
 | P7  | Breathing & focus widget             | P7       | S–M    | Not started |
 | P8  | Streak & habit widgets               | P8       | M      | Not started |
@@ -222,7 +222,7 @@ visible in Battery settings over 24 h.
 
 ## P5 — Lock screen check (Android 16)
 
-**Status:** Not started · **Effort:** S · **Area:** release quality
+**Status:** Testing · **Effort:** S · **Area:** release quality
 
 **What:** make sure widgets look and behave right in Android 16's phone lock-screen widget area
 (vertical stack, up to 3 per page).
@@ -422,7 +422,12 @@ launcher support is wider. Today's live overlays already cover ticking clocks/ti
 | 2026-11-12 | Background photo + Instagram-style placement editor    | `e3e5bd0` |
 | 2026-11-12 | Android 14+ list-row fix, device widget tests          | `25431dc` |
 | 2026-11-12 | Roadmap created                                        | —         |
-| 2026-11-12 | P1 dot-matrix photo filter (renderer, cache, editor preview, Photo widgets, device speed test) | — |
+| 2026-11-12 | P1 dot-matrix photo filter (renderer, cache, editor preview, Photo widgets, device speed test) | `3115810` |
+| 2026-11-12 | P5 lock-screen widgets hardened + safety tests         | `28022f1` |
+| 2026-11-12 | P2 custom widget builder end to end                    | `58d2b60` |
+| 2026-11-12 | P4 Smart Stack automatic rotation                      | `9c6c823` |
+| 2026-11-12 | P3 weather widgets: presentation layer, offline/stale states, tests | see git log |
+| 2026-11-12 | P1–P5 installed on phone; 75/75 unit tests pass; awaiting on-phone checks before marking Done | — |
 
 ---
 
