@@ -50,6 +50,6 @@ object LockScreenSafety {
         definition != null &&
             definition.lockSafe &&
             !definition.requiresNetwork &&
-            definition.requiredPermission == null &&
+            definition.requiredPermissions.isEmpty() &&
             !showsPrivateData(definition.id)
 }

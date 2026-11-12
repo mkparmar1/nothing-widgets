@@ -66,5 +66,6 @@ enum class Category(val title: String, val iconName: String) {
     SMART_HOME("Smart Home", "home"),
     SPORTS("Sports", "sports_soccer"),
     LEARNING("Learning", "school"),
-    TRAVEL("Travel", "flight")
+    TRAVEL("Travel", "flight"),
+    CUSTOM("My widgets", "widgets")
 }

@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
 
         com.example.widgets.base.WidgetAlarmScheduler.scheduleNextMinuteTick(this)
         lifecycleScope.launch(Dispatchers.IO) {
+            com.example.data.builder.CustomWidgetRepository.loadIntoRegistry(this@MainActivity)
             com.example.widgets.base.WidgetRenderEngine.updateAllPlacedWidgets(this@MainActivity)
         }
 

@@ -41,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,10 +75,17 @@ import com.example.core.config.UniversalOptions
 import com.example.ui.components.SizeBadge
 import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.config.WidgetConfigSheet
+import com.example.ui.builder.CustomWidgetBuilderScreen
+import com.example.ui.builder.CustomWidgetManagerDialog
+import com.example.widgets.builder.BuilderRenderer
+import com.example.data.builder.CustomWidget
+import com.example.data.builder.CustomWidgetRepository
+import kotlinx.coroutines.launch
 import com.example.widgets.base.Category
 import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetSpec
+import com.example.widgets.base.WidgetRenderEngine
 
 private val RECOMMENDED = listOf(
     "clock.dotdigital.s",
@@ -115,19 +123,38 @@ fun BrowserScreen(
     val context = LocalContext.current
     val prefs = remember { PreferencesManager.getInstance(context) }
     val globalAccent by prefs.accent.collectAsState()
+    val customWidgets by remember(context) { CustomWidgetRepository.observe(context) }.collectAsState(initial = emptyList())
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(Category.ALL) }
     var activeConfigWidget by remember { mutableStateOf<WidgetDefinition?>(null) }
+    var showCustomManager by remember { mutableStateOf(false) }
+    var showBuilder by remember { mutableStateOf(false) }
+    var editingCustom by remember { mutableStateOf<CustomWidget?>(null) }
     var showTip by remember { mutableStateOf(!prefs.getBrowseTipDismissed()) }
 
-    val filteredWidgets = remember(searchQuery, selectedCategory) {
+    LaunchedEffect(customWidgets) {
+        WidgetRegistry.replaceCustom(customWidgets)
+    }
+
+    val allWidgetDefinitions = remember(customWidgets) {
+        WidgetRegistry.getAll().filter { it.category != Category.CUSTOM } +
+            customWidgets.mapNotNull(BuilderRenderer::definition)
+    }
+
+    val filteredWidgets = remember(searchQuery, selectedCategory, allWidgetDefinitions) {
         if (searchQuery.isNotBlank()) {
-            WidgetRegistry.search(searchQuery).let { list ->
+            allWidgetDefinitions.filter {
+                it.title.contains(searchQuery.trim(), ignoreCase = true) ||
+                    it.description.contains(searchQuery.trim(), ignoreCase = true) ||
+                    it.category.title.contains(searchQuery.trim(), ignoreCase = true)
+            }.let { list ->
                 if (selectedCategory != Category.ALL) list.filter { it.category == selectedCategory } else list
             }
         } else {
-            WidgetRegistry.getByCategory(selectedCategory)
+            if (selectedCategory == Category.ALL) allWidgetDefinitions
+            else allWidgetDefinitions.filter { it.category == selectedCategory }
         }
     }
 
@@ -167,6 +194,19 @@ fun BrowserScreen(
                     onClick = { selectedCategory = category },
                     modifier = Modifier.testTag("category_chip_${category.name.lowercase()}")
                 )
+            }
+        }
+
+        if (selectedCategory == Category.CUSTOM && searchQuery.isBlank()) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                androidx.compose.material3.Button(onClick = {
+                    editingCustom = null
+                    showBuilder = true
+                }) { Text("Create widget") }
+                androidx.compose.material3.OutlinedButton(onClick = { showCustomManager = true }) { Text("Manage") }
             }
         }
 
@@ -313,6 +353,47 @@ fun BrowserScreen(
         WidgetConfigSheet(
             definition = widget,
             onDismiss = { activeConfigWidget = null }
+        )
+    }
+
+    if (showCustomManager) {
+        CustomWidgetManagerDialog(
+            widgets = customWidgets,
+            onCreate = {
+                showCustomManager = false
+                editingCustom = null
+                showBuilder = true
+            },
+            onEdit = { widget ->
+                showCustomManager = false
+                editingCustom = widget
+                showBuilder = true
+            },
+            onDelete = { widget ->
+                scope.launch {
+                    CustomWidgetRepository.delete(context, widget)
+                    WidgetRenderEngine.updateAllPlacedWidgets(context, force = true)
+                }
+            },
+            onDismiss = { showCustomManager = false }
+        )
+    }
+
+    if (showBuilder) {
+        CustomWidgetBuilderScreen(
+            existing = editingCustom,
+            onDismiss = {
+                showBuilder = false
+                editingCustom = null
+            },
+            onSaved = {
+                showBuilder = false
+                editingCustom = null
+                showCustomManager = true
+                scope.launch {
+                    WidgetRenderEngine.updateAllPlacedWidgets(context, force = true)
+                }
+            }
         )
     }
 }

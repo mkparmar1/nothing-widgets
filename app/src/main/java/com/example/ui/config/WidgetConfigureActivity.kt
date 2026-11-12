@@ -82,6 +82,9 @@ class WidgetConfigureActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                com.example.data.builder.CustomWidgetRepository.loadIntoRegistry(applicationContext)
+            }
             val existing = withContext(Dispatchers.IO) {
                 AppDatabase.getInstance(applicationContext).widgetInstanceDao().getById(appWidgetId)
             }

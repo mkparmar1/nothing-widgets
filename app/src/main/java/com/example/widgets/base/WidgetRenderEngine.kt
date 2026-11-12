@@ -75,7 +75,7 @@ object WidgetRenderEngine {
             BitmapCache.makeKey(
                 widgetTypeId = definition.id,
                 instanceId = instanceId,
-                valueHash = spec.configJson.hashCode() + (System.currentTimeMillis() / 60000).toInt(),
+                valueHash = spec.configJson.hashCode() + definition.renderVersion + (System.currentTimeMillis() / 60000).toInt(),
                 size = spec.sizeBucket,
                 isDark = spec.isDark,
                 accent = spec.accentColor.toString()
@@ -209,6 +209,7 @@ object WidgetRenderEngine {
         appWidgetId: Int,
         instance: WidgetInstance
     ): Pair<RemoteViews, Long> = withContext(Dispatchers.Default) {
+        com.example.data.builder.CustomWidgetRepository.loadIntoRegistry(context)
         val requested = WidgetRegistry.getById(instance.widgetTypeId)
         val onLockScreen = WidgetProviders.isLockScreenWidget(context, appWidgetId)
         val useFallback = onLockScreen && !LockScreenSafety.safeForLockScreen(requested)
@@ -224,18 +225,18 @@ object WidgetRenderEngine {
         val sizeBucket = spec.sizeBucket
         val tapAction = spec.tapAction
 
-        val missingPermission = definition.requiredPermission?.takeIf { !it.isGranted(context) }
-        val bitmap = if (missingPermission != null) {
-            renderPermissionMessage(definition, spec, missingPermission)
+        val missingPermissions = definition.requiredPermissions.filterNot { it.isGranted(context) }
+        val bitmap = if (missingPermissions.isNotEmpty()) {
+            renderPermissionMessage(definition, spec, missingPermissions.first())
         } else {
             renderBitmap(context, definition, spec, appWidgetId)
         }
 
         // Scrollable lists and the Smart Stack use their own layouts and a RemoteViewsService.
-        if (missingPermission == null && CollectionWidgets.isCollection(definition.id)) {
+        if (missingPermissions.isEmpty() && CollectionWidgets.isCollection(definition.id)) {
             val views = CollectionViews.build(context, appWidgetId, definition.id, spec, bitmap)
             views.setContentDescription(R.id.widget_image_view, definition.describe(context))
-            return@withContext views to (bitmapSignature(bitmap) * 31 + listOf(definition.id, instance.configJson).hashCode())
+            return@withContext views to (bitmapSignature(bitmap) * 31 + listOf(definition.id, definition.title, definition.renderVersion, instance.configJson).hashCode())
         }
 
         val views = RemoteViews(context.packageName, R.layout.widget_canvas_layout)
@@ -289,6 +290,7 @@ object WidgetRenderEngine {
         }
 
         // A missing permission replaces the design with a tappable prompt.
+        val missingPermission = missingPermissions.firstOrNull()
         if (missingPermission != null) {
             views.setViewVisibility(R.id.multi_region_container, View.GONE)
             val permissionIntent = createPermissionPendingIntent(context, appWidgetId, missingPermission.id)
@@ -300,7 +302,7 @@ object WidgetRenderEngine {
         // change visibly (running/paused, title, date) is in the bitmap, so the bitmap plus these
         // inputs identify what the launcher would show.
         val signature = bitmapSignature(bitmap) * 31 +
-            listOf(definition.id, instance.configJson, missingPermission?.id, DeviceToggles.hasDndAccess(context)).hashCode()
+            listOf(definition.id, definition.title, definition.renderVersion, instance.configJson, missingPermissions.map { it.id }, DeviceToggles.hasDndAccess(context)).hashCode()
         views to signature
     }
 

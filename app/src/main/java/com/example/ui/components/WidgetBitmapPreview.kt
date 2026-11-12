@@ -36,11 +36,11 @@ fun WidgetBitmapPreview(
     refreshKey: Int = 0
 ) {
     val context = LocalContext.current
-    var bitmap by remember(definition.id, spec.sizeBucket) {
+    var bitmap by remember(definition.id, definition.renderVersion, spec.sizeBucket) {
         mutableStateOf<Bitmap?>(null)
     }
 
-    LaunchedEffect(definition.id, spec, refreshKey) {
+    LaunchedEffect(definition.id, definition.renderVersion, spec, refreshKey) {
         try {
             bitmap = WidgetRenderEngine.renderBitmap(context, definition, spec, 0)
         } catch (e: Exception) {

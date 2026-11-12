@@ -32,6 +32,8 @@ import com.example.widgets.catalogue.ToggleRenderers
 import com.example.widgets.catalogue.UniqueSensorRenderers
 import com.example.widgets.catalogue.UtilityRenderers
 import com.example.widgets.catalogue.WeatherRenderers
+import com.example.widgets.builder.BuilderRenderer
+import com.example.data.builder.CustomWidget
 import com.example.ui.permissions.AppPermission
 
 /**
@@ -53,6 +55,7 @@ private val LOCK_SAFE_EXTRA = setOf(
 object WidgetRegistry {
 
     private val widgetsList = mutableListOf<WidgetDefinition>()
+    private val customWidgets = linkedMapOf<String, WidgetDefinition>()
 
     init {
         // --- 1. CLOCK (14 widgets) ---
@@ -684,23 +687,38 @@ object WidgetRegistry {
         }
     }
 
-    fun getAll(): List<WidgetDefinition> = widgetsList
+    @Synchronized
+    fun replaceCustom(widgets: List<CustomWidget>) {
+        customWidgets.clear()
+        widgets.forEach { widget ->
+            val definition = BuilderRenderer.definition(widget)
+            if (definition == null) {
+                android.util.Log.w("WidgetRegistry", "Skipping invalid custom widget ${widget.id}")
+            } else {
+                customWidgets[definition.id] = definition
+            }
+        }
+    }
+
+    @Synchronized
+    fun getAll(): List<WidgetDefinition> = widgetsList + customWidgets.values
 
     fun getByCategory(category: Category): List<WidgetDefinition> {
-        return if (category == Category.ALL) widgetsList else widgetsList.filter { it.category == category }
+        val all = getAll()
+        return if (category == Category.ALL) all else all.filter { it.category == category }
     }
 
     fun getById(id: String): WidgetDefinition? {
-        return widgetsList.find { it.id == id }
+        return synchronized(this) { customWidgets[id] } ?: widgetsList.find { it.id == id }
     }
 
     /** Widgets suitable for the Android 14+ lock screen / Always-On Display. */
-    fun lockSafeDefs(): List<WidgetDefinition> = widgetsList.filter { it.lockSafe }
+    fun lockSafeDefs(): List<WidgetDefinition> = getAll().filter { it.lockSafe }
 
     fun search(query: String): List<WidgetDefinition> {
-        if (query.isBlank()) return widgetsList
+        if (query.isBlank()) return getAll()
         val q = query.trim().lowercase()
-        return widgetsList.filter {
+        return getAll().filter {
             it.title.lowercase().contains(q) ||
             it.description.lowercase().contains(q) ||
             it.category.title.lowercase().contains(q)

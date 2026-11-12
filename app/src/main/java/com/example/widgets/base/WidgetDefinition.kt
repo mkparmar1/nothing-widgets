@@ -11,6 +11,8 @@ interface WidgetDefinition {
     val category: Category
     val title: String
     val description: String
+    val renderVersion: Int
+        get() = 0
     val sizes: Set<SizeBucket>
     val defaultTap: TapAction
     val requiresNetwork: Boolean
@@ -23,13 +25,13 @@ interface WidgetDefinition {
     val options: List<WidgetOption>
         get() = emptyList()
 
-    /**
-     * The single permission this widget needs to show real data. When it isn't granted the setup
-     * screen offers an inline "allow" banner and the placed widget shows a tappable prompt instead
-     * of the design.
-     */
+    /** Legacy single-permission declaration; use [requiredPermissions] when a widget needs several. */
     val requiredPermission: AppPermission?
         get() = null
+
+    /** Permissions needed for this widget's live content. */
+    val requiredPermissions: Set<AppPermission>
+        get() = requiredPermission?.let(::setOf) ?: emptySet()
 
     /**
      * True when this widget is safe and useful on the Android 14+ lock screen / Always-On Display

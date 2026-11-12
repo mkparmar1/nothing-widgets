@@ -344,7 +344,7 @@ fun WidgetSetupContent(
                     .testTag("setup_scroll")
             ) {
                 if (!pinPreview) header()
-                definition.requiredPermission?.let { permission ->
+                definition.requiredPermissions.forEach { permission ->
                     Spacer(Modifier.height(16.dp))
                     Box(Modifier.padding(horizontal = PagePadding)) {
                         PermissionBanner(permission = permission, accentColor = ui)

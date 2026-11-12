@@ -25,7 +25,7 @@
 | #   | Feature                              | Priority | Effort | Status      |
 |-----|--------------------------------------|----------|--------|-------------|
 | P1  | Dot-matrix photo filter              | P1       | S      | Done        |
-| P2  | Widget Builder (make your own)       | P2       | L      | Not started |
+| P2  | Widget Builder (make your own)       | P2       | L      | Testing     |
 | P3  | Better weather widgets               | P3       | M      | Not started |
 | P4  | Smarter Smart Stack (time of day)    | P4       | S–M    | Not started |
 | P5  | Lock screen check (Android 16)       | P5       | S      | Not started |
@@ -106,7 +106,7 @@ modes never crashes; no visible lag when dragging in the editor; Off = exactly t
 
 ## P2 — Widget Builder (make your own widget)
 
-**Status:** Not started · **Effort:** L · **Area:** new feature
+**Status:** Testing · **Effort:** L · **Area:** new feature
 
 **What:** users compose their own widget from blocks on a grid, all drawn in Dot Widgets style.
 Blocks: Time, Date, Battery, Weather (temp/icon), Steps, Next event, Text, Progress ring, Image,
@@ -118,7 +118,7 @@ account approval and 3 permissions. A block builder gives the same "it's mine" f
 Android phone, with no account, and is the strongest new line for the Play listing.
 
 **How we build it:**
-- Data: `data/builder/CustomWidget.kt` (Room entity: id, name, sizes, JSON layout), DAO, repository.
+- Data: `data/builder/CustomWidget.kt` (Room entity: id, name, supported sizes, JSON layout), DAO, repository.
 - Render: `widgets/builder/BuilderRenderer.kt` — one `WidgetDefinition` per saved design, registered
   dynamically in `WidgetRegistry` (prefix `custom.`), each block drawn with existing `RenderKit` /
   `DotMatrixRenderer` helpers so skins, frames, accent and photo backgrounds all apply for free.
@@ -128,21 +128,24 @@ Android phone, with no account, and is the strongest new line for the Play listi
 - Permissions requested only when a block needs them (same `AppPermission` flow as today).
 
 **Tasks:**
-- [ ] Layout JSON schema + versioning (`"v": 1`)
-- [ ] Room entity, DAO, migration
-- [ ] Dynamic registration in `WidgetRegistry`
-- [ ] Block renderers (start with Time, Date, Battery, Text, Progress ring)
-- [ ] Builder canvas: add / move / resize / delete, snap grid
-- [ ] Property sheet per block
-- [ ] Undo / redo
-- [ ] 6 starter templates
-- [ ] Weather, Steps, Next event, Image blocks
-- [ ] "My widgets" section in browse
-- [ ] Tests: schema round trip, every block renders at S/M/L, broken JSON falls back safely
+- [x] Layout JSON schema + versioning (`"v": 1`)
+- [x] Room entity, DAO, migration
+- [x] Dynamic registration in `WidgetRegistry`
+- [x] Block renderers (Time, Date, Battery, Text, Progress ring)
+- [x] Builder canvas: add / move / resize / delete, snap grid
+- [x] Property sheet per block
+- [x] Undo / redo
+- [x] 6 starter templates
+- [x] Weather, Steps, Next event, Image blocks
+- [x] "My widgets" section in browse
+- [x] Tests: schema round trip, every block renders at S/M/L, broken JSON falls back safely
 
 **Acceptance:** a user with no instructions can build and place a clock + battery widget in under
 2 minutes; design survives app restart and phone reboot; all skins/frames apply; bad data never
 crashes the launcher (falls back to a plain clock like other widgets).
+
+**Remaining validation:** verify the two-minute build flow, restart/reboot persistence, and launcher
+placement on a real phone before changing status to `Done`.
 
 ---
 
