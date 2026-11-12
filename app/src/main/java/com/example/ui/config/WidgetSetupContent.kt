@@ -72,6 +72,7 @@ import com.example.core.time.DateFormat
 import com.example.core.time.DotStyle
 import com.example.core.time.TimeFormat
 import com.example.data.db.WidgetInstance
+import com.example.data.photos.BackgroundImageStore
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.permissions.AppPermission
@@ -107,7 +108,9 @@ data class WidgetSetupState(
     /** Advanced-option values (Phase 8), stored under the `"opt"` config object. */
     val optionValues: Map<String, Any> = emptyMap(),
     /** A custom accent colour (ARGB); overrides [accent] when set. */
-    val customAccent: Int? = null
+    val customAccent: Int? = null,
+    /** Optional custom background photo with its placement and darkening; null = plain background. */
+    val backgroundPhoto: BackgroundImageStore.Choice? = null
 ) {
     fun toConfigJson(widgetTypeId: String, existingConfigJson: String? = null): String {
         val base = (runCatching { JSONObject(existingConfigJson ?: "{}") }.getOrElse { JSONObject() }).apply {
@@ -115,6 +118,8 @@ data class WidgetSetupState(
             if (customAccent != null) put(WidgetAccent.CUSTOM_KEY, WidgetAccent.toHex(customAccent)) else remove(WidgetAccent.CUSTOM_KEY)
             put("background", background.name)
             put("bg_alpha", (bgAlpha * 100).roundToInt())
+            BackgroundImageStore.clearFrom(this)
+            backgroundPhoto?.writeTo(this)
             put("theme_mode", theme.name)
             put("corner_radius", cornerRadius)
             put("show_label", showLabel)
@@ -161,7 +166,8 @@ data class WidgetSetupState(
                 stackItems = CollectionWidgets.stackItems(importedConfigJson ?: "{}"),
                 timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}"),
                 optionValues = resolveOptions(definition, importedConfigJson),
-                customAccent = WidgetAccent.custom(importedConfigJson)
+                customAccent = WidgetAccent.custom(importedConfigJson),
+                backgroundPhoto = BackgroundImageStore.fromConfig(importedConfigJson)
             )
         }
 
@@ -194,7 +200,8 @@ data class WidgetSetupState(
                 stackItems = CollectionWidgets.stackItems(instance.configJson),
                 timeZoneId = ClockOptions.timeZone(instance.configJson),
                 optionValues = resolveOptions(definition, instance.configJson),
-                customAccent = WidgetAccent.custom(instance.configJson)
+                customAccent = WidgetAccent.custom(instance.configJson),
+                backgroundPhoto = BackgroundImageStore.fromConfig(instance.configJson)
             )
         }
 
@@ -448,6 +455,11 @@ fun WidgetSetupContent(
                             )
                         }
                     }
+                }
+
+                // Theme widgets paint their own full artwork, so they don't take a photo.
+                if (definition.category != com.example.widgets.base.Category.THEMES) {
+                    BackgroundImageSection(state, spec, ui, update)
                 }
 
                 SetupSection("Theme") {

@@ -51,6 +51,16 @@ object WidgetRenderEngine {
         spec: WidgetSpec,
         instanceId: Int = 0
     ): Bitmap = withContext(Dispatchers.Default) {
+        // Optional custom photo background: content is drawn light-on-dark over the darkened photo.
+        // Theme widgets paint their own full artwork, so they don't take a photo.
+        val photoChoice = if (definition.category == Category.THEMES) null
+            else com.example.data.photos.BackgroundImageStore.fromConfig(spec.configJson)
+        val photo = photoChoice?.let { c ->
+            com.example.data.photos.BackgroundImageStore.load(context, c.id)
+                ?.let { DotMatrixRenderer.PhotoBackground(it, c.dim, c.zoom, c.cx, c.cy) }
+        }
+        @Suppress("NAME_SHADOWING")
+        val spec = if (photo != null) spec.copy(isDark = true) else spec
         val isDynamic = definition.id.startsWith("battery.") || 
                         definition.id.startsWith("fun.") || 
                         definition.id.startsWith("sensor.stopwatch") ||
@@ -87,7 +97,9 @@ object WidgetRenderEngine {
         try {
             DotMatrixRenderer.withStyle(ClockOptions.dotStyle(spec.configJson), Skin.from(spec.configJson), Frame.from(spec.configJson)) {
                 DotMatrixRenderer.withUniversal(UniversalOptions.textScale(spec.options), UniversalOptions.cornerDot(spec.options)) {
-                    definition.render(context, spec, canvas)
+                    DotMatrixRenderer.withBackgroundImage(photo) {
+                        definition.render(context, spec, canvas)
+                    }
                 }
             }
         } catch (e: Exception) {

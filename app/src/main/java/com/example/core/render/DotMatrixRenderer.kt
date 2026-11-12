@@ -1,9 +1,11 @@
 package com.example.core.render
 
+import android.graphics.Bitmap
 import android.graphics.BlurMaskFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
 import com.example.core.theme.BackgroundMode
@@ -25,6 +27,23 @@ object DotMatrixRenderer {
     private val frame = ThreadLocal.withInitial { Frame.HAIRLINE }
     private val textScale = ThreadLocal.withInitial { 1f }
     private val cornerDot = ThreadLocal.withInitial { true }
+    /** Optional custom photo behind the widget, with how much to darken it (0..1). */
+    private val backgroundImage = ThreadLocal<PhotoBackground?>()
+
+    /** A photo behind the widget: placement as in [PhotoFraming], darkened by [dim] (0..1). */
+    class PhotoBackground(val image: Bitmap, val dim: Float, val zoom: Float = 1f, val cx: Float = 0.5f, val cy: Float = 0.5f)
+
+    /** Draws [block] with [photo] as the widget background; plain [block] when null. */
+    fun <T> withBackgroundImage(photo: PhotoBackground?, block: () -> T): T {
+        if (photo == null) return block()
+        val previous = backgroundImage.get()
+        backgroundImage.set(photo)
+        try {
+            return block()
+        } finally {
+            backgroundImage.set(previous)
+        }
+    }
 
     /** Universal per-widget options (text size, corner dot) for the widget being drawn. */
     fun <T> withUniversal(scale: Float, showCornerDot: Boolean, block: () -> T): T {
@@ -549,6 +568,21 @@ object DotMatrixRenderer {
         }
     }
 
+    /** The custom photo, cropped to fill the widget's rounded shape, then darkened so content reads. */
+    private fun drawPhotoBackground(canvas: Canvas, rect: RectF, radius: Float, photo: PhotoBackground) {
+        val image = photo.image
+        val path = Path().apply { addRoundRect(rect, radius, radius, Path.Direction.CW) }
+        canvas.save()
+        canvas.clipPath(path)
+        val b = PhotoFraming.bounds(image.width, image.height, rect.left, rect.top, rect.width(), rect.height(), photo.zoom, photo.cx, photo.cy)
+        canvas.drawBitmap(image, null, RectF(b[0], b[1], b[2], b[3]), photoPaint)
+        paintFill.color = Color.argb((photo.dim.coerceIn(0f, 0.9f) * 255).toInt(), 0, 0, 0)
+        canvas.drawRect(rect, paintFill)
+        canvas.restore()
+    }
+
+    private val photoPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+
     /**
      * Draws widget background and hairline border according to background mode and corner radius.
      */
@@ -590,7 +624,10 @@ object DotMatrixRenderer {
             }
         }
 
-        if (bgColor != Color.TRANSPARENT) {
+        val photo = backgroundImage.get()
+        if (photo != null) {
+            drawPhotoBackground(canvas, rect, cornerRadius, photo)
+        } else if (bgColor != Color.TRANSPARENT) {
             paintFill.color = bgColor
             canvas.drawRoundRect(rect, cornerRadius, cornerRadius, paintFill)
             if (activeSkin == Skin.TERMINAL) {
