@@ -25,11 +25,11 @@
 | #   | Feature                              | Priority | Effort | Status      |
 |-----|--------------------------------------|----------|--------|-------------|
 | P1  | Dot-matrix photo filter              | P1       | S      | Done        |
-| P2  | Widget Builder (make your own)       | P2       | L      | Testing     |
-| P3  | Better weather widgets               | P3       | M      | Testing     |
-| P4  | Smarter Smart Stack (time of day)    | P4       | S–M    | Testing     |
-| P5  | Lock screen check (Android 16)       | P5       | S      | Testing     |
-| P6  | Share a design (code / QR)           | P6       | S      | Not started |
+| P2  | Widget Builder (make your own)       | P2       | L      | Done        |
+| P3  | Better weather widgets               | P3       | M      | Done        |
+| P4  | Smarter Smart Stack (time of day)    | P4       | S–M    | Done        |
+| P5  | Lock screen check (Android 16)       | P5       | S      | Done        |
+| P6  | Share a design (code / QR)           | P6       | S      | Partly done |
 | P7  | Breathing & focus widget             | P7       | S–M    | Not started |
 | P8  | Streak & habit widgets               | P8       | M      | Not started |
 | P9  | Automatic night look                 | P9       | S      | Not started |
@@ -37,8 +37,17 @@
 | P11 | Glyph light companion (Phone 3)      | P11      | M      | Not started |
 | P12 | On-device usage statistics           | P12      | S      | Not started |
 | P13 | Animated widgets (Remote Compose)    | P13      | L      | Parked      |
+| P14 | Builder 2.0 (tap actions, rules, more blocks) | N1 | L   | Not started |
+| P15 | Complete Looks (one-tap full theme)  | N2       | M      | Not started |
+| P16 | Languages (Hindi + 4) & store listing | N3      | M      | Not started |
+| P17 | Accessibility pass (TalkBack, contrast) | N8    | S      | Not started |
+| P18 | Integrations: RSS news, Todoist      | N10      | M      | Not started |
+| P19 | Wear OS tiles                        | N12      | L      | Not started |
+| P20 | Social / shared widgets              | —        | L      | Parked      |
+| P21 | "Describe your widget" (AI)          | —        | L      | Parked      |
 
-**Suggested order:** P1 now → P5 before the Play release → P2 as the next big version → P3, P4.
+**Phase 1 (done):** P1 → P2 → P3 → P4 → P5, all checked on a phone on 2026-11-13.
+**Phase 2 order:** see [Phase 2 — next features](#phase-2--next-features-after-p1p5) (N1 → N13).
 
 ---
 
@@ -106,7 +115,7 @@ modes never crashes; no visible lag when dragging in the editor; Off = exactly t
 
 ## P2 — Widget Builder (make your own widget)
 
-**Status:** Testing · **Effort:** L · **Area:** new feature
+**Status:** Done · **Effort:** L · **Area:** new feature
 
 **What:** users compose their own widget from blocks on a grid, all drawn in Dot Widgets style.
 Blocks: Time, Date, Battery, Weather (temp/icon), Steps, Next event, Text, Progress ring, Image,
@@ -151,7 +160,7 @@ placement on a real phone before changing status to `Done`.
 
 ## P3 — Better weather widgets
 
-**Status:** Testing · **Effort:** M · **Area:** weather
+**Status:** Done · **Effort:** M · **Area:** weather
 
 **What:** fill the gaps in weather: hourly temperature graph (dot sparkline), rain chance bars,
 air-quality ring, severe-weather alert badge, sunrise/sunset arc with daylight left, "feels like",
@@ -190,7 +199,7 @@ battery (no more often than today); location permission asked only once, with a 
 
 ## P4 — Smarter Smart Stack
 
-**Status:** Testing · **Effort:** S–M · **Area:** collection widgets
+**Status:** Done · **Effort:** S–M · **Area:** collection widgets
 
 **What:** Smart Stack can rotate automatically: pick which card shows by time of day (e.g. Morning
 → Weather, Day → Calendar, Evening → Battery, Night → Clock), or "smart" (next event soon → Calendar,
@@ -222,7 +231,7 @@ visible in Battery settings over 24 h.
 
 ## P5 — Lock screen check (Android 16)
 
-**Status:** Testing · **Effort:** S · **Area:** release quality
+**Status:** Done · **Effort:** S · **Area:** release quality
 
 **What:** make sure widgets look and behave right in Android 16's phone lock-screen widget area
 (vertical stack, up to 3 per page).
@@ -403,6 +412,175 @@ launcher support is wider. Today's live overlays already cover ticking clocks/ti
 
 ---
 
+## Phase 2 — next features (after P1–P5)
+
+### Where we stand now (Nov 2026)
+
+| | **Dot Widgets** | Nothing Widgets + Essential Apps | Color Widgets | Material You Widgets | Widgetable | Chronus | KWGT |
+|---|---|---|---|---|---|---|---|
+| Size / reach | New | Nothing phones only | ~25–50M installs, ~4.6★ | ~4.6★, 4.6K reviews, $0.99 | Social, large | Long-running | The power-user standard |
+| Ready widgets | **232** + own designs | Small set + AI-made | Many templates | "300+" | Social widgets | ~10 types | DIY / packs |
+| Make your own | ✅ block builder (P2) | ✅ AI prompt (beta, approval) | ❌ | ❌ | ❌ | ❌ | ✅ (complex) |
+| Dot / Nothing look | ✅ 8 skins, frames, dot shapes | ✅ (only look) | ❌ | ❌ | ❌ | ❌ | Via packs (KWGT Pro) |
+| Photo background + zoom + dot filter | ✅ | Photo widget | Photos | ❌ | Photos | ❌ | Manual |
+| Smart Stack auto-rotate | ✅ (P4) | ❌ | ❌ | ❌ | ❌ | ❌ | Manual |
+| Lock screen widgets | ✅ hardened (P5) | ✅ (OS 4.1) | ✅ | ? | ✅ (main feature) | ✅ | ✅ |
+| One-tap full theme (wallpaper + widgets + icons) | Pieces exist (Theme Studio, icon pack, wallpapers) | System themes | ✅ main draw | ❌ | ❌ | ❌ | Via KLWP |
+| Share a setup | ✅ code (`SetupShareRepository`) + bundled community picks | Playground (paused) | ❌ | ❌ | ✅ with friends | ❌ | Export presets |
+| Tap actions / rules inside a widget | Fixed tap per widget | Limited | ❌ | ❌ | ❌ | Some | ✅ formulas, Tasker |
+| Tasks / news / stocks integrations | Calendar, finance, sports… | Calendar, contacts | ❌ | ❌ | ❌ | ✅ Google Tasks, Todoist, RSS, stocks | Via plugins |
+| Social widgets with friends | ❌ (no server, by design) | ❌ | ❌ | ❌ | ✅ main feature | ❌ | ❌ |
+| Languages | **English only** | Many | Many | ? | Many | Many | Many |
+| Wear OS | ❌ | — | ❌ | ❌ | ❌ | ✅ | ❌ |
+| Price | Free | Free (Nothing phone) | Free + IAP/sub | $0.99 | Free + sub | Free + IAP | Free + Pro |
+
+**We already win on:** number of dot-style designs, the builder + dot look on any phone, photo
+editor with dot filter, auto-rotating Smart Stack, free with no account, on-device privacy.
+
+**Gaps that stop us being clearly #1:**
+1. Builder can't do tap actions or "if this then that" rules (KWGT can; Nothing's AI fakes it).
+2. No one-tap "complete look" — Color Widgets' biggest draw (wallpaper + widgets + icons together).
+3. English only — limits Play search reach, especially in India where we already have India widgets.
+4. No task/news integrations (Chronus' strength).
+5. Social widgets (Widgetable) — needs a server; conflicts with our privacy promise → parked.
+
+### Phase 2 priority order
+
+| Order | ID | Feature | Why | Effort |
+|---|---|---|---|---|
+| **N1** | P14 | **Builder 2.0** | Closes the KWGT gap and beats Nothing's AI on any phone: tap actions per block, rules, more blocks, share designs | L |
+| **N2** | P15 | **Complete Looks** | Color Widgets' #1 feature; we already have the pieces, so it's mostly packaging | M |
+| **N3** | P16 | **Languages + translated store listing** | Biggest cheap boost to Play discovery; no competitor dot app is localised | M |
+| **N4** | P8 | **Streak & habit widgets** | Daily return reason; Google promotes the streak template | M |
+| **N5** | P6 | **Share single design / QR** (finish) | Setup code exists; add one-widget share, QR, and builder-widget share | S |
+| **N6** | P7 | **Breathing & focus** | Matches Nothing OS 4.1 Relaxation Hub on every phone | S–M |
+| **N7** | P9 | **Automatic night look** | Small, very noticeable | S |
+| **N8** | P17 | **Accessibility pass** | Play quality + reviews; TalkBack labels for every widget | S |
+| **N9** | P10 | **Photo shuffle album** | Reuses the photo editor + dot filter | S–M |
+| **N10** | P18 | **RSS news + Todoist** | Chronus' strength, without Google sign-in (Todoist uses a personal token) | M |
+| **N11** | P11 | **Glyph light companion** | Unique on Nothing Phone (3) | M |
+| **N12** | P19 | **Wear OS tiles** | Chronus has it; smaller audience | L |
+| **N13** | P12 | **On-device usage stats** | Tells us what to build next | S |
+| Parked | P20, P21, P13 | Social widgets, AI describe, animated widgets | Need a server / paid AI / new APIs; conflict with "no account, on-device" | — |
+
+---
+
+## P14 — Builder 2.0
+
+**Status:** Not started · **Effort:** L · **Area:** builder
+
+**What:** make the builder as capable as KWGT's everyday use, but simple.
+- **Tap action per block:** open app, open URL, toggle torch, start timer, next stack card, open
+  a builder page.
+- **Rules:** "if battery < 20% → colour red", "if event within 30 min → show", "if charging → show
+  bolt", "night (22:00–06:00) → dim". Simple dropdown rules, no formulas.
+- **More blocks:** analog clock, music now-playing, alarm next, countdown, screen time, AQI,
+  steps ring, world clock, moon phase, icon/shortcut.
+- **Share a builder design** as a code / QR (no personal text, no photos).
+- **Templates gallery:** 20 starter designs.
+
+**Tasks:**
+- [ ] Per-block tap actions (explicit intents only; Android 14+ safe like `RowLaunchActivity`)
+- [ ] Rule engine (pure function, unit-tested) + rule editor UI
+- [ ] New blocks (each with S/M/L render test)
+- [ ] Design share code + import preview
+- [ ] 20 templates
+- [ ] Layout schema `"v": 2` with migration from v1
+
+**Acceptance:** tap targets work on Pixel and Nothing launchers; rules re-evaluate on the right
+events (battery, time, calendar) without extra battery drain; v1 designs open unchanged.
+
+---
+
+## P15 — Complete Looks (one-tap full theme)
+
+**Status:** Not started · **Effort:** M · **Area:** customisation
+
+**What:** a gallery of complete home-screen looks — wallpaper + widget style (skin, frame, accent,
+background) + icon pack suggestion + a recommended set of widgets. One tap applies the wallpaper and
+style to all placed widgets; shows which widgets to add for the full look.
+
+**Why:** Color Widgets (tens of millions of installs) is built around this. We already have Theme
+Studio, theme packs, `WallpaperManagerHelper`, the Clay icon pack and setup sharing.
+
+**Tasks:**
+- [ ] Look format (reuse `SetupBundle`) + 12 launch looks
+- [ ] Apply: wallpaper (home/lock/both), restyle all placed widgets, undo
+- [ ] "Add missing widgets" checklist with pin buttons
+- [ ] Before/after preview
+
+**Acceptance:** apply + undo leaves every widget exactly as before undo; wallpaper never changed
+without explicit confirmation.
+
+---
+
+## P16 — Languages and translated store listing
+
+**Status:** Not started · **Effort:** M · **Area:** reach
+
+**What:** move UI text to `strings.xml`, then translate to Hindi, Spanish, Portuguese (BR),
+Indonesian and German; translate the Play listing for the same languages. Widget text (days,
+months) already follows the phone's locale where formatters are used — audit the rest.
+
+**Tasks:**
+- [ ] Extract hard-coded UI strings (lint `HardcodedText` / Compose strings)
+- [ ] Locale-aware dates/numbers in all renderers
+- [ ] Translations + native-speaker review for Hindi
+- [ ] Check long words don't break widget layouts (German)
+- [ ] Translated store listing + screenshots
+
+**Acceptance:** app fully usable in each language; no clipped text in widgets at any size.
+
+---
+
+## P17 — Accessibility pass
+
+**Status:** Not started · **Effort:** S · **Area:** quality
+
+**Tasks:**
+- [ ] Every widget's image has a spoken description (e.g. "10:42, Thursday, battery 80%")
+- [ ] All setup controls have labels; touch targets ≥ 48 dp
+- [ ] Contrast check for light/dark and photo backgrounds
+- [ ] Font scale 200% check in the app screens
+
+**Acceptance:** TalkBack can read and operate the app and every widget.
+
+---
+
+## P18 — Integrations: RSS news and Todoist
+
+**Status:** Not started · **Effort:** M · **Area:** productivity
+
+**What:** an RSS/Atom news widget (user adds feeds; headlines in dot style) and a Todoist tasks
+widget using the user's personal API token (no Google sign-in, no server). Both opt-in; network only
+to the services the user chose; privacy policy updated.
+
+**Tasks:**
+- [ ] RSS parser + feed manager + widget (M, L)
+- [ ] Todoist token entry (stored encrypted) + tasks widget with check-off
+- [ ] Privacy policy + Data safety form update
+
+---
+
+## P19 — Wear OS tiles
+
+**Status:** Not started · **Effort:** L · **Area:** platform
+
+**What:** dot-style tiles for watch: time, battery (phone + watch), next event, weather.
+Separate Wear module; data from the phone app via the Data Layer.
+
+---
+
+## P20 / P21 — Parked
+
+- **P20 Social widgets** (friends' status, shared notes — Widgetable style): needs accounts and a
+  server, which breaks the "no account, nothing leaves your phone" promise. Revisit only with a
+  clear privacy design.
+- **P21 "Describe your widget" (AI):** Nothing's approach; needs a paid AI API or a large on-device
+  model and an account. Builder templates + rules (P14) cover most of the value.
+
+---
+
 ## Release checklist (before next Play upload)
 
 - [ ] Rerun device tests on emulator after the `WidgetE2ETest` fix (`connectedDebugAndroidTest`)
@@ -439,6 +617,7 @@ launcher support is wider. Today's live overlays already cover ticking clocks/ti
 - Glyph Matrix — [Android Authority](https://www.androidauthority.com/nothing-glyph-matrix-gimmick-3602057), [Glyph Museum 2.0](https://nothing.community/d/60931-glyph-museum-20-is-here)
 - User demand — [Widget poll](https://androidauthority.com/favorite-android-widget-poll-results-3679420), [Pixel Launcher wishes](https://www.androidauthority.com/google-pixel-launcher-missing-features-2026-3686830/), [Remote Compose / streak template](https://androidauthority.com/android-widgets-overhaul-remote-compose-3670122/)
 - Android 16 — [Widget metrics (developer.android.com)](https://developer.android.com/develop/ui/compose/glance/metrics.md.txt), [Lock-screen widgets (Droid Life)](https://www.droid-life.com/2025/08/20/android-16-qpr2-adds-lock-screen-widgets-to-phones-again/)
+- Phase 2 competitors — [Color Widgets (AppGoblin)](https://appgoblin.info/apps/colorwidgets.ios.widget.topwidgets), [Material You Widgets](https://apppricinglab.com/app/google_play/com.appslab.materialyou.widgetspro), [Widgetable (AppGoblin)](https://appgoblin.info/apps/com.widgetable.theme.android), [Widgetable (App Store)](https://apps.apple.com/us/app/widgetable-besties-couples/id1641107226), [Chronus release notes (APKMirror)](https://www.apkmirror.com/apk/dvtonder/chronus-home-lock-widgets-wear-os/chronus-home-lock-widgets-wear-os-7-3-release/)
 
 > Research note: Nothing OS coverage found is from spring 2026; check Nothing's release notes for
 > later changes. Install counts come from third-party trackers, not Google Play.
