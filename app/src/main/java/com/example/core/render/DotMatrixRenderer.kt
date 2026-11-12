@@ -10,6 +10,7 @@ import android.graphics.RectF
 import android.graphics.Typeface
 import com.example.core.theme.BackgroundMode
 import com.example.core.time.DotStyle
+import com.example.data.photos.PhotoFilter
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -31,7 +32,17 @@ object DotMatrixRenderer {
     private val backgroundImage = ThreadLocal<PhotoBackground?>()
 
     /** A photo behind the widget: placement as in [PhotoFraming], darkened by [dim] (0..1). */
-    class PhotoBackground(val image: Bitmap, val dim: Float, val zoom: Float = 1f, val cx: Float = 0.5f, val cy: Float = 0.5f)
+    class PhotoBackground(
+        val image: Bitmap,
+        val dim: Float,
+        val zoom: Float = 1f,
+        val cx: Float = 0.5f,
+        val cy: Float = 0.5f,
+        val filter: PhotoFilter = PhotoFilter.OFF,
+        val dotSize: Float = 1f,
+        /** Stored photo id, so the dot filter cache can tell two photos apart. */
+        val key: String = ""
+    )
 
     /** Draws [block] with [photo] as the widget background; plain [block] when null. */
     fun <T> withBackgroundImage(photo: PhotoBackground?, block: () -> T): T {
@@ -62,6 +73,9 @@ object DotMatrixRenderer {
     /** Skin of the widget being drawn, for renderers that draw their own shapes. */
     val currentSkin: Skin get() = skin.get() ?: Skin.DOT
 
+    /** Dot shape of the widget being drawn, so photo filters can match it. */
+    val currentDotStyle: DotStyle get() = dotStyle.get() ?: DotStyle.ROUND
+
     fun <T> withStyle(style: DotStyle, widgetSkin: Skin, widgetFrame: Frame = Frame.HAIRLINE, block: () -> T): T {
         val previousStyle = dotStyle.get()
         val previousSkin = skin.get()
@@ -79,6 +93,11 @@ object DotMatrixRenderer {
     }
 
     fun <T> withDotStyle(style: DotStyle, block: () -> T): T = withStyle(style, currentSkin, frame.get() ?: Frame.HAIRLINE, block)
+
+    /** Draws one lit dot in the current skin and dot style (used by the photo dot filter). */
+    fun drawLitDot(canvas: Canvas, cx: Float, cy: Float, radius: Float, paint: Paint) {
+        dot(canvas, cx, cy, radius, paint, lit = true)
+    }
 
     /** Draws one lit or unlit dot in the current skin and [DotStyle]. */
     private fun dot(canvas: Canvas, cx: Float, cy: Float, radius: Float, paint: Paint, lit: Boolean) {
@@ -569,15 +588,30 @@ object DotMatrixRenderer {
     }
 
     /** The custom photo, cropped to fill the widget's rounded shape, then darkened so content reads. */
-    private fun drawPhotoBackground(canvas: Canvas, rect: RectF, radius: Float, photo: PhotoBackground) {
+    private fun drawPhotoBackground(canvas: Canvas, rect: RectF, radius: Float, photo: PhotoBackground, accentColor: Int) {
         val image = photo.image
         val path = Path().apply { addRoundRect(rect, radius, radius, Path.Direction.CW) }
         canvas.save()
         canvas.clipPath(path)
         val b = PhotoFraming.bounds(image.width, image.height, rect.left, rect.top, rect.width(), rect.height(), photo.zoom, photo.cx, photo.cy)
-        canvas.drawBitmap(image, null, RectF(b[0], b[1], b[2], b[3]), photoPaint)
-        paintFill.color = Color.argb((photo.dim.coerceIn(0f, 0.9f) * 255).toInt(), 0, 0, 0)
-        canvas.drawRect(rect, paintFill)
+        if (photo.filter == PhotoFilter.OFF) {
+            canvas.drawBitmap(image, null, RectF(b[0], b[1], b[2], b[3]), photoPaint)
+            paintFill.color = Color.argb((photo.dim.coerceIn(0f, 0.9f) * 255).toInt(), 0, 0, 0)
+            canvas.drawRect(rect, paintFill)
+        } else {
+            paintFill.color = Color.argb((photo.dim.coerceIn(0f, 0.9f) * 220).toInt(), 0, 0, 0)
+            canvas.drawRect(rect, paintFill)
+            PhotoDotFilter.draw(
+                canvas = canvas,
+                image = image,
+                src = RectF(b[0], b[1], b[2], b[3]),
+                dst = rect,
+                filter = photo.filter,
+                dotSize = photo.dotSize,
+                accentColor = accentColor,
+                cacheKey = photo.key.ifEmpty { System.identityHashCode(image).toString() }
+            )
+        }
         canvas.restore()
     }
 
@@ -626,7 +660,7 @@ object DotMatrixRenderer {
 
         val photo = backgroundImage.get()
         if (photo != null) {
-            drawPhotoBackground(canvas, rect, cornerRadius, photo)
+            drawPhotoBackground(canvas, rect, cornerRadius, photo, accentColor)
         } else if (bgColor != Color.TRANSPARENT) {
             paintFill.color = bgColor
             canvas.drawRoundRect(rect, cornerRadius, cornerRadius, paintFill)

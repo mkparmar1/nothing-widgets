@@ -1,0 +1,424 @@
+# Dot Widgets — Advanced Feature Roadmap
+
+> **Goal:** stay the most complete Nothing-style widget app on *any* Android phone, and answer
+> Nothing's own moves (AI-built widgets, Relaxation Hub, Glyph Matrix) with features that work
+> everywhere.
+>
+> **Started:** 2026-11-12 · **Owner:** mkparmar1 · **Companion docs:** `docs/BUILD_PLAN.md`,
+> `docs/UX_IMPLEMENTATION_PLAN.md`, `docs/THEME_PLAN.md`
+
+---
+
+## How to use this file
+
+- Tick a box `[x]` when a task is done; update the card's **Status** line.
+- **Status values:** `Not started` · `In progress` · `Testing` · `Done` · `Parked`
+- **Priority:** `P1` is built first. **Effort:** `S` < 1 day · `M` 1–3 days · `L` 3+ days.
+- Every card has **Acceptance** checks. A feature is only `Done` when all of them pass on a real
+  phone *and* the unit tests pass (`./gradlew :app:testDebugUnitTest`).
+- Record what shipped in the **Changelog** at the bottom (date + commit).
+
+---
+
+## Progress at a glance
+
+| #   | Feature                              | Priority | Effort | Status      |
+|-----|--------------------------------------|----------|--------|-------------|
+| P1  | Dot-matrix photo filter              | P1       | S      | Done        |
+| P2  | Widget Builder (make your own)       | P2       | L      | Not started |
+| P3  | Better weather widgets               | P3       | M      | Not started |
+| P4  | Smarter Smart Stack (time of day)    | P4       | S–M    | Not started |
+| P5  | Lock screen check (Android 16)       | P5       | S      | Not started |
+| P6  | Share a design (code / QR)           | P6       | S      | Not started |
+| P7  | Breathing & focus widget             | P7       | S–M    | Not started |
+| P8  | Streak & habit widgets               | P8       | M      | Not started |
+| P9  | Automatic night look                 | P9       | S      | Not started |
+| P10 | Photo shuffle album                  | P10      | S–M    | Not started |
+| P11 | Glyph light companion (Phone 3)      | P11      | M      | Not started |
+| P12 | On-device usage statistics           | P12      | S      | Not started |
+| P13 | Animated widgets (Remote Compose)    | P13      | L      | Parked      |
+
+**Suggested order:** P1 now → P5 before the Play release → P2 as the next big version → P3, P4.
+
+---
+
+## Already done (baseline for this roadmap)
+
+- [x] **Custom background photo** for 223 widgets (Theme widgets excluded — they paint their own art).
+      Photo stays in app storage; config keeps id + darkening. — commit `e3e5bd0`
+- [x] **Instagram-style placement editor:** widget-shaped window, pinch zoom (1–5×), drag, double-tap
+      reset, thirds grid, Darken slider, Adjust later. Saves zoom + focus point so the same spot
+      stays centred when the widget size changes. — commit `e3e5bd0`
+- [x] **Android 14+ fix** for Favourite Contacts / Week Agenda row taps (`RowLaunchActivity`). — commit `25431dc`
+- [x] **Device tests** (UI Automator): every widget draws, pin through launcher, refresh, tap. — commit `25431dc`
+
+---
+
+## Competitive picture (research, Nov 2026)
+
+| | Dot Widgets | Nothing Widgets / Essential Apps | N-Style Widgets: Dot Matrix | KWGT (+ dot packs) |
+|---|---|---|---|---|
+| Widgets | **232**, 19 categories | Small set (clocks, weather, photos, compass…) + AI-made | "40+" | Unlimited (DIY) |
+| Works on | **Any Android** | Nothing phones only | Any Android | Any Android |
+| Make your own | ❌ (→ **P2**) | ✅ AI prompt (beta, approval, 3 permissions) | ❌ | ✅ (complex) |
+| Styles | 8 skins, 4 frames, dot shapes, Material You, Theme Studio, icon pack | Nothing look only | Dot look only | Anything (manual) |
+| Photo background + zoom | ✅ | Photo widget | ❌ | Manual |
+| Cost to user | Free | Free (Nothing phone) | Free/IAP | KWGT Pro paid |
+
+**What users want most (sources at the bottom):** weather (46% of ~3,200 votes), widget stacks
+(top launcher wish), icon packs (2nd), streak/progress widgets (Google I/O 2026 template),
+lock-screen widgets (Android 16 QPR2).
+
+---
+
+## P1 — Dot-matrix photo filter
+
+**Status:** Done · **Effort:** S · **Area:** photos
+
+**What:** an optional filter that redraws the background photo (and the 4 Photo widgets) as a grid
+of dots, like Nothing's dot-matrix art. Modes: *Off*, *Mono dots* (white on black), *Accent dots*
+(widget accent colour), *Colour dots* (photo colours). A *Dot size* slider.
+
+**Why:** no competitor offers it; it's Nothing's signature look; it builds directly on the photo
+feature just shipped, so it's cheap and visibly impressive in screenshots.
+
+**How we build it:**
+- `core/render/PhotoDotFilter.kt` — sample the photo on a grid (cell = dot size × density), draw one
+  circle per cell; radius from brightness (mono/accent) or fixed radius with sampled colour (colour).
+  Reuse `DotMatrixRenderer` dot shapes so the current **Dot style** (round/square/diamond…) applies.
+- Cache the filtered bitmap per (photo id, mode, dot size, accent, widget size) — it's expensive.
+- `BackgroundImageStore.Choice` + config keys: `bg_image_filter`, `bg_image_dot`.
+- `DotMatrixRenderer.drawPhotoBackground` — draw filtered bitmap when filter ≠ Off.
+- UI: filter chips + dot-size slider in `PhotoPlacementEditor` (live) and in `BackgroundImageSection`.
+
+**Tasks:**
+- [x] Filter renderer (mono / accent / colour) + unit test on a known gradient image
+- [x] Config keys + `Choice` round trip test
+- [x] Bitmap cache with sensible memory limit
+- [x] Editor chips + dot-size slider (live preview)
+- [x] Apply to Photo widgets (`PhotoRenderers.kt`) as well
+- [x] Phone check: render speed on 4×4 widget < 150 ms after first draw
+
+**Acceptance:** filter visible in editor, setup preview and home screen identically; switching
+modes never crashes; no visible lag when dragging in the editor; Off = exactly today's behaviour.
+
+---
+
+## P2 — Widget Builder (make your own widget)
+
+**Status:** Not started · **Effort:** L · **Area:** new feature
+
+**What:** users compose their own widget from blocks on a grid, all drawn in Dot Widgets style.
+Blocks: Time, Date, Battery, Weather (temp/icon), Steps, Next event, Text, Progress ring, Image,
+Divider, Spacer. Each block: position, size, alignment, font scale, colour (accent/primary/muted).
+Saved designs appear in the catalogue under **My widgets** and can be placed like any widget.
+
+**Why:** Nothing's headline feature is AI-built widgets — but only on Nothing phones, in beta, with
+account approval and 3 permissions. A block builder gives the same "it's mine" feeling on every
+Android phone, with no account, and is the strongest new line for the Play listing.
+
+**How we build it:**
+- Data: `data/builder/CustomWidget.kt` (Room entity: id, name, sizes, JSON layout), DAO, repository.
+- Render: `widgets/builder/BuilderRenderer.kt` — one `WidgetDefinition` per saved design, registered
+  dynamically in `WidgetRegistry` (prefix `custom.`), each block drawn with existing `RenderKit` /
+  `DotMatrixRenderer` helpers so skins, frames, accent and photo backgrounds all apply for free.
+- Data sources reuse existing repositories (`data/battery`, `data/weather`, `data/calendar`, `data/health`).
+- UI: `ui/builder/BuilderScreen.kt` — canvas with snap grid (4×4 cells per widget cell), block
+  palette, property sheet; undo/redo; templates to start from.
+- Permissions requested only when a block needs them (same `AppPermission` flow as today).
+
+**Tasks:**
+- [ ] Layout JSON schema + versioning (`"v": 1`)
+- [ ] Room entity, DAO, migration
+- [ ] Dynamic registration in `WidgetRegistry`
+- [ ] Block renderers (start with Time, Date, Battery, Text, Progress ring)
+- [ ] Builder canvas: add / move / resize / delete, snap grid
+- [ ] Property sheet per block
+- [ ] Undo / redo
+- [ ] 6 starter templates
+- [ ] Weather, Steps, Next event, Image blocks
+- [ ] "My widgets" section in browse
+- [ ] Tests: schema round trip, every block renders at S/M/L, broken JSON falls back safely
+
+**Acceptance:** a user with no instructions can build and place a clock + battery widget in under
+2 minutes; design survives app restart and phone reboot; all skins/frames apply; bad data never
+crashes the launcher (falls back to a plain clock like other widgets).
+
+---
+
+## P3 — Better weather widgets
+
+**Status:** Not started · **Effort:** M · **Area:** weather
+
+**What:** fill the gaps in weather: hourly temperature graph (dot sparkline), rain chance bars,
+air-quality ring, severe-weather alert badge, sunrise/sunset arc with daylight left, "feels like",
+wind with direction dots.
+
+**Why:** weather is the most-used widget type by far (46% in Android Authority's poll). Better
+weather = more daily views = better reviews.
+
+**How we build it:**
+- Audit existing weather widgets in `WeatherRenderers.kt` first — list what already exists
+  (we have `WeatherRepository`, `AirQualityRepository`, sunrise arc, precip bar).
+- Extend `WeatherRepository` with hourly data and alerts if the provider supports them.
+- New renderers only for real gaps; reuse dot-graph helpers.
+
+**Tasks:**
+- [ ] Audit: list existing weather widgets and data fields → write gaps here
+- [ ] Hourly graph widget (M, L)
+- [ ] Rain chance widget
+- [ ] Alert badge on existing weather widgets (opt-in option)
+- [ ] Offline / stale data state ("updated 3 h ago") on all weather widgets
+- [ ] Tests: render with full, partial and missing data
+
+**Acceptance:** every weather widget shows sensible content with no network; data refresh respects
+battery (no more often than today); location permission asked only once, with a clear reason.
+
+---
+
+## P4 — Smarter Smart Stack
+
+**Status:** Not started · **Effort:** S–M · **Area:** collection widgets
+
+**What:** Smart Stack can rotate automatically: pick which card shows by time of day (e.g. Morning
+→ Weather, Day → Calendar, Evening → Battery, Night → Clock), or "smart" (next event soon → Calendar,
+battery < 20% → Battery).
+
+**Why:** stacks were the most-wanted launcher feature in a reader poll; we already have the stack
+(`CollectionWidgets.STACK_KEY`), so this upgrades an existing feature cheaply.
+
+**How we build it:**
+- New stack options: `stack_mode` (Manual / Time of day / Smart) + time slots.
+- `WidgetAlarmScheduler` schedules a refresh at slot boundaries; `RemoteViews.setDisplayedChild`
+  (or stack adapter position) picks the card.
+- UI in `StackItemsSection`.
+
+**Tasks:**
+- [ ] Options + config round trip
+- [ ] Time-slot scheduling (exact alarms not required — inexact is fine)
+- [ ] Smart rules (event within 30 min, battery low, charging)
+- [ ] Manual swipe still works and is respected until next slot
+- [ ] Tests for slot selection logic (pure function)
+
+**Acceptance:** card changes within a few minutes of a slot boundary; no extra battery drain
+visible in Battery settings over 24 h.
+
+---
+
+## P5 — Lock screen check (Android 16)
+
+**Status:** Not started · **Effort:** S · **Area:** release quality
+
+**What:** make sure widgets look and behave right in Android 16's phone lock-screen widget area
+(vertical stack, up to 3 per page).
+
+**Why:** Android 16 QPR2 brings lock-screen widgets to phones. Broken lock-screen widgets mean bad
+reviews right when people discover the feature. We already have lock providers
+(`res/xml/dot_widget_lock_s.xml`, `dot_widget_lock_m.xml`) and `LockScreenWidgetsTest`.
+
+**Tasks:**
+- [ ] Check which widgets the lock providers expose; confirm none show private data (to-dos, contacts)
+- [ ] Emulator on Android 16 QPR2+ with lock-screen widgets enabled — screenshot each lock widget
+- [ ] Check text size / contrast on the lock wallpaper (transparent background mode)
+- [ ] Taps from the lock screen ask to unlock first where needed
+- [ ] Decide whether home-screen providers (`dot_widget_info_*.xml`, `widgetCategory="home_screen"`) should also allow `keyguard`
+
+**Acceptance:** every lock widget readable on light and dark wallpapers; no private content shown
+while locked; no crash on tap.
+
+---
+
+## P6 — Share a design (code / QR)
+
+**Status:** Not started · **Effort:** S · **Area:** growth
+
+**What:** "Share design" in widget setup creates a short code / QR / link containing the style
+(skin, frame, accent, background, options — **not** personal content or photos). "Import design"
+applies it.
+
+**Why:** people love showing off home screens; every shared design is free promotion. Config is
+already JSON (`importedConfigJson` path exists in `WidgetSetupState.defaults`), so no server needed.
+
+**How we build it:**
+- Whitelist of shareable keys → compact JSON → Base64URL (optionally deflate) → `dotwidgets://design/<code>`.
+- QR via a small encoder (or ZXing core) — no camera permission needed to *show* it; importing by
+  paste or Android's built-in QR scanner opening the link.
+- Strip `bg_image*`, notes, contacts, any personal fields.
+
+**Tasks:**
+- [ ] Shareable-key whitelist + encode/decode + tests (round trip, malicious input rejected)
+- [ ] Deep link intent filter
+- [ ] Share sheet + QR image
+- [ ] Import screen with preview before applying
+
+**Acceptance:** design shared from one phone reproduces exactly on another; no personal data in the
+code; garbage codes show a friendly error.
+
+---
+
+## P7 — Breathing & focus widget
+
+**Status:** Not started · **Effort:** S–M · **Area:** health / wellbeing
+
+**What:** tap the widget to start a 1-minute breathing session shown as dots growing and shrinking
+(in, hold, out), with gentle vibration on each phase. Patterns: Calm 4-7-8, Box 4-4-4-4, Quick 3-3.
+
+**Why:** Nothing's newest widgets (Relaxation Hub in Nothing OS 4.1) are breathing exercises with
+haptics — we match it on every phone.
+
+**How we build it:**
+- Widget shows a static preview + "Tap to breathe"; tap opens a small translucent activity
+  (like `RowLaunchActivity`) that runs the animation in Compose with `Vibrator` patterns.
+- Optional daily minutes counter on the widget.
+
+**Tasks:**
+- [ ] Widget renderer (S, M)
+- [ ] Session activity with 3 patterns + haptics (respects system "touch vibration" off)
+- [ ] Minutes-today counter
+- [ ] Tests: pattern timing logic
+
+**Acceptance:** session starts within 1 s of tap; vibration matches phases; works with vibration off.
+
+---
+
+## P8 — Streak & habit widgets
+
+**Status:** Not started · **Effort:** M · **Area:** productivity
+
+**What:** habits (water, reading, workout, custom) with a tap-to-check widget and a streak counter
+drawn as a dot calendar (last 7 / 30 days).
+
+**Why:** brings users back daily; Google is promoting a streak widget template (I/O 2026).
+
+**Tasks:**
+- [ ] Room table for habits + check-ins
+- [ ] Interactive check button on the widget (broadcast, explicit intent)
+- [ ] Dot-calendar renderer (S, M, L)
+- [ ] Streak rules (missed day resets; optional "rest days")
+- [ ] Midnight rollover refresh
+- [ ] Tests: streak calculation across time zones / DST
+
+**Acceptance:** checking in from the widget updates within 1 s; streak correct after a day change
+and after reboot.
+
+---
+
+## P9 — Automatic night look
+
+**Status:** Not started · **Effort:** S · **Area:** customisation
+
+**What:** global setting: at bedtime switch all widgets to a night style (dim, red dots, or force
+dark) and back in the morning. Times manual or follow system Bedtime / sunset.
+
+**Why:** easy, noticeable, and comfortable at night.
+
+**Tasks:**
+- [ ] Setting + schedule (two daily refreshes)
+- [ ] Night style applied in `WidgetRenderEngine` (override accent/dim, don't touch saved config)
+- [ ] Per-widget opt-out
+- [ ] Tests: style selection by time
+
+**Acceptance:** switch happens within minutes of the set time; turning it off restores every widget exactly.
+
+---
+
+## P10 — Photo shuffle album
+
+**Status:** Not started · **Effort:** S–M · **Area:** photos
+
+**What:** choose several photos for a widget background (or Photo widget); it changes every hour /
+day / on tap. Each photo keeps its own zoom placement (reuses the editor).
+
+**Tasks:**
+- [ ] Multiple `Choice` entries per widget (config array) + migration from single photo
+- [ ] Rotation schedule + "next photo" tap action
+- [ ] Editor: album strip, reorder, adjust each
+- [ ] Clean up photo files no longer used by any widget (also fixes today's leftover-file note)
+
+**Acceptance:** rotation survives reboot; deleting a photo never leaves a broken widget.
+
+---
+
+## P11 — Glyph light companion (Nothing Phone 3)
+
+**Status:** Not started · **Effort:** M · **Area:** Nothing phones
+
+**What:** mirror chosen widgets (timer, battery, notification count, clock) onto the Phone (3)'s
+back Glyph Matrix light.
+
+**Why:** unique — no general widget app does it, and Nothing fans love it. Limited to a few phones,
+so lower priority.
+
+**Tasks:**
+- [ ] Read Nothing's Glyph Matrix developer kit docs and licence; confirm Play policy fit
+- [ ] Prototype one "toy" (battery)
+- [ ] Hide the feature on non-Nothing phones
+
+**Acceptance:** works on a real Phone (3); app unaffected on every other phone.
+
+---
+
+## P12 — On-device usage statistics
+
+**Status:** Not started · **Effort:** S · **Area:** product insight
+
+**What:** record (on the phone only) which widgets are placed, tapped and kept, using Android 16's
+widget event APIs (`AppWidgetEvent`) where available. Optional screen in Settings: "Your widgets".
+
+**Why:** tells us what to improve next without collecting data off-device (privacy policy stays true).
+
+**Tasks:**
+- [ ] Needs `compileSdk 36.1` — check build impact
+- [ ] Local counters in Room; never uploaded
+- [ ] Settings screen (optional)
+
+**Acceptance:** no network calls added; privacy policy unchanged.
+
+---
+
+## P13 — Animated widgets (Remote Compose) — Parked
+
+**Status:** Parked · **Effort:** L
+
+**What:** smooth animations (ticking dots, flowing bars) using Google's Remote Compose widgets
+announced at I/O 2026 (Android 16+).
+
+**Why parked:** brand new, few phones, APIs still settling. Revisit when it's stable and the
+launcher support is wider. Today's live overlays already cover ticking clocks/timers.
+
+---
+
+## Release checklist (before next Play upload)
+
+- [ ] Rerun device tests on emulator after the `WidgetE2ETest` fix (`connectedDebugAndroidTest`)
+- [ ] P5 lock-screen check done
+- [ ] `versionCode` → **5** (code 4 may already be used), `versionName` → next version
+- [ ] Signed release AAB built with the upload key (never overwrite signing files)
+- [ ] Store listing text + screenshots updated with new features (photo background, editor)
+- [ ] Privacy policy still accurate (photos stay on device)
+- [ ] Explicit owner approval before uploading / publishing
+
+---
+
+## Changelog
+
+| Date       | Item                                                   | Commit    |
+|------------|--------------------------------------------------------|-----------|
+| 2026-11-12 | Background photo + Instagram-style placement editor    | `e3e5bd0` |
+| 2026-11-12 | Android 14+ list-row fix, device widget tests          | `25431dc` |
+| 2026-11-12 | Roadmap created                                        | —         |
+| 2026-11-12 | P1 dot-matrix photo filter (renderer, cache, editor preview, Photo widgets, device speed test) | — |
+
+---
+
+## Sources
+
+- Nothing OS 4.1 / Relaxation Hub — [9to5Google](https://9to5google.com/2026/03/17/nothing-phone-4a-debuts-these-new-features-in-nothing-os-4-1/), [GSMArena](https://www.gsmarena.com/nothing_phone_4a-review-2948p4.php), [Gizmochina](https://www.gizmochina.com/2026/03/17/nothing-phone-4a-first-update-nothing-os-4-1-features/)
+- Nothing OS 4 / Essential Apps — [Trusted Reviews](https://www.trustedreviews.com/news/nothing-os-4-is-rolling-out-heres-whats-new), [9to5Google hands-on](https://9to5google.com/2026/02/10/nothing-essential-apps-hands-on/), [Android Police](https://www.androidpolice.com/nothing-launches-a-vibe-coded-app-store/), [Nothing wiki](https://nothing.wiki/software/essential_apps_and_playground), [91mobiles](https://www.91mobiles.com/hub/nothing-os-4-roundup-release-timeline-eligible-phones-features/)
+- Competitors — [N-Style Widgets (AppGoblin)](https://appgoblin.info/apps/com.nothingness.widgetpack), [Something KWGT (AppGoblin)](https://appgoblin.info/apps/nothing.kwgt.app), [Nothing Widgets (APKMirror)](https://www.apkmirror.com/apk/nothing-technology-limited/nothing-widgets/), [KWGT alternatives](https://alternativeto.net/software/kwgt-kustom-widget-maker)
+- Glyph Matrix — [Android Authority](https://www.androidauthority.com/nothing-glyph-matrix-gimmick-3602057), [Glyph Museum 2.0](https://nothing.community/d/60931-glyph-museum-20-is-here)
+- User demand — [Widget poll](https://androidauthority.com/favorite-android-widget-poll-results-3679420), [Pixel Launcher wishes](https://www.androidauthority.com/google-pixel-launcher-missing-features-2026-3686830/), [Remote Compose / streak template](https://androidauthority.com/android-widgets-overhaul-remote-compose-3670122/)
+- Android 16 — [Widget metrics (developer.android.com)](https://developer.android.com/develop/ui/compose/glance/metrics.md.txt), [Lock-screen widgets (Droid Life)](https://www.droid-life.com/2025/08/20/android-16-qpr2-adds-lock-screen-widgets-to-phones-again/)
+
+> Research note: Nothing OS coverage found is from spring 2026; check Nothing's release notes for
+> later changes. Install counts come from third-party trackers, not Google Play.

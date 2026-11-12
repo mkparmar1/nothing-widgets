@@ -9,6 +9,7 @@ import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.ThemeMode
 import com.example.data.photos.BackgroundImageStore
+import com.example.data.photos.PhotoFilter
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.config.WidgetSetupState
 import com.example.widgets.base.WidgetRegistry
@@ -36,7 +37,7 @@ class BackgroundImageTest {
     fun `background photo survives a save and reload of the widget settings`() {
         val def = WidgetRegistry.getAll().first()
         val state = WidgetSetupState.defaults(def, PreferencesManager.getInstance(context))
-            .copy(backgroundPhoto = BackgroundImageStore.Choice("abcd1234-ef56", dim = 0.6f, zoom = 2.5f, cx = 0.3f, cy = 0.7f))
+            .copy(backgroundPhoto = BackgroundImageStore.Choice("abcd1234-ef56", dim = 0.6f, zoom = 2.5f, cx = 0.3f, cy = 0.7f, filter = PhotoFilter.ACCENT, dotSize = 1.4f))
         val json = state.toConfigJson(def.id)
         val back = WidgetSetupState.defaults(def, PreferencesManager.getInstance(context), importedConfigJson = json)
         val photo = back.backgroundPhoto!!
@@ -45,6 +46,8 @@ class BackgroundImageTest {
         assertEquals(2.5f, photo.zoom, 0.001f)
         assertEquals(0.3f, photo.cx, 0.001f)
         assertEquals(0.7f, photo.cy, 0.001f)
+        assertEquals(PhotoFilter.ACCENT, photo.filter)
+        assertEquals(1.4f, photo.dotSize, 0.001f)
 
         // Removing it clears the keys, so the widget goes back to its plain background.
         val cleared = back.copy(backgroundPhoto = null).toConfigJson(def.id, existingConfigJson = json)
@@ -55,6 +58,15 @@ class BackgroundImageTest {
     fun `odd ids in config are ignored`() {
         assertNull(BackgroundImageStore.fromConfig("""{"bg_image":"../../secret"}"""))
         assertNull(BackgroundImageStore.fromConfig("not json"))
+    }
+
+    @Test
+    fun `photo filter settings default to off and round-trip cleanly`() {
+        val text = """{"bg_image":"abcd1234-ef56","bg_image_filter":"accent","bg_image_dot":1.4}"""
+        val parsed = BackgroundImageStore.fromConfig(text)!!
+        assertEquals(PhotoFilter.ACCENT, parsed.filter)
+        assertEquals(1.4f, parsed.dotSize, 0.001f)
+        assertEquals(PhotoFilter.OFF, BackgroundImageStore.fromConfig("""{"bg_image":"abcd1234-ef56"}""")!!.filter)
     }
 
     /** Zooming in on one side of the photo shows that side, the same way the editor shows it. */

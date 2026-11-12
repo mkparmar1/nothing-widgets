@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -154,6 +156,42 @@ internal fun BackgroundImageSection(
                         accent = ui,
                         valueRange = 0f..0.9f,
                         modifier = Modifier.testTag("bg_image_dim")
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        listOf(
+                            "Off" to com.example.data.photos.PhotoFilter.OFF,
+                            "Mono" to com.example.data.photos.PhotoFilter.MONO,
+                            "Accent" to com.example.data.photos.PhotoFilter.ACCENT,
+                            "Colour" to com.example.data.photos.PhotoFilter.COLOUR
+                        ).forEach { (label, filter) ->
+                            OutlinedButton(
+                                onClick = { current?.let { update(state.copy(backgroundPhoto = it.copy(filter = filter))) } },
+                                modifier = Modifier.weight(1f),
+                                border = if (current?.filter == filter) null else BorderStroke(1.dp, ui.copy(alpha = 0.45f)),
+                                colors = if (current?.filter == filter) ButtonDefaults.buttonColors(containerColor = ui.copy(alpha = 0.12f))
+                                else ButtonDefaults.outlinedButtonColors(contentColor = ui)
+                            ) { Text(label) }
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Dot size", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f))
+                        Text(
+                            "${((current?.dotSize ?: BackgroundImageStore.DEFAULT_DOT_SIZE) * 10).roundToInt() / 10f}",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = ui,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(ui.copy(alpha = 0.12f))
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+                    SlimSlider(
+                        value = current?.dotSize ?: BackgroundImageStore.DEFAULT_DOT_SIZE,
+                        onValueChange = { d -> current?.let { update(state.copy(backgroundPhoto = it.copy(dotSize = d))) } },
+                        accent = ui,
+                        valueRange = 0.5f..2.0f,
+                        modifier = Modifier.testTag("bg_image_dot_size")
                     )
                 }
             }

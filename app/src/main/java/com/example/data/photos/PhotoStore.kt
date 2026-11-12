@@ -7,6 +7,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.media.ExifInterface
 import java.io.File
+import java.util.Locale
 
 /** Photos chosen for the photo widgets, stored as small JPEGs in app storage. */
 object PhotoStore {
@@ -19,8 +20,31 @@ object PhotoStore {
         "photo.clock.overlay" to 1
     )
 
+    /** Optional dot-matrix look applied to the photos of the photo widgets. */
+    data class Style(
+        val filter: PhotoFilter = PhotoFilter.OFF,
+        val dotSize: Float = 1f
+    )
+
+    private const val STYLE_PREFS = "photo_widget_style"
     private const val MAX_SIDE = 720
     private val memory = HashMap<String, Pair<Long, Bitmap>>()
+
+    /** The saved dot-filter settings for a photo widget (off by default). */
+    fun style(context: Context, widgetId: String): Style {
+        val prefs = context.getSharedPreferences(STYLE_PREFS, Context.MODE_PRIVATE)
+        return Style(
+            filter = PhotoFilter.fromName(prefs.getString("$widgetId.filter", null)),
+            dotSize = prefs.getFloat("$widgetId.dot", 1f).coerceIn(0.5f, 2f)
+        )
+    }
+
+    fun setStyle(context: Context, widgetId: String, style: Style) {
+        context.getSharedPreferences(STYLE_PREFS, Context.MODE_PRIVATE).edit()
+            .putString("$widgetId.filter", style.filter.name.lowercase(Locale.US))
+            .putFloat("$widgetId.dot", style.dotSize.coerceIn(0.5f, 2f))
+            .apply()
+    }
 
     private fun file(context: Context, widgetId: String, slot: Int) =
         File(File(context.filesDir, "photos").apply { mkdirs() }, "${widgetId}_$slot.jpg")

@@ -27,6 +27,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,9 +51,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.example.core.theme.AccentOption
 import com.example.data.contacts.ContactRepository
+import com.example.data.photos.PhotoFilter
 import com.example.data.photos.PhotoStore
 import com.example.data.shortcuts.Shortcut
 import com.example.data.shortcuts.ShortcutStore
+import kotlin.math.roundToInt
 
 /** Pick contacts, apps, a link or a number for each slot of a shortcut widget. */
 @Composable
@@ -267,6 +271,12 @@ fun PhotoEditor(widgetId: String, accent: AccentOption, onChanged: () -> Unit) {
     val count = PhotoStore.WIDGETS[widgetId] ?: return
     var version by remember { mutableIntStateOf(0) }
     var pickingSlot by remember { mutableIntStateOf(0) }
+    var style by remember(version) { mutableStateOf(PhotoStore.style(context, widgetId)) }
+    val updateStyle: (PhotoStore.Style) -> Unit = { next ->
+        style = next
+        PhotoStore.setStyle(context, widgetId, next)
+        onChanged()
+    }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) {
             if (PhotoStore.save(context, widgetId, pickingSlot, uri)) {
@@ -297,5 +307,53 @@ fun PhotoEditor(widgetId: String, accent: AccentOption, onChanged: () -> Unit) {
             )
         }
         Spacer(modifier = Modifier.height(2.dp))
+        if ((0 until count).any { PhotoStore.has(context, widgetId, it) }) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Dot filter",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                listOf(
+                    "Off" to PhotoFilter.OFF,
+                    "Mono" to PhotoFilter.MONO,
+                    "Accent" to PhotoFilter.ACCENT,
+                    "Colour" to PhotoFilter.COLOUR
+                ).forEach { (label, filter) ->
+                    FilterChip(
+                        selected = style.filter == filter,
+                        onClick = { updateStyle(style.copy(filter = filter)) },
+                        label = { Text(label) },
+                        modifier = Modifier.weight(1f),
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
+            if (style.filter != PhotoFilter.OFF) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Dot size",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        "${(style.dotSize * 10).roundToInt() / 10f}",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                SlimSlider(
+                    value = style.dotSize,
+                    onValueChange = { updateStyle(style.copy(dotSize = it)) },
+                    accent = MaterialTheme.colorScheme.primary,
+                    valueRange = 0.5f..2f
+                )
+            }
+        }
     }
 }

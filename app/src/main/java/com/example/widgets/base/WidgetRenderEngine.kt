@@ -57,7 +57,7 @@ object WidgetRenderEngine {
             else com.example.data.photos.BackgroundImageStore.fromConfig(spec.configJson)
         val photo = photoChoice?.let { c ->
             com.example.data.photos.BackgroundImageStore.load(context, c.id)
-                ?.let { DotMatrixRenderer.PhotoBackground(it, c.dim, c.zoom, c.cx, c.cy) }
+                ?.let { DotMatrixRenderer.PhotoBackground(it, c.dim, c.zoom, c.cx, c.cy, c.filter, c.dotSize, c.id) }
         }
         @Suppress("NAME_SHADOWING")
         val spec = if (photo != null) spec.copy(isDark = true) else spec

@@ -8,7 +8,9 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
+import com.example.core.render.PhotoDotFilter
 import com.example.core.render.RenderKit
+import com.example.data.photos.PhotoFilter
 import com.example.data.photos.PhotoStore
 import com.example.widgets.base.WidgetSpec
 import java.util.Calendar
@@ -16,6 +18,9 @@ import java.util.Locale
 
 /** Widgets showing photos the user picked in the app. */
 object PhotoRenderers {
+
+    private val photoPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+    private val blackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK }
 
     /** Photo filling the widget inside a dotted frame. */
     fun renderFrame(context: Context, spec: WidgetSpec, canvas: Canvas) {
@@ -25,7 +30,7 @@ object PhotoRenderers {
         kit.background()
         val inset = kit.pad * 0.7f
         val rect = RectF(inset, inset, kit.width - inset, kit.height - inset)
-        drawPhoto(canvas, photo, rect, spec.cornerRadiusDp * kit.d * 0.6f)
+        drawPhoto(context, "photo.single.frame", 0, canvas, photo, rect, spec.cornerRadiusDp * kit.d * 0.6f, kit.accentColor)
         drawDotBorder(kit, RectF(inset * 0.45f, inset * 0.45f, kit.width - inset * 0.45f, kit.height - inset * 0.45f))
     }
 
@@ -41,8 +46,8 @@ object PhotoRenderers {
         val mid = kit.width / 2f
         val r = spec.cornerRadiusDp * kit.d * 0.6f
         listOf(left to RectF(inset, inset, mid - gap / 2, kit.height - inset), right to RectF(mid + gap / 2, inset, kit.width - inset, kit.height - inset))
-            .forEach { (bmp, rect) ->
-                if (bmp != null) drawPhoto(canvas, bmp, rect, r)
+            .forEachIndexed { slot, (bmp, rect) ->
+                if (bmp != null) drawPhoto(context, "photo.duo.collage", slot, canvas, bmp, rect, r, kit.accentColor)
                 else kit.labelCentered("ADD PHOTO", rect.centerY(), kit.textPaint(kit.greyColor, 10f, 13f), rect.width())
             }
     }
@@ -53,6 +58,16 @@ object PhotoRenderers {
             ?: return RenderKit.message(spec, canvas, "HALFTONE ART", "PICK A PHOTO IN THE APP")
         val kit = RenderKit(spec, canvas)
         kit.background()
+        // A chosen dot filter replaces the built-in halftone with the shared photo-dot look.
+        if (PhotoStore.style(context, "photo.monochrome.art").filter != PhotoFilter.OFF) {
+            val inset = kit.pad * 0.7f
+            drawPhoto(
+                context, "photo.monochrome.art", 0, canvas, photo,
+                RectF(inset, inset, kit.width - inset, kit.height - inset),
+                spec.cornerRadiusDp * kit.d * 0.6f, kit.accentColor
+            )
+            return
+        }
         val cols = if (kit.width > kit.height * 1.5f) 44 else 30
         val step = (kit.width - kit.pad) / cols
         val rows = ((kit.height - kit.pad) / step).toInt()
@@ -79,7 +94,7 @@ object PhotoRenderers {
         kit.background()
         val inset = 1.5f
         val rect = RectF(inset, inset, kit.width - inset, kit.height - inset)
-        drawPhoto(canvas, photo, rect, spec.cornerRadiusDp * kit.d)
+        drawPhoto(context, "photo.clock.overlay", 0, canvas, photo, rect, spec.cornerRadiusDp * kit.d, kit.accentColor)
         // Darken behind the time so it stays readable on bright photos
         canvas.drawRect(RectF(0f, kit.height * 0.30f, kit.width, kit.height * 0.70f), kit.fill(0x88000000.toInt()))
 
@@ -88,11 +103,35 @@ object PhotoRenderers {
         kit.dotTextCentered(time, kit.height * 0.50f, kit.height * 0.26f, 10f * kit.d, accentIndices = RenderKit.colonIndices(time), color = Color.WHITE)
     }
 
-    private fun drawPhoto(canvas: Canvas, photo: Bitmap, rect: RectF, radius: Float) {
+    private fun drawPhoto(
+        context: Context,
+        widgetId: String,
+        slot: Int,
+        canvas: Canvas,
+        photo: Bitmap,
+        rect: RectF,
+        radius: Float,
+        accentColor: Int
+    ) {
         val crop = centerCropRect(photo.width, photo.height, rect.width(), rect.height())
         canvas.save()
         canvas.clipPath(Path().apply { addRoundRect(rect, radius, radius, Path.Direction.CW) })
-        canvas.drawBitmap(photo, crop, rect, Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG))
+        val style = PhotoStore.style(context, widgetId)
+        if (style.filter == PhotoFilter.OFF) {
+            canvas.drawBitmap(photo, crop, rect, photoPaint)
+        } else {
+            canvas.drawRect(rect, blackPaint)
+            PhotoDotFilter.draw(
+                canvas = canvas,
+                image = photo,
+                src = RectF(crop.left.toFloat(), crop.top.toFloat(), crop.right.toFloat(), crop.bottom.toFloat()),
+                dst = rect,
+                filter = style.filter,
+                dotSize = style.dotSize,
+                accentColor = accentColor,
+                cacheKey = "$widgetId/$slot"
+            )
+        }
         canvas.restore()
     }
 

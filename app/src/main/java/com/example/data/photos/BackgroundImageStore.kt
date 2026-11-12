@@ -9,8 +9,25 @@ import android.net.Uri
 import android.util.LruCache
 import com.example.core.render.PhotoFraming
 import java.io.File
+import java.util.Locale
 import java.util.UUID
 import org.json.JSONObject
+
+enum class PhotoFilter {
+    OFF,
+    MONO,
+    ACCENT,
+    COLOUR;
+
+    companion object {
+        fun fromName(value: String?): PhotoFilter = when (value?.trim()?.lowercase(Locale.US)) {
+            "mono" -> MONO
+            "accent" -> ACCENT
+            "colour", "color" -> COLOUR
+            else -> OFF
+        }
+    }
+}
 
 /**
  * Optional custom background photo for any widget. The picked image is saved once as a JPEG in
@@ -25,7 +42,10 @@ object BackgroundImageStore {
     const val KEY_ZOOM = "bg_image_zoom"
     const val KEY_CX = "bg_image_cx"
     const val KEY_CY = "bg_image_cy"
+    const val KEY_FILTER = "bg_image_filter"
+    const val KEY_DOT_SIZE = "bg_image_dot"
     const val DEFAULT_DIM = 0.45f
+    const val DEFAULT_DOT_SIZE = 1f
 
     /** Long side kept; room to zoom in on a large widget and stay sharp. */
     private const val MAX_SIDE = 1600
@@ -40,7 +60,9 @@ object BackgroundImageStore {
         val dim: Float = DEFAULT_DIM,
         val zoom: Float = 1f,
         val cx: Float = 0.5f,
-        val cy: Float = 0.5f
+        val cy: Float = 0.5f,
+        val filter: PhotoFilter = PhotoFilter.OFF,
+        val dotSize: Float = DEFAULT_DOT_SIZE
     ) {
         fun writeTo(json: JSONObject) {
             json.put(KEY_IMAGE, id)
@@ -48,11 +70,13 @@ object BackgroundImageStore {
             json.put(KEY_ZOOM, Math.round(zoom * 1000) / 1000.0)
             json.put(KEY_CX, Math.round(cx * 10000) / 10000.0)
             json.put(KEY_CY, Math.round(cy * 10000) / 10000.0)
+            json.put(KEY_FILTER, filter.name.lowercase(Locale.US))
+            json.put(KEY_DOT_SIZE, Math.round(dotSize * 100) / 100.0)
         }
     }
 
     fun clearFrom(json: JSONObject) {
-        listOf(KEY_IMAGE, KEY_DIM, KEY_ZOOM, KEY_CX, KEY_CY).forEach { json.remove(it) }
+        listOf(KEY_IMAGE, KEY_DIM, KEY_ZOOM, KEY_CX, KEY_CY, KEY_FILTER, KEY_DOT_SIZE).forEach { json.remove(it) }
     }
 
     private fun dir(context: Context) = File(context.filesDir, "backgrounds").apply { mkdirs() }
@@ -63,12 +87,15 @@ object BackgroundImageStore {
     fun fromConfig(configJson: String?): Choice? {
         val json = runCatching { JSONObject(configJson ?: "{}") }.getOrNull() ?: return null
         val id = json.optString(KEY_IMAGE).takeIf { it.matches(ID) } ?: return null
+        val filter = PhotoFilter.fromName(json.optString(KEY_FILTER))
         return Choice(
             id = id,
             dim = (json.optInt(KEY_DIM, (DEFAULT_DIM * 100).toInt()) / 100f).coerceIn(0f, 0.9f),
             zoom = json.optDouble(KEY_ZOOM, 1.0).toFloat().takeIf { !it.isNaN() }?.coerceIn(1f, PhotoFraming.MAX_ZOOM) ?: 1f,
             cx = json.optDouble(KEY_CX, 0.5).toFloat().takeIf { !it.isNaN() }?.coerceIn(0f, 1f) ?: 0.5f,
-            cy = json.optDouble(KEY_CY, 0.5).toFloat().takeIf { !it.isNaN() }?.coerceIn(0f, 1f) ?: 0.5f
+            cy = json.optDouble(KEY_CY, 0.5).toFloat().takeIf { !it.isNaN() }?.coerceIn(0f, 1f) ?: 0.5f,
+            filter = filter,
+            dotSize = json.optDouble(KEY_DOT_SIZE, DEFAULT_DOT_SIZE.toDouble()).toFloat().coerceIn(0.5f, 2.5f)
         )
     }
 

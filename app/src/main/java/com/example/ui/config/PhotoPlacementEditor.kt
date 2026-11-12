@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -24,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,6 +43,7 @@ import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -50,9 +54,13 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.core.render.PhotoDotFilter
 import com.example.core.render.PhotoFraming
 import com.example.data.photos.BackgroundImageStore
+import com.example.data.photos.PhotoFilter
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Full-screen editor for placing a background photo, like setting a profile picture: a window the
@@ -75,9 +83,19 @@ internal fun PhotoPlacementEditor(
     var cx by remember { mutableFloatStateOf(initial.cx) }
     var cy by remember { mutableFloatStateOf(initial.cy) }
     var dim by remember { mutableFloatStateOf(initial.dim) }
+    var filter by remember { mutableStateOf(initial.filter) }
+    var dotSize by remember { mutableFloatStateOf(initial.dotSize) }
     var touching by remember { mutableStateOf(false) }
     var area by remember { mutableStateOf(IntSize.Zero) }
     val margin = with(LocalDensity.current) { 24.dp.toPx() }
+
+    // Live dot preview: rebuilt off the main thread when the look changes, then drawn in place.
+    val filtered by produceState<Bitmap?>(null, image, filter, dotSize, accent) {
+        value = if (filter == PhotoFilter.OFF) null else withContext(Dispatchers.Default) {
+            PhotoDotFilter.filteredWhole(image, filter, dotSize, accent.toArgb())
+        }
+    }
+    val filteredBitmap = remember(filtered) { filtered?.asImageBitmap() }
 
     // The widget-shaped window, as large as fits in the editing area.
     fun frame(): Rect {
@@ -117,7 +135,10 @@ internal fun PhotoPlacementEditor(
                     modifier = Modifier.weight(1f).padding(start = 8.dp)
                 )
                 Button(
-                    onClick = { clampNow(); onDone(initial.copy(zoom = zoom, cx = cx, cy = cy, dim = dim)) },
+                    onClick = {
+                        clampNow()
+                        onDone(initial.copy(zoom = zoom, cx = cx, cy = cy, dim = dim, filter = filter, dotSize = dotSize))
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = accent),
                     modifier = Modifier.testTag("photo_edit_done")
                 ) { Text("Done") }
@@ -172,8 +193,18 @@ internal fun PhotoPlacementEditor(
                     )
                     val r = (cornerFraction * f.width).coerceAtMost(minOf(f.width, f.height) / 2f)
                     val window = Path().apply { addRoundRect(RoundRect(f, CornerRadius(r, r))) }
-                    // Inside: the darkening the widget will use.
-                    clipPath(window) { drawRect(Color.Black.copy(alpha = dim)) }
+                    // Inside: the darkening the widget will use, then the dot filter preview.
+                    clipPath(window) {
+                        drawRect(Color.Black.copy(alpha = dim))
+                        filteredBitmap?.let {
+                            drawImage(
+                                it,
+                                dstOffset = IntOffset(b[0].roundToInt(), b[1].roundToInt()),
+                                dstSize = IntSize((b[2] - b[0]).roundToInt(), (b[3] - b[1]).roundToInt()),
+                                filterQuality = FilterQuality.High
+                            )
+                        }
+                    }
                     // Outside: dimmed, so only the widget's part stands out.
                     val outside = Path().apply {
                         fillType = PathFillType.EvenOdd
@@ -223,6 +254,49 @@ internal fun PhotoPlacementEditor(
                     valueRange = 0f..0.9f,
                     modifier = Modifier.testTag("photo_edit_dim")
                 )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    listOf(
+                        "Off" to PhotoFilter.OFF,
+                        "Mono" to PhotoFilter.MONO,
+                        "Accent" to PhotoFilter.ACCENT,
+                        "Colour" to PhotoFilter.COLOUR
+                    ).forEach { (label, mode) ->
+                        FilterChip(
+                            selected = filter == mode,
+                            onClick = { filter = mode },
+                            label = { Text(label) },
+                            modifier = Modifier.weight(1f),
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = Color.White.copy(alpha = 0.08f),
+                                labelColor = Color.White.copy(alpha = 0.75f),
+                                selectedContainerColor = accent.copy(alpha = 0.35f),
+                                selectedLabelColor = Color.White
+                            )
+                        )
+                    }
+                }
+                if (filter != PhotoFilter.OFF) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Dot size", color = Color.White, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        Text(
+                            "${(dotSize * 10).roundToInt() / 10f}",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.14f))
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+                    SlimSlider(
+                        value = dotSize,
+                        onValueChange = { dotSize = it },
+                        accent = accent,
+                        valueRange = 0.5f..2f,
+                        modifier = Modifier.testTag("photo_edit_dot_size")
+                    )
+                }
             }
         }
     }
