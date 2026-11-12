@@ -42,4 +42,18 @@ object WidgetProviders {
 
     fun isLockScreenProvider(className: String): Boolean =
         ALL.firstOrNull { it.providerClass.name == className }?.lockScreen == true
+
+    /** Provider entry for a placed widget id, or null when it isn't one of ours. */
+    fun entryFor(context: Context, appWidgetId: Int): Entry? {
+        val manager = AppWidgetManager.getInstance(context) ?: return null
+        val className = manager.getAppWidgetInfo(appWidgetId)?.provider?.className ?: return null
+        return ALL.firstOrNull { it.providerClass.name == className }
+    }
+
+    fun isLockScreenWidget(context: Context, appWidgetId: Int): Boolean =
+        entryFor(context, appWidgetId)?.lockScreen == true
+
+    /** Safe default design for a widget id, used when a lock widget's saved choice must be refused. */
+    fun defaultWidgetTypeIdFor(context: Context, appWidgetId: Int): String =
+        entryFor(context, appWidgetId)?.defaultWidgetTypeId ?: "clock.dotdigital.s"
 }

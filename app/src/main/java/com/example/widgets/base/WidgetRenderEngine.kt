@@ -150,9 +150,15 @@ object WidgetRenderEngine {
         val accent = AccentOption.fromName(accentStr)
         val accentColor = com.example.core.theme.WidgetAccent.resolve(context, accent, instance.configJson)
 
+        val onLockScreen = WidgetProviders.isLockScreenWidget(context, appWidgetId)
         val bgModeStr = instance.getBackground(prefs.getSavedBgMode().name)
-        val bgMode = BackgroundMode.fromName(bgModeStr)
+        val bgMode = LockScreenSafety.effectiveBackground(
+            BackgroundMode.fromName(bgModeStr),
+            onLockScreen
+        )
         val bgAlpha = instance.getBgAlphaPercent(100) / 100f
+        val configJson = if (onLockScreen) LockScreenSafety.sanitizedConfig(instance.configJson)
+        else instance.configJson
 
         val themeModeStr = instance.getThemeMode(prefs.getSavedThemeMode().name)
         val themeMode = ThemeMode.fromName(themeModeStr)
@@ -186,11 +192,11 @@ object WidgetRenderEngine {
             bgAlpha = bgAlpha,
             themeMode = themeMode,
             // Paper is always light; Neon and Terminal always dark.
-            isDark = Skin.from(instance.configJson).resolveDark(isDark),
+            isDark = Skin.from(configJson).resolveDark(isDark),
             cornerRadiusDp = cornerRadius,
             showLabel = showLabel,
             tapAction = tapAction,
-            configJson = instance.configJson,
+            configJson = configJson,
             liveOverlays = true
         )
 
@@ -203,12 +209,20 @@ object WidgetRenderEngine {
         appWidgetId: Int,
         instance: WidgetInstance
     ): Pair<RemoteViews, Long> = withContext(Dispatchers.Default) {
-        val spec = specFor(context, appWidgetId, instance)
+        val requested = WidgetRegistry.getById(instance.widgetTypeId)
+        val onLockScreen = WidgetProviders.isLockScreenWidget(context, appWidgetId)
+        val useFallback = onLockScreen && !LockScreenSafety.safeForLockScreen(requested)
+        val definition = if (useFallback) {
+            // Never leak personal data if a lock widget's stored design is stale or tampered with.
+            WidgetRegistry.getById(WidgetProviders.defaultWidgetTypeIdFor(context, appWidgetId))
+                ?: WidgetRegistry.getAll().first()
+        } else {
+            requested ?: WidgetRegistry.getAll().first()
+        }
+        val baseSpec = specFor(context, appWidgetId, instance)
+        val spec = if (useFallback) baseSpec.copy(tapAction = definition.defaultTap) else baseSpec
         val sizeBucket = spec.sizeBucket
         val tapAction = spec.tapAction
-
-        val definition = WidgetRegistry.getById(instance.widgetTypeId)
-            ?: WidgetRegistry.getAll().first()
 
         val missingPermission = definition.requiredPermission?.takeIf { !it.isGranted(context) }
         val bitmap = if (missingPermission != null) {
