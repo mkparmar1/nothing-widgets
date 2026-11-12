@@ -118,7 +118,9 @@ object WidgetRenderEngine {
         instance: WidgetInstance
     ): RemoteViews {
         // Callers send these straight to the launcher, so remember what it now shows.
-        val (views, signature) = buildWidget(context, appWidgetId, instance)
+        val (views, signature) = buildWidget(
+            context, appWidgetId, instance, refreshSmartStackSelection = true
+        )
         lastSignatures[appWidgetId] = signature
         return views
     }
@@ -207,7 +209,8 @@ object WidgetRenderEngine {
     private suspend fun buildWidget(
         context: Context,
         appWidgetId: Int,
-        instance: WidgetInstance
+        instance: WidgetInstance,
+        refreshSmartStackSelection: Boolean = false
     ): Pair<RemoteViews, Long> = withContext(Dispatchers.Default) {
         com.example.data.builder.CustomWidgetRepository.loadIntoRegistry(context)
         val requested = WidgetRegistry.getById(instance.widgetTypeId)
@@ -234,9 +237,22 @@ object WidgetRenderEngine {
 
         // Scrollable lists and the Smart Stack use their own layouts and a RemoteViewsService.
         if (missingPermissions.isEmpty() && CollectionWidgets.isCollection(definition.id)) {
-            val views = CollectionViews.build(context, appWidgetId, definition.id, spec, bitmap)
+            val selectedStackCard = if (CollectionWidgets.isStack(definition.id)) {
+                CollectionWidgets.selectedAutomaticStackCard(
+                    context, appWidgetId, instance.configJson, refreshSmartStackSelection
+                )
+            } else null
+            val stackItems = CollectionWidgets.stackItems(instance.configJson)
+            val selectedStackChild = selectedStackCard?.let(stackItems::indexOf)?.takeIf { it >= 0 }
+            val views = CollectionViews.build(
+                context, appWidgetId, definition.id, spec, bitmap,
+                selectedStackChild.takeIf { refreshSmartStackSelection }
+            )
             views.setContentDescription(R.id.widget_image_view, definition.describe(context))
-            return@withContext views to (bitmapSignature(bitmap) * 31 + listOf(definition.id, definition.title, definition.renderVersion, instance.configJson).hashCode())
+            return@withContext views to (
+                bitmapSignature(bitmap) * 31 +
+                    listOf(definition.id, definition.title, definition.renderVersion, instance.configJson, selectedStackChild).hashCode()
+                )
         }
 
         val views = RemoteViews(context.packageName, R.layout.widget_canvas_layout)
@@ -544,7 +560,11 @@ object WidgetRenderEngine {
      * minute for nothing. Pass [force] after boot, app updates or time changes, when the launcher
      * may need everything again.
      */
-    suspend fun updateAllPlacedWidgets(context: Context, force: Boolean = false) = withContext(Dispatchers.IO) {
+    suspend fun updateAllPlacedWidgets(
+        context: Context,
+        force: Boolean = false,
+        refreshSmartStackSelection: Boolean = false
+    ) = withContext(Dispatchers.IO) {
         val db = AppDatabase.getInstance(context)
         val manager = AppWidgetManager.getInstance(context)
 
@@ -576,7 +596,10 @@ object WidgetRenderEngine {
         var sent = 0
         for (instance in placed) {
             try {
-                val (views, signature) = buildWidget(context, instance.appWidgetId, instance)
+                val (views, signature) = buildWidget(
+                    context, instance.appWidgetId, instance,
+                    refreshSmartStackSelection = refreshSmartStackSelection
+                )
                 if (lastSignatures[instance.appWidgetId] == signature) continue
                 manager.updateAppWidget(instance.appWidgetId, views)
                 lastSignatures[instance.appWidgetId] = signature
@@ -590,6 +613,36 @@ object WidgetRenderEngine {
         CollectionViews.notifyChanged(context, placed.associate { it.appWidgetId to it.widgetTypeId })
         android.util.Log.d("WidgetRenderEngine", "Refresh: sent $sent of ${placed.size} widgets (${placed.size - sent} unchanged)")
         PreferencesManager.getInstance(context).setLastWidgetRefresh(System.currentTimeMillis())
+    }
+
+    /** Re-selects automatic Smart Stack cards at a slot boundary without touching other widgets. */
+    suspend fun updateAutomaticSmartStacks(context: Context) = withContext(Dispatchers.IO) {
+        val db = AppDatabase.getInstance(context)
+        val manager = AppWidgetManager.getInstance(context)
+        val updated = linkedMapOf<Int, String>()
+
+        for ((_, ids) in WidgetProviders.placedIds(context)) {
+            for (id in ids) {
+                if (WidgetProviders.isLockScreenWidget(context, id)) continue
+                val instance = db.widgetInstanceDao().getById(id) ?: continue
+                if (!CollectionWidgets.isStack(instance.widgetTypeId) ||
+                    CollectionWidgets.stackMode(instance.configJson) == com.example.widgets.collection.StackMode.MANUAL ||
+                    CollectionWidgets.stackItems(instance.configJson).isEmpty()
+                ) continue
+
+                try {
+                    val (views, signature) = buildWidget(
+                        context, id, instance, refreshSmartStackSelection = true
+                    )
+                    manager.updateAppWidget(id, views)
+                    lastSignatures[id] = signature
+                    updated[id] = instance.widgetTypeId
+                } catch (e: Exception) {
+                    android.util.Log.e("WidgetRenderEngine", "Failed to rotate Smart Stack $id", e)
+                }
+            }
+        }
+        CollectionViews.notifyChanged(context, updated)
     }
 
     /** Number of Dot Widgets currently placed on the home screen. */

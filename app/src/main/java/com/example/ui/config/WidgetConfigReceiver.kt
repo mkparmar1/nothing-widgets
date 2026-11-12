@@ -8,6 +8,7 @@ import android.util.Log
 import com.example.data.db.AppDatabase
 import com.example.data.db.WidgetInstance
 import com.example.widgets.base.WidgetRenderEngine
+import com.example.widgets.base.WidgetAlarmScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,6 +37,7 @@ class WidgetConfigReceiver : BroadcastReceiver() {
                     // Immediate render to home screen
                     val views = WidgetRenderEngine.buildRemoteViews(context, appWidgetId, instance)
                     AppWidgetManager.getInstance(context).updateAppWidget(appWidgetId, views)
+                    WidgetAlarmScheduler.scheduleNextSmartStackSlot(context)
                 } catch (e: Exception) {
                     Log.e("WidgetConfigReceiver", "Failed to configure pinned widget $appWidgetId", e)
                 } finally {

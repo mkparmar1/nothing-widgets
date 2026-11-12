@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,6 +82,8 @@ import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetSpec
 import com.example.widgets.collection.CollectionWidgets
+import com.example.widgets.collection.StackMode
+import com.example.widgets.collection.StackTimeSlot
 import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
@@ -103,6 +106,8 @@ data class WidgetSetupState(
     val frame: Frame = Frame.HAIRLINE,
     /** Smart Stack only: widget ids shown as swipeable cards, in order. */
     val stackItems: List<String> = emptyList(),
+    val stackMode: StackMode = StackMode.MANUAL,
+    val stackTimeSlots: Map<StackTimeSlot, String> = emptyMap(),
     /** IANA zone for world-clock widgets, null = phone's zone. */
     val timeZoneId: String? = null,
     /** Advanced-option values (Phase 8), stored under the `"opt"` config object. */
@@ -134,6 +139,13 @@ data class WidgetSetupState(
             put(Skin.KEY, skin.name)
             put(Frame.KEY, frame.name)
             put(CollectionWidgets.STACK_KEY, JSONArray(stackItems))
+            if (CollectionWidgets.isStack(widgetTypeId)) {
+                put(CollectionWidgets.STACK_MODE_KEY, stackMode.name)
+                put(
+                    CollectionWidgets.STACK_TIME_SLOTS_KEY,
+                    JSONObject().apply { stackTimeSlots.forEach { (slot, id) -> put(slot.name, id) } }
+                )
+            }
         }.toString()
         // Option values live in a nested object so they never collide with core config keys.
         return com.example.core.config.WidgetOptions.write(base, optionValues)
@@ -164,6 +176,8 @@ data class WidgetSetupState(
                 skin = Skin.fromName(json.optString(Skin.KEY)),
                 frame = Frame.fromName(json.optString(Frame.KEY)),
                 stackItems = CollectionWidgets.stackItems(importedConfigJson ?: "{}"),
+                stackMode = CollectionWidgets.stackMode(importedConfigJson ?: "{}"),
+                stackTimeSlots = CollectionWidgets.stackTimeSlots(importedConfigJson ?: "{}"),
                 timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}"),
                 optionValues = resolveOptions(definition, importedConfigJson),
                 customAccent = WidgetAccent.custom(importedConfigJson),
@@ -198,6 +212,8 @@ data class WidgetSetupState(
                 skin = Skin.fromName(json.optString(Skin.KEY)),
                 frame = Frame.fromName(json.optString(Frame.KEY)),
                 stackItems = CollectionWidgets.stackItems(instance.configJson),
+                stackMode = CollectionWidgets.stackMode(instance.configJson),
+                stackTimeSlots = CollectionWidgets.stackTimeSlots(instance.configJson),
                 timeZoneId = ClockOptions.timeZone(instance.configJson),
                 optionValues = resolveOptions(definition, instance.configJson),
                 customAccent = WidgetAccent.custom(instance.configJson),
@@ -711,11 +727,80 @@ private fun StackItemsSection(state: WidgetSetupState, accent: Color, update: (W
             color = mutedText()
         )
         Spacer(Modifier.height(8.dp))
+        Text("ROTATION MODE", style = MaterialTheme.typography.labelMedium, color = mutedText())
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(
+                StackMode.MANUAL to "Manual",
+                StackMode.TIME_OF_DAY to "Time of day",
+                StackMode.SMART to "Smart"
+            ).forEach { (mode, label) ->
+                SelectChip(label, state.stackMode == mode, accent) {
+                    update(state.copy(stackMode = mode))
+                }
+            }
+        }
+        if (state.stackMode != StackMode.MANUAL) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "The stack auto-selects this slot at its boundary. Swipes remain manual until the next boundary.",
+                style = MaterialTheme.typography.bodySmall,
+                color = mutedText()
+            )
+            StackTimeSlot.entries.forEach { slot ->
+                val hours = when (slot) {
+                    StackTimeSlot.MORNING -> "05:00–10:59"
+                    StackTimeSlot.DAY -> "11:00–16:59"
+                    StackTimeSlot.EVENING -> "17:00–21:59"
+                    StackTimeSlot.NIGHT -> "22:00–04:59"
+                }
+                Text(
+                    "${slot.label.uppercase()} • $hours",
+                    modifier = Modifier.padding(top = 12.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = mutedText()
+                )
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    state.stackItems.forEach { id ->
+                        val title = WidgetRegistry.getById(id)?.title ?: id
+                        SelectChip(
+                            title,
+                            state.stackTimeSlots[slot] == id ||
+                                (state.stackTimeSlots[slot] == null && state.stackItems.firstOrNull() == id),
+                            accent
+                        ) {
+                            update(state.copy(stackTimeSlots = state.stackTimeSlots + (slot to id)))
+                        }
+                    }
+                }
+            }
+            if (state.stackMode == StackMode.SMART) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "At each slot boundary, Smart prefers a calendar card for an event within 30 minutes, then a battery card below 20% or while charging; otherwise it uses the time-slot choice.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = mutedText()
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
         state.stackItems.forEachIndexed { i, id ->
             val def = WidgetRegistry.getById(id) ?: return@forEachIndexed
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text("${i + 1}. ${def.title}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                IconButton(onClick = { update(state.copy(stackItems = state.stackItems - id)) }) {
+                IconButton(onClick = {
+                    update(
+                        state.copy(
+                            stackItems = state.stackItems - id,
+                            stackTimeSlots = state.stackTimeSlots.filterValues { it != id }
+                        )
+                    )
+                }) {
                     Icon(Icons.Default.Close, contentDescription = "Remove card", tint = mutedText())
                 }
             }

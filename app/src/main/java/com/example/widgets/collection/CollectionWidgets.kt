@@ -4,13 +4,16 @@ import android.content.Context
 import android.graphics.Canvas
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.RenderKit
+import com.example.data.battery.BatteryHelper
 import com.example.data.calendar.CalendarRepository
 import com.example.data.contacts.ContactRepository
 import com.example.data.lists.ListStore
 import com.example.data.prefs.PreferencesManager
 import com.example.widgets.base.WidgetSpec
+import com.example.widgets.base.WidgetRegistry
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 
 /**
@@ -159,6 +162,68 @@ object CollectionWidgets {
         (0 until arr.length()).map { arr.getString(it) }
     }.getOrDefault(emptyList())
 
+    fun stackMode(configJson: String): StackMode = runCatching {
+        StackMode.fromName(org.json.JSONObject(configJson).optString(STACK_MODE_KEY))
+    }.getOrDefault(StackMode.MANUAL)
+
+    fun stackTimeSlots(configJson: String): Map<StackTimeSlot, String> = runCatching {
+        val slots = org.json.JSONObject(configJson).optJSONObject(STACK_TIME_SLOTS_KEY) ?: return emptyMap()
+        StackTimeSlot.entries.mapNotNull { slot ->
+            slots.optString(slot.name).takeIf { it.isNotBlank() && it != "null" }?.let { slot to it }
+        }.toMap()
+    }.getOrDefault(emptyMap())
+
+    fun selectedAutomaticStackCard(
+        context: Context,
+        appWidgetId: Int,
+        configJson: String,
+        refresh: Boolean,
+        nowMillis: Long = System.currentTimeMillis()
+    ): String? {
+        val mode = stackMode(configJson)
+        val items = stackItems(configJson)
+        val preferences = context.getSharedPreferences(STACK_SELECTION_PREFERENCES, Context.MODE_PRIVATE)
+        val key = "$STACK_SELECTION_PREFIX$appWidgetId"
+        if (mode == StackMode.MANUAL || items.isEmpty()) {
+            preferences.edit().remove(key).apply()
+            return null
+        }
+        val savedSelection = preferences.getString(key, null)
+            ?.takeIf { !refresh && it in items }
+        if (savedSelection != null) return savedSelection
+
+        val calendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
+        val minutesUntilNextEvent = if (mode == StackMode.SMART) {
+            CalendarRepository.upcoming(context, 1)
+                ?.asSequence()
+                ?.filter { !it.allDay && it.beginMs >= nowMillis }
+                ?.minOfOrNull { ((it.beginMs - nowMillis + 59_999L) / 60_000L).toInt() }
+        } else null
+        val battery = if (mode == StackMode.SMART) BatteryHelper.getBatteryStatus(context) else null
+        val categories = items.mapNotNull { id ->
+            WidgetRegistry.getById(id)?.let { id to it.category }
+        }.toMap()
+        val selected = SmartStackRules.selectCard(
+            items = items,
+            mode = mode,
+            hour = calendar.get(Calendar.HOUR_OF_DAY),
+            timeSlots = stackTimeSlots(configJson),
+            categories = categories,
+            signals = StackSmartSignals(
+                minutesUntilNextEvent = minutesUntilNextEvent,
+                batteryLevelPercent = battery?.level,
+                isCharging = battery?.isCharging == true
+            )
+        )
+        if (selected == null) preferences.edit().remove(key).apply()
+        else preferences.edit().putString(key, selected).apply()
+        return selected
+    }
+
+    private const val STACK_SELECTION_PREFERENCES = "smart_stack_selection"
+    private const val STACK_SELECTION_PREFIX = "widget_"
     const val STACK_KEY = "stack_items"
+    const val STACK_MODE_KEY = "stack_mode"
+    const val STACK_TIME_SLOTS_KEY = "stack_time_slots"
     const val MAX_STACK = 5
 }

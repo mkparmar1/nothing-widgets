@@ -48,6 +48,7 @@ abstract class BaseDotWidgetProvider(private val defaultWidgetTypeId: String) : 
                         Log.e("DotWidgetProvider", "Failed to update widget $id", e)
                     }
                 }
+                WidgetAlarmScheduler.scheduleNextSmartStackSlot(context)
             } finally {
                 pendingResult.finish()
             }
@@ -94,6 +95,7 @@ abstract class BaseDotWidgetProvider(private val defaultWidgetTypeId: String) : 
                 for (id in appWidgetIds) {
                     db.widgetInstanceDao().deleteById(id)
                 }
+                WidgetAlarmScheduler.scheduleNextSmartStackSlot(context)
             } finally {
                 pendingResult.finish()
             }

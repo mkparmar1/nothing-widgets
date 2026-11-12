@@ -27,7 +27,7 @@
 | P1  | Dot-matrix photo filter              | P1       | S      | Done        |
 | P2  | Widget Builder (make your own)       | P2       | L      | Testing     |
 | P3  | Better weather widgets               | P3       | M      | Not started |
-| P4  | Smarter Smart Stack (time of day)    | P4       | S–M    | Not started |
+| P4  | Smarter Smart Stack (time of day)    | P4       | S–M    | Testing     |
 | P5  | Lock screen check (Android 16)       | P5       | S      | Not started |
 | P6  | Share a design (code / QR)           | P6       | S      | Not started |
 | P7  | Breathing & focus widget             | P7       | S–M    | Not started |
@@ -181,7 +181,7 @@ battery (no more often than today); location permission asked only once, with a 
 
 ## P4 — Smarter Smart Stack
 
-**Status:** Not started · **Effort:** S–M · **Area:** collection widgets
+**Status:** Testing · **Effort:** S–M · **Area:** collection widgets
 
 **What:** Smart Stack can rotate automatically: pick which card shows by time of day (e.g. Morning
 → Weather, Day → Calendar, Evening → Battery, Night → Clock), or "smart" (next event soon → Calendar,
@@ -197,11 +197,14 @@ battery < 20% → Battery).
 - UI in `StackItemsSection`.
 
 **Tasks:**
-- [ ] Options + config round trip
-- [ ] Time-slot scheduling (exact alarms not required — inexact is fine)
-- [ ] Smart rules (event within 30 min, battery low, charging)
-- [ ] Manual swipe still works and is respected until next slot
-- [ ] Tests for slot selection logic (pure function)
+- [x] Options + config round trip (Manual / Time of day / Smart and slot card choices)
+- [x] Inexact time-slot alarm scheduling and displayed-card selection at each slot boundary
+- [x] Pure selection rules (event within 30 min, battery below 20%, charging, time-slot fallback)
+- [x] Manual swipe still works and remains selected until the next slot boundary
+- [x] Tests for slot selection logic (pure function)
+
+Smart signals are evaluated at slot boundaries; this preserves manual swipes between boundaries without
+requiring the launcher to report its current StackView position.
 
 **Acceptance:** card changes within a few minutes of a slot boundary; no extra battery drain
 visible in Battery settings over 24 h.

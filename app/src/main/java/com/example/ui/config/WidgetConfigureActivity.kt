@@ -189,6 +189,8 @@ class WidgetConfigureActivity : ComponentActivity() {
                                         )
                                         AppWidgetManager.getInstance(this@WidgetConfigureActivity)
                                             .updateAppWidget(appWidgetId, views)
+                                        com.example.widgets.base.WidgetAlarmScheduler
+                                            .scheduleNextSmartStackSlot(applicationContext)
                                         setResult(RESULT_OK, result)
                                         finish()
                                     } catch (e: Exception) {

@@ -11,6 +11,9 @@ import com.example.data.prefs.PreferencesManager
 import com.example.ui.config.WidgetSetupState
 import com.example.widgets.base.TapAction
 import com.example.widgets.base.WidgetRegistry
+import com.example.widgets.collection.CollectionWidgets
+import com.example.widgets.collection.StackMode
+import com.example.widgets.collection.StackTimeSlot
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -65,5 +68,31 @@ class WidgetSetupStateTest {
                 WidgetInstance(appWidgetId = 42, widgetTypeId = "clock.dotdigital.s")
             )
         )
+    }
+
+    @Test
+    fun `smart stack mode and slot choices round trip through widget config`() {
+        val definition = WidgetRegistry.getById(CollectionWidgets.SMART_STACK)!!
+        val preferences = PreferencesManager.getInstance(
+            ApplicationProvider.getApplicationContext<Context>()
+        )
+        val state = WidgetSetupState.defaults(definition, preferences).copy(
+            stackItems = listOf("clock.dotdigital.s", "calendar.week.progress"),
+            stackMode = StackMode.SMART,
+            stackTimeSlots = mapOf(
+                StackTimeSlot.MORNING to "clock.dotdigital.s",
+                StackTimeSlot.DAY to "calendar.week.progress"
+            )
+        )
+        val instance = WidgetInstance(
+            appWidgetId = 43,
+            widgetTypeId = definition.id,
+            configJson = state.toConfigJson(definition.id)
+        )
+
+        val restored = WidgetSetupState.fromInstance(instance, definition, preferences)
+        assertEquals(state.stackMode, restored.stackMode)
+        assertEquals(state.stackTimeSlots, restored.stackTimeSlots)
+        assertEquals(state.stackItems, restored.stackItems)
     }
 }

@@ -43,13 +43,21 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
                     Intent.ACTION_MY_PACKAGE_REPLACED,
                     AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED -> {
                         BitmapCache.clear()
-                        WidgetRenderEngine.updateAllPlacedWidgets(context, force = true)
+                        WidgetRenderEngine.updateAllPlacedWidgets(
+                            context,
+                            force = true,
+                            refreshSmartStackSelection = true
+                        )
                     }
 
                     // Minute tick: only widgets whose picture changed are sent.
                     WidgetAlarmScheduler.ACTION_REFRESH_WIDGETS -> {
                         BitmapCache.clear()
                         WidgetRenderEngine.updateAllPlacedWidgets(context)
+                    }
+
+                    WidgetAlarmScheduler.ACTION_SMART_STACK_SLOT -> {
+                        WidgetRenderEngine.updateAutomaticSmartStacks(context)
                     }
 
                     "com.aistudio.dotwidgets.ACTION_DICE_ROLL" -> {
@@ -182,6 +190,15 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
                     }
                 }
             } finally {
+                if (action == WidgetAlarmScheduler.ACTION_SMART_STACK_SLOT ||
+                    action == Intent.ACTION_TIMEZONE_CHANGED ||
+                    action == Intent.ACTION_TIME_CHANGED ||
+                    action == Intent.ACTION_BOOT_COMPLETED ||
+                    action == Intent.ACTION_MY_PACKAGE_REPLACED ||
+                    action == AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED
+                ) {
+                    WidgetAlarmScheduler.scheduleNextSmartStackSlot(context)
+                }
                 pendingResult.finish()
             }
         }

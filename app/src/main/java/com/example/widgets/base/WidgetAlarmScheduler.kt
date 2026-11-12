@@ -8,11 +8,18 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import com.example.data.db.AppDatabase
+import com.example.widgets.collection.CollectionWidgets
+import com.example.widgets.collection.StackMode
+import com.example.widgets.collection.StackTimeSlot
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 object WidgetAlarmScheduler {
 
     const val ACTION_REFRESH_WIDGETS = "com.aistudio.dotwidgets.ACTION_REFRESH_WIDGETS"
     private const val REQUEST_CODE = 9918
+    private const val STACK_REQUEST_CODE = 9919
 
     /** True when at least one Dot widget is placed, on the home screen or the lock screen. */
     fun hasPlacedWidgets(context: Context): Boolean =
@@ -40,6 +47,7 @@ object WidgetAlarmScheduler {
             cancelMinuteTick(context)
             return
         }
+
         try {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
             val pendingIntent = tickPendingIntent(context)
@@ -55,6 +63,51 @@ object WidgetAlarmScheduler {
             }
         } catch (e: Exception) {
             Log.e("WidgetAlarmScheduler", "Failed to schedule next minute tick", e)
+        }
+    }
+
+    /** Schedules an inexact local-time slot boundary only while an automatic stack is placed. */
+    suspend fun scheduleNextSmartStackSlot(context: Context) = withContext(Dispatchers.IO) {
+        try {
+            val dao = AppDatabase.getInstance(context).widgetInstanceDao()
+            var automaticStackExists = false
+            for ((_, ids) in WidgetProviders.placedIds(context)) {
+                for (id in ids) {
+                    if (WidgetProviders.isLockScreenWidget(context, id)) continue
+                    val instance = dao.getById(id) ?: continue
+                    if (CollectionWidgets.isStack(instance.widgetTypeId) &&
+                        CollectionWidgets.stackMode(instance.configJson) != StackMode.MANUAL &&
+                        CollectionWidgets.stackItems(instance.configJson).isNotEmpty()
+                    ) {
+                        automaticStackExists = true
+                        break
+                    }
+                }
+                if (automaticStackExists) break
+            }
+
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return@withContext
+            val pendingIntent = smartStackSlotPendingIntent(context)
+            if (!automaticStackExists) {
+                cancelSmartStackSlot(context)
+                return@withContext
+            }
+            alarmManager.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                StackTimeSlot.nextBoundaryMillis(System.currentTimeMillis()),
+                pendingIntent
+            )
+        } catch (e: Exception) {
+            Log.e("WidgetAlarmScheduler", "Failed to schedule Smart Stack slot refresh", e)
+        }
+    }
+
+    fun cancelSmartStackSlot(context: Context) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
+            alarmManager.cancel(smartStackSlotPendingIntent(context))
+        } catch (e: Exception) {
+            Log.e("WidgetAlarmScheduler", "Failed to cancel Smart Stack slot refresh", e)
         }
     }
 
@@ -99,4 +152,19 @@ object WidgetAlarmScheduler {
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         return PendingIntent.getBroadcast(context, REQUEST_CODE, intent, flags)
     }
+
+    private fun smartStackSlotPendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, WidgetUpdateReceiver::class.java).apply {
+            action = ACTION_SMART_STACK_SLOT
+            data = Uri.parse("dotwidgets://smart-stack/slot")
+        }
+        return PendingIntent.getBroadcast(
+            context,
+            STACK_REQUEST_CODE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    const val ACTION_SMART_STACK_SLOT = "com.aistudio.dotwidgets.ACTION_SMART_STACK_SLOT"
 }

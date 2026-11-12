@@ -19,7 +19,14 @@ object CollectionViews {
 
     const val ACTION_LIST_ITEM = "com.aistudio.dotwidgets.ACTION_LIST_ITEM"
 
-    fun build(context: Context, appWidgetId: Int, widgetId: String, spec: WidgetSpec, bitmap: Bitmap): RemoteViews {
+    fun build(
+        context: Context,
+        appWidgetId: Int,
+        widgetId: String,
+        spec: WidgetSpec,
+        bitmap: Bitmap,
+        displayedStackChild: Int? = null
+    ): RemoteViews {
         val isStack = CollectionWidgets.isStack(widgetId)
         val views = RemoteViews(context.packageName, if (isStack) R.layout.widget_stack_layout else R.layout.widget_list_layout)
         views.setImageViewBitmap(R.id.widget_image_view, bitmap)
@@ -32,6 +39,9 @@ object CollectionViews {
         val emptyId = if (isStack) R.id.stack_empty else R.id.list_empty
         @Suppress("DEPRECATION")
         views.setRemoteAdapter(listId, service)
+        if (isStack && displayedStackChild != null) {
+            views.setDisplayedChild(listId, displayedStackChild)
+        }
         views.setEmptyView(listId, emptyId)
         views.setTextViewText(emptyId, CollectionWidgets.emptyMessage(context, widgetId))
         views.setTextColor(emptyId, if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt())
