@@ -201,7 +201,7 @@ object DeepVariantRenderers {
         val kit = RenderKit(spec, canvas)
         kit.background()
         val data = WeatherRepository.getWeatherInstant(context)
-        kit.header("WIND", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+        WeatherRenderers.renderDataHeader(context, kit, data, "WIND", spec.options.boolean("show_weather_alert", false))
         kit.dotTextCentered(if (data.isStale) "--" else "${data.windKmh}", kit.height * 0.42f, kit.height * 0.34f, 11f * kit.d,
             accentIndices = setOf(1))
         kit.labelCentered("KM/H", kit.height * 0.66f, kit.textPaint(kit.greyColor, 10f, 13f))
@@ -216,7 +216,7 @@ object DeepVariantRenderers {
         // Open-Meteo helper doesn't expose pressure; derive a plausible sea-level reading from the
         // forecast so the gauge is still meaningful rather than blank.
         val hpa = 1013 + (data.temperatureC - 15)
-        kit.header("PRESSURE", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+        WeatherRenderers.renderDataHeader(context, kit, data, "PRESSURE", spec.options.boolean("show_weather_alert", false))
         kit.dotTextCentered("$hpa", kit.height * 0.42f, kit.height * 0.32f, 10f * kit.d,
             accentIndices = setOf(3))
         kit.labelCentered("HPA", kit.height * 0.64f, kit.textPaint(kit.greyColor, 10f, 13f))
@@ -244,7 +244,7 @@ object DeepVariantRenderers {
             code in 95..99 -> 6
             else -> 20
         }
-        kit.header("VISIBILITY", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+        WeatherRenderers.renderDataHeader(context, kit, data, "VISIBILITY", spec.options.boolean("show_weather_alert", false))
         kit.dotTextCentered("$km", kit.height * 0.44f, kit.height * 0.36f, 11f * kit.d,
             accentIndices = setOf(1))
         kit.labelCentered("KILOMETRES", kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.greyColor, 10f, 13f))
@@ -261,7 +261,7 @@ object DeepVariantRenderers {
         val b = 237.7
         val alpha = ((a * t) / (b + t)) + Math.log(rh / 100.0)
         val dew = ((b * alpha) / (a - alpha)).roundToInt()
-        kit.header("DEW POINT", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+        WeatherRenderers.renderDataHeader(context, kit, data, "DEW POINT", spec.options.boolean("show_weather_alert", false))
         kit.dotTextCentered(if (data.isStale) "--" else "$dew°", kit.height * 0.46f, kit.height * 0.38f, 11f * kit.d,
             accentIndices = setOf(1))
         val risk = if (dew >= 18) "MUGGY" else if (dew >= 13) "HUMID" else "COMFORTABLE"
@@ -275,7 +275,7 @@ object DeepVariantRenderers {
         // A rough AQI proxy from wind (dispersion) and humidity; labelled as an estimate.
         val wind = data.windKmh
         val aqi = (90 - wind * 2 + (data.humidityPct - 50)).coerceIn(5, 200)
-        kit.header("AIR QUALITY", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+        WeatherRenderers.renderDataHeader(context, kit, data, "AIR QUALITY", spec.options.boolean("show_weather_alert", false))
         kit.dotTextCentered("$aqi", kit.height * 0.44f, kit.height * 0.34f, 11f * kit.d,
             accentIndices = setOf(3))
         val band = when {
@@ -298,28 +298,36 @@ object DeepVariantRenderers {
         val kit = RenderKit(spec, canvas)
         kit.background()
         val data = WeatherRepository.getWeatherInstant(context)
+        val place = WeatherRepository.currentPlace(context)
         val today = data.daily.firstOrNull()
-        val pct = today?.precipitationPct ?: 0
-        kit.header("PRECIPITATION", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+        val upcoming = com.example.data.weather.WeatherPresentation.upcomingHours(
+            data.hourly, place.timezone, count = 8
+        )
+        val pct = today?.precipitationPct ?: (upcoming.maxOfOrNull { it.precipitationPct } ?: 0)
+        WeatherRenderers.renderDataHeader(
+            context, kit, data, "PRECIPITATION",
+            spec.options.boolean("show_weather_alert", false), place.timezone
+        )
         kit.dotTextCentered("$pct%", kit.height * 0.44f, kit.height * 0.36f, 11f * kit.d,
             accentIndices = setOf(pct.toString().length))
-        // Hourly bars: a small histogram of the next 8 hours' temperatures as a proxy.
-        val hours = data.hourly.take(8)
-        if (hours.isNotEmpty()) {
-            val barW = kit.maxW / hours.size
+        if (spec.options.boolean("show_bars", true) && upcoming.isNotEmpty()) {
+            val barW = kit.maxW / upcoming.size
             val baseY = kit.height - kit.pad - 14f * kit.d
-            val maxT = hours.maxOf { it.temperatureC }.coerceAtLeast(1)
-            hours.forEachIndexed { i, h ->
-                val frac = (h.temperatureC.toFloat() / maxT).coerceIn(0.1f, 1f)
-                val barH = frac * kit.height * 0.14f
-                canvas.drawRect(
-                    kit.pad + i * barW + barW * 0.15f, baseY - barH,
-                    kit.pad + i * barW + barW * 0.85f, baseY,
-                    kit.fill(kit.onColor)
-                )
+            upcoming.forEachIndexed { i, hour ->
+                val probability = hour.precipitationPct.coerceIn(0, 100)
+                if (probability > 0) {
+                    val barH = (probability / 100f) * kit.height * 0.14f
+                    canvas.drawRect(
+                        kit.pad + i * barW + barW * 0.15f, baseY - maxOf(2f * kit.d, barH),
+                        kit.pad + i * barW + barW * 0.85f, baseY,
+                        kit.fill(if (probability >= 50) kit.accentColor else kit.onColor)
+                    )
+                }
             }
-            kit.labelCentered("RAIN CHANCE", baseY + 5f * kit.d, kit.textPaint(kit.greyColor, 9f, 12f))
-        } else {
+            if (spec.options.boolean("show_label", true)) {
+                kit.labelCentered("RAIN CHANCE", baseY + 5f * kit.d, kit.textPaint(kit.greyColor, 9f, 12f))
+            }
+        } else if (spec.options.boolean("show_label", true)) {
             kit.labelCentered("RAIN CHANCE", kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.greyColor, 10f, 13f))
         }
     }

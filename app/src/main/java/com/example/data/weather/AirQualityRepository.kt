@@ -16,7 +16,8 @@ data class AirQuality(
     val pm25: Double,
     val pm10: Double,
     val place: String,
-    val fetchedAt: Long
+    val fetchedAt: Long,
+    val isOffline: Boolean = false
 ) {
     /** US EPA AQI category. */
     val category: String
@@ -46,8 +47,13 @@ object AirQualityRepository {
             val app = context.applicationContext
             scope.launch {
                 try {
-                    fetch(place)?.let {
-                        cached = it
+                    val fresh = fetch(place)
+                    if (fresh != null) {
+                        cached = fresh
+                        BitmapCache.clear()
+                        WidgetRenderEngine.updateAllPlacedWidgets(app)
+                    } else if (c?.place == place.name) {
+                        cached = c.copy(isOffline = true)
                         BitmapCache.clear()
                         WidgetRenderEngine.updateAllPlacedWidgets(app)
                     }

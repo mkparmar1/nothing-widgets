@@ -38,6 +38,7 @@ data class WeatherData(
     val daily: List<DailyForecast> = emptyList(),
     val hourly: List<HourlyForecast> = emptyList(),
     val isStale: Boolean = false,
+    val isOffline: Boolean = false,
     val fetchedAt: Long = System.currentTimeMillis()
 )
 
@@ -236,6 +237,7 @@ object WeatherRepository {
         weatherCode = 1,
         description = "Loading",
         isStale = true,
+        isOffline = true,
         fetchedAt = 0L
     )
 
@@ -317,7 +319,10 @@ object WeatherRepository {
         }
 
         // Offline: keep the last good data, marking it stale after 90 minutes.
-        val fallback = cached?.copy(isStale = now - cached.fetchedAt > 90 * 60 * 1000L) ?: placeholder(place)
+        val fallback = cached?.copy(
+            isStale = now - cached.fetchedAt > 90 * 60 * 1000L,
+            isOffline = true
+        ) ?: placeholder(place)
         cache[key] = fallback
         fallback
     }

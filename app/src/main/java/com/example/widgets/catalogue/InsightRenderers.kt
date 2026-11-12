@@ -10,6 +10,7 @@ import com.example.data.india.IndiaCalendar
 import com.example.data.system.DeviceStatsRepository
 import com.example.data.weather.AirQualityRepository
 import com.example.data.weather.WeatherRepository
+import com.example.data.weather.WeatherPresentation
 import com.example.ui.permissions.AppPermission
 import com.example.widgets.base.WidgetSpec
 import java.text.SimpleDateFormat
@@ -109,19 +110,30 @@ object InsightRenderers {
         canvas.drawText("NOW", kit.width - kit.pad - paint.measureText("NOW"), kit.height - kit.pad, paint)
     }
 
-    fun renderAirQuality(context: Context, spec: WidgetSpec, canvas: Canvas) {
+    fun renderAirQuality(context: Context, spec: WidgetSpec, canvas: Canvas, showWeatherAlert: Boolean = false) {
         val kit = RenderKit(spec, canvas)
         val d = kit.d
         kit.background()
         val aq = AirQualityRepository.current(context)
         val place = WeatherRepository.currentPlace(context).name.uppercase()
         if (aq == null) {
-            kit.header("AIR QUALITY • $place")
+            WeatherRenderers.renderStatusHeader(kit, "AIR QUALITY • $place", null)
             kit.labelCentered("LOADING…", kit.height * 0.55f, kit.textPaint(kit.onColor, 11f, 15f))
             return
         }
         val bad = aq.usAqi > 100
-        kit.header("AQI • $place", if (bad) kit.accentColor else kit.greyColor)
+        val weatherAlert = if (showWeatherAlert) {
+            val weather = WeatherRepository.getWeatherInstant(context)
+            val timezone = WeatherRepository.currentPlace(context).timezone
+            WeatherPresentation.nextSevereForecast(weather.hourly, timezone)
+                ?.let { WeatherPresentation.alertBadge(it, timezone) }
+        } else null
+        WeatherRenderers.renderStatusHeader(
+            kit,
+            "AQI • $place",
+            WeatherPresentation.offlineStatus(aq.fetchedAt, aq.isOffline),
+            weatherAlert
+        )
         kit.dotTextCentered(aq.usAqi.toString(), kit.height * 0.43f, kit.height * 0.32f, 10f * d, kit.maxW * 0.6f)
         kit.labelCentered(aq.category, kit.height * 0.72f, kit.textPaint(if (bad) kit.accentColor else kit.onColor, 11f, 15f))
         if (spec.sizeBucket != SizeBucket.S) {

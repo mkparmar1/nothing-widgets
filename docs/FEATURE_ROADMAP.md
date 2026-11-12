@@ -26,7 +26,7 @@
 |-----|--------------------------------------|----------|--------|-------------|
 | P1  | Dot-matrix photo filter              | P1       | S      | Done        |
 | P2  | Widget Builder (make your own)       | P2       | L      | Testing     |
-| P3  | Better weather widgets               | P3       | M      | Not started |
+| P3  | Better weather widgets               | P3       | M      | Testing     |
 | P4  | Smarter Smart Stack (time of day)    | P4       | S–M    | Testing     |
 | P5  | Lock screen check (Android 16)       | P5       | S      | Not started |
 | P6  | Share a design (code / QR)           | P6       | S      | Not started |
@@ -151,7 +151,7 @@ placement on a real phone before changing status to `Done`.
 
 ## P3 — Better weather widgets
 
-**Status:** Not started · **Effort:** M · **Area:** weather
+**Status:** Testing · **Effort:** M · **Area:** weather
 
 **What:** fill the gaps in weather: hourly temperature graph (dot sparkline), rain chance bars,
 air-quality ring, severe-weather alert badge, sunrise/sunset arc with daylight left, "feels like",
@@ -166,13 +166,22 @@ weather = more daily views = better reviews.
 - Extend `WeatherRepository` with hourly data and alerts if the provider supports them.
 - New renderers only for real gaps; reuse dot-graph helpers.
 
+**Audit and implementation notes:** the app already had current conditions, a 5-day strip, an hourly
+strip, a precipitation widget, live AQI, sunrise/sunset, feels-like/humidity, and wind speed. It had
+no hourly temperature graph; the deep precipitation widget incorrectly plotted temperature as rain
+chance. A new graph preserves the existing hourly strip, and precipitation bars now use the provider's
+probability field. Severe-weather indicators are opt-in and derived from forecast weather codes; they
+are not official emergency alerts. Network-backed weather surfaces show cached-data age when offline.
+
 **Tasks:**
-- [ ] Audit: list existing weather widgets and data fields → write gaps here
-- [ ] Hourly graph widget (M, L)
-- [ ] Rain chance widget
-- [ ] Alert badge on existing weather widgets (opt-in option)
-- [ ] Offline / stale data state ("updated 3 h ago") on all weather widgets
-- [ ] Tests: render with full, partial and missing data
+- [x] Audit: list existing weather widgets and data fields → write gaps here
+- [x] Hourly graph widget (M, L), without replacing the existing hourly strip
+- [x] Rain chance bars use hourly precipitation probability rather than temperature
+- [x] Forecast severe-weather indicator on supported widgets (opt-in option)
+- [x] Offline / stale data state ("updated 3 h ago") on forecast-backed weather widgets
+- [x] Tests: renderer snapshots plus full, partial and missing forecast-helper inputs
+- [x] Connected-phone rendering of the hourly graph, hourly strip and both precipitation widgets with live forecast data
+- [ ] Phone acceptance: place the new graph and existing hourly strip, then check online/offline refresh behavior
 
 **Acceptance:** every weather widget shows sensible content with no network; data refresh respects
 battery (no more often than today); location permission asked only once, with a clear reason.

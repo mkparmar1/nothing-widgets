@@ -8,6 +8,8 @@ import com.example.core.bitmap.SizeBucket
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.RenderKit
 import com.example.data.weather.WeatherRepository
+import com.example.data.weather.WeatherData
+import com.example.data.weather.WeatherPresentation
 import com.example.widgets.base.WidgetSpec
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -17,7 +19,42 @@ import kotlin.math.roundToInt
 
 object WeatherRenderers {
 
-    fun renderCurrentWeather(context: Context, spec: WidgetSpec, canvas: Canvas, cityNameOverride: String? = null) {
+    fun renderDataHeader(
+        context: Context,
+        kit: RenderKit,
+        data: WeatherData,
+        title: String,
+        showWeatherAlert: Boolean = false,
+        timezone: String = WeatherRepository.currentPlace(context).timezone
+    ) {
+        val offline = WeatherPresentation.offlineStatus(data)
+        val alert = if (showWeatherAlert) {
+            WeatherPresentation.nextSevereForecast(data.hourly, timezone)
+                ?.let { WeatherPresentation.alertBadge(it, timezone) }
+        } else null
+        renderStatusHeader(kit, title, offline, alert)
+    }
+
+    fun renderStatusHeader(kit: RenderKit, title: String, freshness: String?, alert: String? = null) {
+        val header = freshness ?: title
+        kit.header(
+            if (alert == null) header else "$header • $alert",
+            when {
+                freshness != null -> 0xFFE02B2B.toInt()
+                alert != null -> kit.accentColor
+                else -> kit.greyColor
+            },
+            0.96f
+        )
+    }
+
+    fun renderCurrentWeather(
+        context: Context,
+        spec: WidgetSpec,
+        canvas: Canvas,
+        cityNameOverride: String? = null,
+        showWeatherAlert: Boolean = false
+    ) {
         val data = WeatherRepository.getWeatherInstant(context, cityNameOverride)
 
         val onColor = if (spec.isDark) 0xFFFFFFFF.toInt() else 0xFF0A0A0A.toInt()
@@ -43,15 +80,19 @@ object WeatherRenderers {
         // Draw City name top left
         if (spec.showLabel) {
             val paintLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = if (data.isStale) 0xFFE02B2B.toInt() else 0xFF8A8A8A.toInt()
+                color = if (data.isOffline || data.isStale) 0xFFE02B2B.toInt() else 0xFF8A8A8A.toInt()
                 textSize = (11f * spec.density).coerceAtMost(14f)
                 isFakeBoldText = true
             }
-            val label = when {
-                data.fetchedAt == 0L -> data.cityName.uppercase()
-                data.isStale -> "${data.cityName.uppercase()} (OFFLINE)"
-                else -> data.cityName.uppercase()
-            }
+            val freshness = WeatherPresentation.offlineStatus(data)
+            val alert = if (showWeatherAlert) {
+                val timezone = cityNameOverride?.let { WeatherRepository.preset(it).timezone }
+                    ?: WeatherRepository.currentPlace(context).timezone
+                WeatherPresentation.nextSevereForecast(data.hourly, timezone)
+                    ?.let { WeatherPresentation.alertBadge(it, timezone) }
+            } else null
+            val label = (freshness ?: data.cityName.uppercase())
+                .let { title -> if (alert == null) title else "$title • $alert" }
             DotMatrixRenderer.drawFittedLabel(canvas, label, pad, pad + 12f * spec.density, maxW * 0.70f, paintLabel)
         }
 
@@ -165,14 +206,20 @@ object WeatherRenderers {
      * Real 5-day outlook from Open-Meteo. With [showPrecipitation] the bottom row shows the
      * chance of rain as a dot column instead of the high temperature.
      */
-    fun renderForecast5Day(context: Context, spec: WidgetSpec, canvas: Canvas, showPrecipitation: Boolean = false) {
+    fun renderForecast5Day(
+        context: Context,
+        spec: WidgetSpec,
+        canvas: Canvas,
+        showPrecipitation: Boolean = false,
+        showWeatherAlert: Boolean = false
+    ) {
         val kit = RenderKit(spec, canvas)
         val d = kit.d
         kit.background()
 
         val data = WeatherRepository.getWeatherInstant(context)
         val title = if (showPrecipitation) "RAIN CHANCE" else "5-DAY FORECAST"
-        kit.header("$title • ${data.cityName.uppercase()}", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor, 0.95f)
+        renderDataHeader(context, kit, data, "$title • ${data.cityName.uppercase()}", showWeatherAlert)
 
         val days = data.daily.take(5)
         if (days.isEmpty()) {
@@ -296,7 +343,7 @@ object WeatherRenderers {
         kit.background()
 
         val data = WeatherRepository.getWeatherInstant(context)
-        kit.header("COMFORT • ${data.cityName.uppercase()}", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+        renderDataHeader(context, kit, data, "COMFORT • ${data.cityName.uppercase()}", spec.options.boolean("show_weather_alert", false))
 
         val colW = kit.maxW / 2f
         val valueY = kit.height * 0.50f
@@ -334,7 +381,7 @@ object WeatherRenderers {
         kit.background()
 
         val data = WeatherRepository.getWeatherInstant(context)
-        kit.header("UV INDEX", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor)
+        renderDataHeader(context, kit, data, "UV INDEX", spec.options.boolean("show_weather_alert", false))
 
         val uv = data.uvIndex.roundToInt()
         val value = if (data.isStale) "--" else uv.toString()
@@ -376,10 +423,13 @@ object WeatherRenderers {
 
         val data = WeatherRepository.getWeatherInstant(context)
         val place = WeatherRepository.currentPlace(context)
-        kit.header("NEXT HOURS • ${data.cityName.uppercase()}", if (data.isStale) 0xFFE02B2B.toInt() else kit.greyColor, 0.95f)
+        renderDataHeader(
+            context, kit, data, "NEXT HOURS • ${data.cityName.uppercase()}",
+            spec.options.boolean("show_weather_alert", false), place.timezone
+        )
 
         val columns = if (spec.sizeBucket == SizeBucket.L) 6 else 4
-        val hours = upcomingHours(data.hourly, place.timezone, columns)
+        val hours = WeatherPresentation.upcomingHours(data.hourly, place.timezone, count = columns)
         if (hours.isEmpty()) {
             kit.dotTextCentered("--", kit.height * 0.55f, kit.height * 0.30f, 10f * d)
             return
@@ -429,18 +479,76 @@ object WeatherRenderers {
         kit.labelCentered(summary, kit.height - kit.pad, kit.textPaint(if (maxRain >= 50) kit.accentColor else kit.greyColor, 9f, 12f))
     }
 
-    /** The next [count] hourly entries from now (in the city's time zone), falling back to the head. */
-    private fun upcomingHours(
-        all: List<com.example.data.weather.HourlyForecast>,
-        timezone: String,
-        count: Int
-    ): List<com.example.data.weather.HourlyForecast> {
-        if (all.isEmpty()) return emptyList()
-        val zone = TimeZone.getTimeZone(timezone)
-        val parse = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US).apply { timeZone = zone }
-        val now = SimpleDateFormat("yyyy-MM-dd'T'HH:00", Locale.US).apply { timeZone = zone }.format(Calendar.getInstance(zone).time)
-        val fromNow = all.dropWhile { it.time < now }
-        return (if (fromNow.isEmpty()) all else fromNow).take(count)
+    fun renderHourlyGraph(context: Context, spec: WidgetSpec, canvas: Canvas) {
+        val kit = RenderKit(spec, canvas)
+        val d = kit.d
+        kit.background()
+
+        val data = WeatherRepository.getWeatherInstant(context)
+        val timezone = WeatherRepository.currentPlace(context).timezone
+        renderDataHeader(
+            context, kit, data, "HOURLY TEMP • ${data.cityName.uppercase()}",
+            spec.options.boolean("show_weather_alert", false), timezone
+        )
+
+        val count = if (spec.sizeBucket == SizeBucket.L) 8 else 6
+        val hours = WeatherPresentation.upcomingHours(data.hourly, timezone, count = count)
+        if (hours.isEmpty()) {
+            kit.dotTextCentered("--", kit.height * 0.57f, kit.height * 0.24f, 10f * d)
+            return
+        }
+
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.US).apply { timeZone = TimeZone.getTimeZone(timezone) }
+        val parse = SimpleDateFormat("yyyy-MM-dd'T'HH:mm", Locale.US).apply { timeZone = TimeZone.getTimeZone(timezone) }
+        val colW = kit.maxW / hours.size
+        val labelY = kit.pad + 28f * d
+        val temperatures = hours.map { it.temperatureC }
+        val low = temperatures.minOrNull() ?: return
+        val high = temperatures.maxOrNull() ?: return
+        val positions = WeatherPresentation.temperaturePositions(temperatures)
+        val graphTop = if (spec.sizeBucket == SizeBucket.L) kit.height * 0.37f else kit.pad + 47f * d
+        val graphBottom = if (spec.sizeBucket == SizeBucket.L) kit.height * 0.61f else kit.height - kit.pad - 35f * d
+        val barBaseY = if (spec.sizeBucket == SizeBucket.L) kit.height - kit.pad - 20f * d else kit.height - kit.pad - 16f * d
+        val maxBarHeight = if (spec.sizeBucket == SizeBucket.L) 20f * d else 12f * d
+        val maxRain = hours.maxOfOrNull { it.precipitationPct } ?: 0
+
+        kit.labelCentered(
+            "LOW ${low}° • HIGH ${high}°",
+            labelY + 13f * d,
+            kit.textPaint(kit.greyColor, 8.5f, 12f)
+        )
+
+        val points = hours.mapIndexed { index, hour ->
+            val x = kit.pad + (index * colW) + colW / 2f
+            val y = graphBottom - positions[index] * (graphBottom - graphTop)
+            val time = if (index == 0) "NOW" else runCatching { timeFormat.format(parse.parse(hour.time)!!) }.getOrDefault("--")
+            val timePaint = kit.textPaint(if (index == 0) kit.accentColor else kit.greyColor, 8.5f, 12f)
+            canvas.drawText(time, x - timePaint.measureText(time) / 2f, labelY, timePaint)
+            x to y
+        }
+
+        val graphPaint = kit.fill(kit.accentColor).apply { strokeWidth = 2.2f * d; strokeCap = Paint.Cap.ROUND }
+        points.zipWithNext().forEach { (from, to) ->
+            canvas.drawLine(from.first, from.second, to.first, to.second, graphPaint)
+        }
+        points.forEachIndexed { index, (x, y) ->
+            canvas.drawCircle(x, y, 3f * d, kit.fill(if (index == points.lastIndex) kit.accentColor else kit.onColor))
+        }
+
+        hours.forEachIndexed { index, hour ->
+            val barW = colW * 0.38f
+            val barH = maxBarHeight * (hour.precipitationPct.coerceIn(0, 100) / 100f)
+            val left = kit.pad + index * colW + (colW - barW) / 2f
+            val paint = kit.fill(if (hour.precipitationPct >= 50) kit.accentColor else kit.offColor)
+            if (hour.precipitationPct > 0) {
+                canvas.drawRect(left, barBaseY - maxOf(2f * d, barH), left + barW, barBaseY, paint)
+            }
+        }
+        kit.labelCentered(
+            if (maxRain > 0) "RAIN CHANCE • PEAK $maxRain%" else "RAIN CHANCE • LOW",
+            kit.height - kit.pad,
+            kit.textPaint(if (maxRain >= 50) kit.accentColor else kit.greyColor, 8.5f, 12f)
+        )
     }
 
     private fun formatMinutes(min: Int) = String.format(Locale.US, "%02d:%02d", min / 60, min % 60)

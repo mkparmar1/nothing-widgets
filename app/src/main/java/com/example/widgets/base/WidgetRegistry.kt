@@ -57,6 +57,9 @@ object WidgetRegistry {
     private val widgetsList = mutableListOf<WidgetDefinition>()
     private val customWidgets = linkedMapOf<String, WidgetDefinition>()
 
+    private fun forecastAlertOption() =
+        WidgetOption.Toggle("show_weather_alert", "Show forecast severe-weather indicator", default = false)
+
     init {
         // --- 1. CLOCK (14 widgets) ---
         register(createDef("clock.dotdigital.s", Category.CLOCK, "Digital Dot Clock S", "Minimalist dot-matrix digital clock", setOf(SizeBucket.S), TapAction.OPEN_CLOCK, lockSafe = true) { c, s, cv -> ClockRenderers.renderDigitalClock(s, cv) })
@@ -108,20 +111,34 @@ object WidgetRegistry {
         register(createDef("battery.minimal.pill", Category.BATTERY, "Mini Battery Pill", "Compact capsule battery status", setOf(SizeBucket.S), TapAction.OPEN_BATTERY) { c, s, cv -> BatteryRenderers.renderBatteryRing(c, s, cv) })
         register(createDef("battery.fuel.gauge", Category.BATTERY, "Battery Fuel Gauge", "Horizontal dot gauge with time-to-full or time-left", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY) { c, s, cv -> ExclusiveRenderers.renderBatteryFuelGauge(c, s, cv) })
 
-        // --- 4. WEATHER (10 widgets) ---
+        // --- 4. WEATHER (12 widgets) ---
         register(createDef("weather.current.temp", Category.WEATHER, "Current Temperature", "Real-time temp with dot icon and stale guard", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(
-            com.example.core.config.WidgetOption.Toggle("show_details", "Show high/low line", default = true)
-        )) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv) })
-        register(createDef("weather.5day.strip", Category.WEATHER, "5-Day Forecast Strip", "5-day outlook with daily high/low dots", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderForecast5Day(c, s, cv) })
-        register(createDef("weather.hourly.strip", Category.WEATHER, "Hourly Forecast Strip", "Next hours with temperature, icon and rain chance", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderHourlyForecast(c, s, cv) })
+            com.example.core.config.WidgetOption.Toggle("show_details", "Show high/low line", default = true),
+            forecastAlertOption()
+        )) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, showWeatherAlert = s.options.boolean("show_weather_alert", false)) })
+        register(createDef("weather.5day.strip", Category.WEATHER, "5-Day Forecast Strip", "5-day outlook with daily high/low dots", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(
+            forecastAlertOption()
+        )) { c, s, cv -> WeatherRenderers.renderForecast5Day(c, s, cv, showWeatherAlert = s.options.boolean("show_weather_alert", false)) })
+        register(createDef("weather.hourly.strip", Category.WEATHER, "Hourly Forecast Strip", "Next hours with temperature, icon and rain chance", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(
+            forecastAlertOption()
+        )) { c, s, cv -> WeatherRenderers.renderHourlyForecast(c, s, cv) })
+        register(createDef("weather.hourly.graph", Category.WEATHER, "Hourly Temperature Graph", "Temperature trend and rain probability over the next hours", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(
+            forecastAlertOption()
+        )) { c, s, cv -> WeatherRenderers.renderHourlyGraph(c, s, cv) })
         register(createDef("weather.sunrise.arc", Category.WEATHER, "Sun Tracker Arc", "Sunrise and sunset dot arc tracking daylight", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, requiredPermission = AppPermission.Location) { c, s, cv -> WeatherRenderers.renderSunriseSunsetArc(c, s, cv) })
-        register(createDef("weather.city.london", Category.WEATHER, "London Weather", "City preset weather for London", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, "London") })
-        register(createDef("weather.city.nyc", Category.WEATHER, "New York Weather", "City preset weather for New York", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, "New York") })
-        register(createDef("weather.city.tokyo", Category.WEATHER, "Tokyo Weather", "City preset weather for Tokyo", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, "Tokyo") })
+        register(createDef("weather.city.london", Category.WEATHER, "London Weather", "City preset weather for London", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(forecastAlertOption())) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, "London", s.options.boolean("show_weather_alert", false)) })
+        register(createDef("weather.city.nyc", Category.WEATHER, "New York Weather", "City preset weather for New York", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(forecastAlertOption())) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, "New York", s.options.boolean("show_weather_alert", false)) })
+        register(createDef("weather.city.tokyo", Category.WEATHER, "Tokyo Weather", "City preset weather for Tokyo", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(forecastAlertOption())) { c, s, cv -> WeatherRenderers.renderCurrentWeather(c, s, cv, "Tokyo", s.options.boolean("show_weather_alert", false)) })
         register(createDef("weather.moon.phase", Category.WEATHER, "Moon Phase Tracker", "Current lunar phase dot matrix depiction", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER) { c, s, cv -> UniqueSensorRenderers.renderLunarMoonPhase(s, cv) })
-        register(createDef("weather.precipitation", Category.WEATHER, "Precipitation Bar", "Hourly rain probability dot run", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderForecast5Day(c, s, cv, showPrecipitation = true) })
-        register(createDef("weather.feels.humidity", Category.WEATHER, "Humidity & Feels Like", "Thermal comfort and atmospheric moisture", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location) { c, s, cv -> WeatherRenderers.renderComfort(c, s, cv) })
-        register(createDef("weather.uv.index", Category.WEATHER, "UV Index Warning", "Solar radiation level & sun safety badge", setOf(SizeBucket.S), TapAction.OPEN_WEATHER, requiredPermission = AppPermission.Location) { c, s, cv -> WeatherRenderers.renderUvIndex(c, s, cv) })
+        register(createDef("weather.precipitation", Category.WEATHER, "Precipitation Bar", "Hourly rain probability dot run", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(
+            forecastAlertOption()
+        )) { c, s, cv -> WeatherRenderers.renderForecast5Day(c, s, cv, showPrecipitation = true, showWeatherAlert = s.options.boolean("show_weather_alert", false)) })
+        register(createDef("weather.feels.humidity", Category.WEATHER, "Humidity & Feels Like", "Thermal comfort and atmospheric moisture", setOf(SizeBucket.M), TapAction.OPEN_WEATHER, true, AppPermission.Location, options = listOf(
+            forecastAlertOption()
+        )) { c, s, cv -> WeatherRenderers.renderComfort(c, s, cv) })
+        register(createDef("weather.uv.index", Category.WEATHER, "UV Index Warning", "Solar radiation level & sun safety badge", setOf(SizeBucket.S), TapAction.OPEN_WEATHER, requiredPermission = AppPermission.Location, options = listOf(
+            forecastAlertOption()
+        )) { c, s, cv -> WeatherRenderers.renderUvIndex(c, s, cv) })
 
         // --- 5. SYSTEM & SENSORS (12 widgets) ---
         register(createDef("sensor.ram.meter", Category.SYSTEM, "System RAM Vitals", "Real Android memory usage in dot font & 20-dot bar", setOf(SizeBucket.M, SizeBucket.L), TapAction.DEFAULT) { c, s, cv -> UniqueSensorRenderers.renderRamMeter(c, s, cv) })
@@ -191,7 +208,9 @@ object WidgetRegistry {
         register(createDef("sys.network.speed", Category.SYSTEM, "Network Speed", "Download and upload speed over the last minute", setOf(SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InsightRenderers.renderNetworkSpeed(c, s, cv) })
         register(createDef("sys.thermal.uptime", Category.SYSTEM, "Thermal & Uptime", "Phone temperature state and time since restart", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN) { c, s, cv -> InsightRenderers.renderThermalUptime(c, s, cv) })
         register(createDef("battery.history.24h", Category.BATTERY, "Battery History", "Your battery level over the last 24 hours", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_BATTERY) { c, s, cv -> InsightRenderers.renderBatteryHistory(c, s, cv) })
-        register(createDef("weather.air.quality", Category.WEATHER, "Air Quality", "Live AQI with PM2.5 and PM10 for your city", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, requiresNetwork = true) { c, s, cv -> InsightRenderers.renderAirQuality(c, s, cv) })
+        register(createDef("weather.air.quality", Category.WEATHER, "Air Quality", "Live AQI with PM2.5 and PM10 for your city", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_WEATHER, requiresNetwork = true, options = listOf(
+            WidgetOption.Toggle("show_weather_alert", "Show forecast severe-weather indicator", default = false)
+        )) { c, s, cv -> InsightRenderers.renderAirQuality(c, s, cv, s.options.boolean("show_weather_alert", false)) })
         register(createDef("weather.golden.hour", Category.WEATHER, "Golden Hour", "Golden and blue hour times for photos today", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_WEATHER) { c, s, cv -> InsightRenderers.renderGoldenHour(c, s, cv) })
         register(createDef("sys.top.apps", Category.SYSTEM, "Top Apps Today", "The apps you used most today", setOf(SizeBucket.M, SizeBucket.L), TapAction.OPEN_MAIN, requiredPermission = AppPermission.UsageAccess) { c, s, cv -> InsightRenderers.renderTopApps(c, s, cv) })
         register(createDef("sys.mobile.data", Category.SYSTEM, "Mobile Data Today", "Mobile data used since midnight", setOf(SizeBucket.S, SizeBucket.M), TapAction.OPEN_MAIN, requiredPermission = AppPermission.UsageAccess) { c, s, cv -> InsightRenderers.renderMobileData(c, s, cv) })
@@ -527,27 +546,33 @@ object WidgetRegistry {
         // Weather (+6)
         register(createDef("weather.wind.compass", Category.WEATHER, "Wind Compass", "Wind speed with a direction tag", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
             WidgetOption.Text("direction", "Direction label", default = "N"),
-            WidgetOption.Toggle("show_unit", "Show unit", default = true)
+            WidgetOption.Toggle("show_unit", "Show unit", default = true),
+            forecastAlertOption()
         )) { c, s, cv -> DeepVariantRenderers.renderWeatherWindCompass(c, s, cv) })
         register(createDef("weather.pressure.gauge", Category.WEATHER, "Pressure Gauge", "Sea-level pressure with a scale", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
             WidgetOption.Toggle("show_scale", "Show scale", default = true),
-            WidgetOption.Toggle("show_unit", "Show unit", default = true)
+            WidgetOption.Toggle("show_unit", "Show unit", default = true),
+            forecastAlertOption()
         )) { c, s, cv -> DeepVariantRenderers.renderWeatherPressureGauge(c, s, cv) })
         register(createDef("weather.visibility", Category.WEATHER, "Visibility", "Estimated visibility in kilometres", setOf(SizeBucket.S, SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
             WidgetOption.Toggle("show_unit", "Show unit", default = true),
-            WidgetOption.Toggle("show_label", "Show label", default = true)
+            WidgetOption.Toggle("show_label", "Show label", default = true),
+            forecastAlertOption()
         )) { c, s, cv -> DeepVariantRenderers.renderWeatherVisibility(c, s, cv) })
         register(createDef("weather.dewpoint", Category.WEATHER, "Dew Point", "Dew point with a comfort band", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
             WidgetOption.Toggle("show_band", "Show comfort band", default = true),
-            WidgetOption.Toggle("show_unit", "Show unit", default = true)
+            WidgetOption.Toggle("show_unit", "Show unit", default = true),
+            forecastAlertOption()
         )) { c, s, cv -> DeepVariantRenderers.renderWeatherDewpoint(c, s, cv) })
         register(createDef("weather.aqi.dial", Category.WEATHER, "Air Quality", "An estimated AQI dial and band", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
             WidgetOption.Toggle("show_band", "Show band", default = true),
-            WidgetOption.Toggle("show_scale", "Show scale", default = true)
+            WidgetOption.Toggle("show_scale", "Show scale", default = true),
+            forecastAlertOption()
         )) { c, s, cv -> DeepVariantRenderers.renderWeatherAqiDial(c, s, cv) })
         register(createDef("weather.precip.bar", Category.WEATHER, "Precipitation", "Rain chance with an hourly bar run", setOf(SizeBucket.M), TapAction.DEFAULT, requiresNetwork = true, options = listOf(
             WidgetOption.Toggle("show_bars", "Show hourly bars", default = true),
-            WidgetOption.Toggle("show_label", "Show label", default = true)
+            WidgetOption.Toggle("show_label", "Show label", default = true),
+            forecastAlertOption()
         )) { c, s, cv -> DeepVariantRenderers.renderWeatherPrecipBar(c, s, cv) })
         // Battery (+6)
         register(createDef("battery.temp.gauge", Category.BATTERY, "Battery Temp", "Battery temperature with a gauge", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
