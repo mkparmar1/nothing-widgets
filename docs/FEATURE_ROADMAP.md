@@ -5,7 +5,7 @@
 > everywhere.
 >
 > **Started:** 2026-11-12 · **Owner:** mkparmar1 · **Companion docs:** `docs/BUILD_PLAN.md`,
-> `docs/UX_IMPLEMENTATION_PLAN.md`, `docs/THEME_PLAN.md`
+> `docs/UX_IMPLEMENTATION_PLAN.md`, `docs/THEME_PLAN.md`, **`docs/DESIGN_QUALITY_PLAN.md` (current #1)**
 
 ---
 
@@ -45,9 +45,16 @@
 | P19 | Wear OS tiles                        | N12      | L      | Not started |
 | P20 | Social / shared widgets              | —        | L      | Parked      |
 | P21 | "Describe your widget" (AI)          | —        | L      | Parked      |
+| P22 | **Design quality pass** (D0–D5: layout bugs, Large sizes, empty states, variety, icons, textures) | **#1** | L | Not started |
+| P23 | Photo art styles + sticker cut-out (D6) | #2    | M      | Not started |
+| P24 | "Dot Art" illustrated collection + mascot (D7) | #3 | L | Not started |
+| P25 | Builder sticker layer (D8)           | with N1  | M      | Not started |
 
 **Phase 1 (done):** P1 → P2 → P3 → P4 → P5, all checked on a phone on 2026-11-13.
-**Phase 2 order:** see [Phase 2 — next features](#phase-2--next-features-after-p1p5) (N1 → N13).
+**Current priority (#1):** design quality — full plan in
+[`docs/DESIGN_QUALITY_PLAN.md`](DESIGN_QUALITY_PLAN.md) (D0 → D8). D0–D2 are required before the
+next Play upload.
+**Then Phase 2:** see [Phase 2 — next features](#phase-2--next-features-after-p1p5) (N1 → N13).
 
 ---
 
@@ -584,7 +591,8 @@ Separate Wear module; data from the phone app via the Data Layer.
 ## Release checklist (before next Play upload)
 
 - [ ] Rerun device tests on emulator after the `WidgetE2ETest` fix (`connectedDebugAndroidTest`)
-- [ ] P5 lock-screen check done
+- [x] P5 lock-screen check done
+- [ ] Design quality D0–D2 done (layout lint green, Large sizes, empty states) — see `docs/DESIGN_QUALITY_PLAN.md`
 - [ ] `versionCode` → **5** (code 4 may already be used), `versionName` → next version
 - [ ] Signed release AAB built with the upload key (never overwrite signing files)
 - [ ] Store listing text + screenshots updated with new features (photo background, editor)
