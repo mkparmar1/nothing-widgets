@@ -426,7 +426,7 @@ launcher support is wider. Today's live overlays already cover ticking clocks/ti
 | 2026-11-12 | P5 lock-screen widgets hardened + safety tests         | `28022f1` |
 | 2026-11-12 | P2 custom widget builder end to end                    | `58d2b60` |
 | 2026-11-12 | P4 Smart Stack automatic rotation                      | `9c6c823` |
-| 2026-11-12 | P3 weather widgets: presentation layer, offline/stale states, tests | see git log |
+| 2026-11-12 | P3 weather widgets: presentation layer, offline/stale states, tests | `e806168` |
 | 2026-11-12 | P1–P5 installed on phone; 75/75 unit tests pass; awaiting on-phone checks before marking Done | — |
 
 ---
