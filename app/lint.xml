@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- local.properties is machine-specific, git-ignored and rewritten by Android Studio; Gradle reads
+         its unescaped "C:/" path correctly, so this check only adds noise. -->
+    <issue id="PropertyEscape">
+        <ignore path="../local.properties" />
+    </issue>
+</lint>

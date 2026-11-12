@@ -83,6 +83,15 @@
             </intent-filter>
         </activity>
 
+        <!-- Opens the dialler or calendar for list-widget row taps (see RowLaunchActivity). -->
+        <activity
+            android:name=".widgets.collection.RowLaunchActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <!-- Widget Providers: MUST be exported="true" for Launcher to load widgets -->
         <receiver
             android:name=".widgets.base.DotWidgetProviderS"

@@ -147,7 +147,7 @@ class LearnRepository private constructor(private val context: Context) {
 
         fun getInstance(context: Context): LearnRepository =
             INSTANCE ?: synchronized(this) {
-                INSTANCE ?: LearnRepository(context).also { INSTANCE = it }
+                INSTANCE ?: LearnRepository(context.applicationContext).also { INSTANCE = it }
             }
     }
 }

@@ -47,10 +47,11 @@ object CollectionViews {
         // Row taps: rows fill in the item (and the dial/calendar target) on a mutable template.
         val mutable = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
         val template = when (widgetId) {
-            CollectionWidgets.FAVORITES ->
-                PendingIntent.getActivity(context, appWidgetId * 100 + 62, Intent(Intent.ACTION_DIAL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), mutable)
-            CollectionWidgets.WEEK_AGENDA ->
-                PendingIntent.getActivity(context, appWidgetId * 100 + 62, Intent(Intent.ACTION_VIEW).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), mutable)
+            // Android 14+ rejects a mutable implicit template, so rows go through an explicit hop.
+            CollectionWidgets.FAVORITES, CollectionWidgets.WEEK_AGENDA -> PendingIntent.getActivity(
+                context, appWidgetId * 100 + 62,
+                Intent(context, RowLaunchActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), mutable
+            )
             CollectionWidgets.SMART_STACK -> PendingIntent.getActivity(
                 context, appWidgetId * 100 + 62,
                 Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), mutable
