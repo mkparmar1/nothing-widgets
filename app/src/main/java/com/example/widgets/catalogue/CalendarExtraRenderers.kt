@@ -41,9 +41,11 @@ object CalendarExtraRenderers {
             return
         }
 
-        val shown = events!!.take(maxEvents)
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        val visibleEvents = if (isLarge) maxEvents + 2 else maxEvents
+        val shown = events!!.take(visibleEvents)
         val startY = kit.pad + 34f * d
-        val lineSpacing = ((kit.height - startY - kit.pad) / maxEvents).coerceAtMost(30f * d)
+        val lineSpacing = ((kit.height - startY - kit.pad) / visibleEvents).coerceAtMost(if (isLarge) 27f * d else 30f * d)
         val paintTime = kit.textPaint(kit.accentColor, 11f, 15f)
         val paintTitle = kit.textPaint(kit.onColor, 11f, 15f)
         val now = System.currentTimeMillis()
@@ -62,7 +64,6 @@ object CalendarExtraRenderers {
             val titleX = kit.pad + 14f * d + timeW
             DotMatrixRenderer.drawFittedLabel(canvas, event.title.uppercase(), titleX, y, kit.width - kit.pad - titleX, paintTitle)
         }
-        val isLarge = spec.sizeBucket == SizeBucket.L
         if (events.size > shown.size) {
             val more = "+${events.size - shown.size} MORE"
             val paintMore = kit.textPaint(kit.greyColor, 9.5f, 12f)
@@ -118,7 +119,8 @@ object CalendarExtraRenderers {
         // 24 hour columns in a 12x2 grid (AM row, PM row)
         val cols = 12
         val gap = kit.maxW / (cols - 1)
-        val rowY = listOf(kit.height * 0.30f, kit.height * 0.48f)
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        val rowY = if (isLarge) listOf(kit.height * 0.25f, kit.height * 0.40f) else listOf(kit.height * 0.30f, kit.height * 0.48f)
         val paintHour = kit.textPaint(kit.greyColor, 8.5f, 11f)
         for (h in 0 until 24) {
             val x = kit.pad + (h % cols) * gap
@@ -137,18 +139,35 @@ object CalendarExtraRenderers {
             }
         }
 
-        val next = timed.firstOrNull { it.endMs > now }
-        val paintNext = kit.textPaint(kit.onColor, 11f, 15f)
-        val caption = when {
-            next == null && events.isEmpty() -> "NOTHING SCHEDULED TODAY"
-            next == null -> "NO MORE EVENTS TODAY"
-            next.beginMs <= now -> "NOW: ${next.title.uppercase()}"
-            else -> "NEXT ${timeFmt.format(Date(next.beginMs))}: ${next.title.uppercase()}"
-        }
-        DotMatrixRenderer.drawFittedLabel(canvas, caption, kit.pad, kit.height * 0.72f, kit.maxW, paintNext)
-        val allDay = events.filter { it.allDay }
-        if (allDay.isNotEmpty()) {
-            DotMatrixRenderer.drawFittedLabel(canvas, "ALL DAY: " + allDay.joinToString(", ") { it.title.uppercase() }, kit.pad, kit.height * 0.72f + 20f * d, kit.maxW, kit.textPaint(kit.greyColor, 10f, 13f))
+        val nextEvents = timed.filter { it.endMs > now }.take(3)
+        if (isLarge) {
+            if (nextEvents.isEmpty()) {
+                kit.labelCentered(if (events.isEmpty()) "NOTHING SCHEDULED TODAY" else "NO MORE EVENTS TODAY",
+                    kit.height * 0.68f, kit.textPaint(kit.onColor, 11f, 15f))
+            } else {
+                nextEvents.forEachIndexed { index, event ->
+                    val y = kit.height * (0.62f + index * 0.10f)
+                    val time = if (event.beginMs <= now) "NOW" else timeFmt.format(Date(event.beginMs))
+                    val timeWidth = 45f * d
+                    DotMatrixRenderer.drawFittedLabel(canvas, time, kit.pad, y, timeWidth, kit.textPaint(kit.accentColor, 10f, 13f))
+                    DotMatrixRenderer.drawFittedLabel(canvas, event.title.uppercase(), kit.pad + timeWidth, y,
+                        kit.maxW - timeWidth, kit.textPaint(kit.onColor, 10f, 13f))
+                }
+            }
+        } else {
+            val next = nextEvents.firstOrNull()
+            val paintNext = kit.textPaint(kit.onColor, 11f, 15f)
+            val caption = when {
+                next == null && events.isEmpty() -> "NOTHING SCHEDULED TODAY"
+                next == null -> "NO MORE EVENTS TODAY"
+                next.beginMs <= now -> "NOW: ${next.title.uppercase()}"
+                else -> "NEXT ${timeFmt.format(Date(next.beginMs))}: ${next.title.uppercase()}"
+            }
+            DotMatrixRenderer.drawFittedLabel(canvas, caption, kit.pad, kit.height * 0.72f, kit.maxW, paintNext)
+            val allDay = events.filter { it.allDay }
+            if (allDay.isNotEmpty()) {
+                DotMatrixRenderer.drawFittedLabel(canvas, "ALL DAY: " + allDay.joinToString(", ") { it.title.uppercase() }, kit.pad, kit.height * 0.72f + 20f * d, kit.maxW, kit.textPaint(kit.greyColor, 10f, 13f))
+            }
         }
     }
 
@@ -194,10 +213,10 @@ object CalendarExtraRenderers {
             days == 0 -> "0" to "IT'S TODAY"
             else -> (-days).toString() to "DAYS AGO"
         }
-        kit.dotTextCentered(value, kit.height * 0.48f, kit.height * 0.36f, 11f * d)
+        kit.dotTextCentered(value, kit.height * 0.52f, kit.height * 0.30f, 11f * d)
         val dateStr = target?.let { SimpleDateFormat("dd MMM yyyy", Locale.US).format(it).uppercase() } ?: ""
-        kit.labelCentered(caption, kit.height - kit.pad - 14f * d, kit.textPaint(kit.onColor, 11f, 14f))
-        kit.labelCentered(dateStr, kit.height - kit.pad, kit.textPaint(kit.greyColor, 9.5f, 12f))
+        kit.labelCentered(caption, kit.height * 0.80f, kit.textPaint(kit.onColor, 11f, 14f))
+        kit.labelCentered(dateStr, kit.height * 0.91f, kit.textPaint(kit.greyColor, 9.5f, 12f))
     }
 
     /** Two-tone card: weekday on an accent strip, big day number below. */

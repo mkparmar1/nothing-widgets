@@ -87,33 +87,9 @@ import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetSpec
 import com.example.widgets.base.WidgetRenderEngine
 
-private val RECOMMENDED = listOf(
-    "clock.dotdigital.s",
-    "sensor.glyph.lights",
-    "weather.current.temp",
-    "calendar.agenda.3",
-    "media.nowplaying.compact",
-    "clock.flip.style"
-)
+private val RECOMMENDED = CatalogueHighlights.RECOMMENDED
 
-/**
- * The "only in Dot Widgets" set: designs no competitor ships. Surfaced as a dedicated row and
- * badged on their cards. Keep this list in sync with the exclusive widgets registered in
- * [WidgetRegistry].
- */
-private val FEATURED_EXCLUSIVE = listOf(
-    "clock.glyph.ring",
-    "calendar.life.dots",
-    "battery.fuel.gauge",
-    "prod.week.dots",
-    "prod.focus.companion",
-    "fun.orbit.ambient",
-    "clock.flip.style",
-    "clock.binary",
-    "clock.text.words",
-    "sensor.ram.meter",
-    "sensor.year.progress"
-)
+private val FEATURED_EXCLUSIVE = CatalogueHighlights.EXCLUSIVE
 
 @Composable
 fun BrowserScreen(
@@ -176,7 +152,7 @@ fun BrowserScreen(
             colors = dotFieldColors(),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
                 .testTag("search_widgets_input")
         )
 

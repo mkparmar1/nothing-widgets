@@ -36,6 +36,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
@@ -62,8 +63,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.core.bitmap.BitmapCache
+import com.example.core.theme.ThemeMode
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.AccentSelectorRow
+import com.example.ui.components.SegmentTabs
 import com.example.ui.permissions.PermissionList
 import com.example.widgets.base.WidgetAlarmScheduler
 import com.example.widgets.base.WidgetRenderEngine
@@ -91,7 +94,7 @@ fun SettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -176,9 +179,48 @@ private fun SettingsPageHeader(title: String, onBack: () -> Unit) {
 private fun AppearancePage() {
     val prefs = PreferencesManager.getInstance(LocalContext.current)
     val globalAccent by prefs.accent.collectAsState()
+    ThemeModeCard()
     com.example.themes.ui.ThemeStudioCard()
     LooksCard(accent = globalAccent)
     AccentCard()
+}
+
+/** System / Light / Dark for the whole app (screens, sheets and previews). */
+@Composable
+private fun ThemeModeCard() {
+    val context = LocalContext.current
+    val prefs = remember(context) { PreferencesManager.getInstance(context) }
+    val mode by prefs.themeMode.collectAsState()
+    val options = remember { listOf(ThemeMode.AUTO, ThemeMode.FORCE_LIGHT, ThemeMode.FORCE_DARK) }
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        modifier = Modifier.fillMaxWidth().testTag("theme_mode_card")
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(Icons.Default.DarkMode, contentDescription = null, tint = com.example.ui.components.headerIconTint())
+                Text(
+                    text = "App theme",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Text(
+                text = "Follow the system, or keep Dot Widgets light or dark all the time.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = com.example.ui.theme.DotTheme.colors.textSecondary
+            )
+            SegmentTabs(
+                items = options.map { it.displayName },
+                selectedIndex = options.indexOf(mode).coerceAtLeast(0),
+                onSelect = { prefs.setGlobalThemeMode(options[it]) },
+                modifier = Modifier.testTag("theme_mode_tabs")
+            )
+        }
+    }
 }
 
 @Composable

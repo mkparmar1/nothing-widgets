@@ -76,8 +76,8 @@ Files: `ui/theme/DesignTokens.kt`, `Color.kt`, `Type.kt`, `Theme.kt`, `ui/compon
   through 3 widgets every 5 s (respects "reduce motion").
 
 **Tasks**
-- [ ] Tokens + light/dark palettes + contrast check (4.5:1 body, 3:1 large)
-- [ ] 11 components above with previews
+- [x] Tokens + light/dark palettes + contrast check (4.5:1 body, 3:1 large) — v2 palette in `DesignTokens.kt`, shapes `button`/`card`/`hero`/`pill`, type scale updated
+- [x] 11 components above with previews — in `DotComponents.kt` (`DotSetupCard` to avoid clashing with the Setups screen's card)
 - [ ] Component screenshot test (Robolectric) so restyles don't regress
 
 ---
@@ -87,7 +87,7 @@ Files: `ui/theme/DesignTokens.kt`, `Color.kt`, `Type.kt`, `Theme.kt`, `ui/compon
 Each step ships on its own and keeps the app usable. Tick when done; record the commit.
 
 ### R1 — Navigation shell + Home (new)
-**Status:** Not started · **Effort:** M
+**Status:** Done · **Effort:** M
 
 - `MainActivity`: tabs → Home · Explore · (+) · My Widgets · Settings. "+" opens the Builder.
 - `ui/home/HomeScreen.kt`:
@@ -136,7 +136,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
   green; photo editor and dot filter unchanged.
 
 ### R5 — My Widgets tab (new)
-**Status:** Not started · **Effort:** M
+**Status:** Partial — tab, All/Active/Inactive, previews, edit and delete shipped; duplicate and add-to-home still open · **Effort:** M
 
 - Tabs: **All / Active / Inactive**. Lists custom (builder) widgets *and* placed widgets.
   - Active = placed on the home screen (from `WidgetInstance`), Inactive = saved but not placed.
@@ -247,12 +247,12 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 
 | Step | Status | Commit |
 |---|---|---|
-| §2 Design system | Not started | |
-| R1 | Not started | |
+| §2 Design system | Done (component test pending) | |
+| R1 | Done | |
 | R2 | Not started | |
 | R3 | Not started | |
 | R4 | Not started | |
-| R5 | Not started | |
+| R5 | Partial (actions pending) | |
 | R6 | Not started | |
 | R7 | Not started | |
 | R8 | Not started | |
@@ -264,3 +264,4 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | Date | Item | Commit |
 |---|---|---|
 | 2026-11-14 | Plan written from the 4 reference images in `docs/design/` | — |
+| 2026-11-14 | §2 tokens + v2 components; R1 Home + floating nav; R5 tab (partial) | — |

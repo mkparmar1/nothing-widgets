@@ -95,7 +95,7 @@ object CollectionWidgets {
         HABITS -> "ADD HABITS IN THE APP"
         WEEK_AGENDA -> if (CalendarRepository.hasPermission(context)) "NOTHING IN THE NEXT 7 DAYS" else "ALLOW CALENDAR ACCESS IN THE APP"
         FAVORITES -> if (ContactRepository.hasPermission(context)) "STAR CONTACTS IN YOUR CONTACTS APP" else "ALLOW CONTACTS ACCESS IN THE APP"
-        SMART_STACK -> "PICK WIDGETS FOR THIS STACK IN THE APP"
+        SMART_STACK -> "ADD WIDGETS IN APP"
         else -> ""
     }
 
@@ -151,8 +151,8 @@ object CollectionWidgets {
         val kit = RenderKit(spec, canvas)
         kit.background()
         if (spec.liveOverlays) return
-        kit.header("SMART STACK • ${items.size} WIDGETS")
-        val message = if (items.isEmpty()) emptyMessage(context, SMART_STACK) else "SWIPE TO FLIP THROUGH ${items.size} WIDGETS"
+        kit.header("SMART STACK")
+        val message = if (items.isEmpty()) emptyMessage(context, SMART_STACK) else "SWIPE TO FLIP • ${items.size} WIDGETS"
         kit.labelCentered(message, kit.height * 0.55f, kit.textPaint(kit.onColor, 11f, 15f))
     }
 

@@ -9,6 +9,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import androidx.core.content.ContextCompat
+import com.example.data.demo.DemoData
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import java.text.SimpleDateFormat
@@ -32,6 +33,7 @@ object StepRepository {
 
     /** Last computed steps for today, or null if we can't count steps (no permission or sensor). */
     fun todaySteps(context: Context): Int? {
+        DemoData.current()?.let { return it.steps }
         if (!hasPermission(context) || !hasSensor(context)) return null
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (p.getString("day", null) != today()) return 0

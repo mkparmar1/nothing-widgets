@@ -7,6 +7,7 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import com.example.core.bitmap.BitmapCache
+import com.example.data.demo.DemoData
 import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -96,7 +97,8 @@ object WeatherRepository {
     // ---------- Location ----------
 
     /** The user's chosen place, or the preset city matching the phone's time zone. */
-    fun currentPlace(context: Context): WeatherPlace = savedPlace(context) ?: timezonePlace()
+    fun currentPlace(context: Context): WeatherPlace =
+        DemoData.current()?.weatherPlace ?: savedPlace(context) ?: timezonePlace()
 
     /** True when the user has picked a city or shared their location. */
     fun hasChosenPlace(context: Context): Boolean = savedPlace(context) != null
@@ -202,6 +204,9 @@ object WeatherRepository {
      * preset city; null means the user's current place.
      */
     fun getWeatherInstant(context: Context, cityName: String? = null): WeatherData {
+        DemoData.current()?.let { demo ->
+            return demo.weatherFor(cityName)
+        }
         val place = if (cityName == null) currentPlace(context) else preset(cityName)
         val key = keyFor(place)
         val cached = cache[key] ?: placeholder(place)

@@ -97,17 +97,34 @@ object InsightRenderers {
             kit.labelCentered("COLLECTING… CHECK BACK SOON", kit.height * 0.55f, kit.textPaint(kit.onColor, 11f, 15f))
             return
         }
-        val top = kit.pad + 26f * d
-        val bottom = kit.height - kit.pad - 14f * d
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        val top = if (isLarge) kit.height * 0.30f else kit.pad + 26f * d
+        val bottom = if (isLarge) kit.height * 0.68f else kit.height - kit.pad - 14f * d
         val start = System.currentTimeMillis() - 24 * 3_600_000L
+        if (isLarge) {
+            val guide = kit.fill(kit.offColor).apply { strokeWidth = 1f * d }
+            listOf(25, 50, 75).forEach { level ->
+                val y = bottom - (bottom - top) * level / 100f
+                canvas.drawLine(kit.pad, y, kit.width - kit.pad, y, guide)
+                val p = kit.textPaint(kit.greyColor, 8f, 11f)
+                canvas.drawText("$level", kit.pad, y - 2f * d, p)
+            }
+        }
         history.forEach { s ->
             val x = kit.pad + kit.maxW * ((s.timeMs - start).toFloat() / (24 * 3_600_000f)).coerceIn(0f, 1f)
             val y = bottom - (bottom - top) * s.level / 100f
-            canvas.drawCircle(x, y, 2.6f * d, kit.fill(if (s.charging) kit.accentColor else kit.onColor))
+            canvas.drawCircle(x, y, (if (isLarge) 3.4f else 2.6f) * d, kit.fill(if (s.charging) kit.accentColor else kit.onColor))
         }
         val paint = kit.textPaint(kit.greyColor, 9f, 12f)
-        canvas.drawText("-24H", kit.pad, kit.height - kit.pad, paint)
-        canvas.drawText("NOW", kit.width - kit.pad - paint.measureText("NOW"), kit.height - kit.pad, paint)
+        val axisY = if (isLarge) kit.height * 0.74f else kit.height - kit.pad
+        canvas.drawText("-24H", kit.pad, axisY, paint)
+        canvas.drawText("NOW", kit.width - kit.pad - paint.measureText("NOW"), axisY, paint)
+        if (isLarge) {
+            val low = history.minOf { it.level }
+            val high = history.maxOf { it.level }
+            kit.labelCentered("LOW $low%  •  HIGH $high%", kit.height * 0.84f, kit.textPaint(kit.greyColor, 10f, 13f))
+            kit.labelCentered("CURRENT ${now?.level ?: "--"}%", kit.height * 0.92f, kit.textPaint(kit.accentColor, 11f, 15f))
+        }
     }
 
     fun renderAirQuality(context: Context, spec: WidgetSpec, canvas: Canvas, showWeatherAlert: Boolean = false) {
@@ -163,6 +180,39 @@ object InsightRenderers {
             Triple("EVENING BLUE", set, set + 25)
         )
         val nowMin = Calendar.getInstance(tz).let { it.get(Calendar.HOUR_OF_DAY) * 60 + it.get(Calendar.MINUTE) }
+        if (spec.sizeBucket == SizeBucket.L) {
+            val top = kit.pad + 34f * d
+            val bottom = kit.height * 0.67f
+            val rowH = (bottom - top) / rows.size
+            rows.forEachIndexed { i, (label, from, to) ->
+                val y = top + i * rowH + rowH * 0.58f
+                val active = nowMin in from until to
+                DotMatrixRenderer.drawFittedLabel(canvas, label, kit.pad, y, kit.maxW * 0.48f,
+                    kit.textPaint(if (active) kit.accentColor else kit.greyColor, 11f, 15f))
+                val time = "${hm(from)}–${hm(to)}"
+                val paint = kit.textPaint(if (active) kit.accentColor else kit.onColor, 12f, 16f)
+                canvas.drawText(time, kit.width - kit.pad - paint.measureText(time), y, paint)
+            }
+
+            kit.labelCentered("DAYLIGHT", kit.height * 0.77f, kit.textPaint(kit.greyColor, 9f, 12f))
+            val currentHour = nowMin / 60
+            for (hour in 0..23) {
+                val x = kit.pad + hour * kit.maxW / 23f
+                val daylight = hour * 60 in rise until set
+                val color = when {
+                    hour == currentHour -> kit.accentColor
+                    daylight -> kit.onColor
+                    else -> kit.offColor
+                }
+                canvas.drawCircle(x, kit.height * 0.84f, if (hour == currentHour) 3.6f * d else 2.4f * d, kit.fill(color))
+            }
+            val timePaint = kit.textPaint(kit.greyColor, 9f, 12f)
+            val riseLabel = "RISE ${hm(rise)}"
+            val setLabel = "SET ${hm(set)}"
+            canvas.drawText(riseLabel, kit.pad, kit.height * 0.92f, timePaint)
+            canvas.drawText(setLabel, kit.width - kit.pad - timePaint.measureText(setLabel), kit.height * 0.92f, timePaint)
+            return
+        }
         val rowH = (kit.height - kit.pad * 2 - 24f * d) / rows.size
         rows.forEachIndexed { i, (label, from, to) ->
             val y = kit.pad + 32f * d + i * rowH
@@ -242,7 +292,7 @@ object InsightRenderers {
         val d = kit.d
         kit.background()
         val t = IndiaCalendar.tithi()
-        kit.header("TITHI • ${t.paksha} PAKSHA")
+        kit.header("TITHI • ${t.paksha}")
         val day = if (t.number > 15) t.number - 15 else t.number
         kit.dotTextCentered(day.toString(), kit.height * 0.42f, kit.height * 0.30f, 10f * d, kit.maxW * 0.5f)
         kit.labelCentered(t.name, kit.height * 0.72f, kit.textPaint(kit.accentColor, 12f, 17f))

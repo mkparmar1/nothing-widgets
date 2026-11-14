@@ -82,7 +82,7 @@ object LearnRenderers {
         )
         if (spec.options.boolean("show_meaning", true)) {
             val paint = kit.textPaint(kit.greyColor, 10f, 13f)
-            var y = kit.height * 0.55f
+            var y = kit.height * 0.66f
             wrapText(word.meaning.uppercase(), kit.maxW, paint).take(2).forEach { line ->
                 DotMatrixRenderer.drawFittedLabel(canvas, line, kit.pad, y, kit.maxW, paint)
                 y += 14f * kit.d

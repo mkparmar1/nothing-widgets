@@ -6,64 +6,56 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material.icons.filled.Widgets
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Tune
-import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material.icons.outlined.Widgets
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
-import com.example.core.theme.AccentOption
-import com.example.core.theme.MaterialYouPalette
-import com.example.data.battery.BatteryHelper
+import com.example.core.theme.ThemeMode
+import com.example.data.builder.CustomWidget
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.browse.BrowserScreen
+import com.example.ui.builder.CustomWidgetBuilderScreen
+import com.example.ui.components.BottomNav
+import com.example.ui.components.DotNavItem
+import com.example.ui.home.HomeScreen
+import com.example.ui.mywidgets.MyWidgetsScreen
 import com.example.ui.permissions.AppPermission
 import com.example.ui.permissions.PermissionsScreen
 import com.example.ui.permissions.markPermissionsSeen
@@ -73,6 +65,7 @@ import com.example.ui.setups.SetupsScreen
 import com.example.ui.theme.DotWidgetsTheme
 import com.example.ui.wallpapers.WallpapersScreen
 import com.example.ui.weather.WeatherDetailSheet
+import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -95,12 +88,26 @@ class MainActivity : ComponentActivity() {
             val context = LocalContext.current
             val prefs = remember { PreferencesManager.getInstance(context) }
             val currentAccent by prefs.accent.collectAsState()
+            val themeMode by prefs.themeMode.collectAsState()
+            val darkTheme = when (themeMode) {
+                ThemeMode.FORCE_DARK -> true
+                ThemeMode.FORCE_LIGHT -> false
+                ThemeMode.AUTO -> isSystemInDarkTheme()
+            }
+            val view = LocalView.current
+            SideEffect {
+                val activity = context as? ComponentActivity ?: return@SideEffect
+                WindowCompat.getInsetsController(activity.window, view).apply {
+                    isAppearanceLightStatusBars = !darkTheme
+                    isAppearanceLightNavigationBars = !darkTheme
+                }
+            }
 
             var showWeatherSheet by remember { mutableStateOf(openWeatherDetail) }
             // First launch, or while exact alarms are off: ask for permissions before showing the app.
             var showPermissions by remember { mutableStateOf(shouldShowPermissions(context)) }
 
-            DotWidgetsTheme(accentOption = currentAccent) {
+            DotWidgetsTheme(darkTheme = darkTheme, accentOption = currentAccent) {
                 if (showPermissions) {
                     PermissionsScreen(
                         accent = currentAccent,
@@ -110,9 +117,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 } else {
-                    DotWidgetsApp(
-                        onOpenWeather = { showWeatherSheet = true }
-                    )
+                    DotWidgetsApp()
                 }
 
                 if (!showPermissions && showWeatherSheet) {
@@ -167,105 +172,86 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Outlined when idle and filled when selected, so state doesn't depend on colour alone. */
-private enum class MainTab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector) {
-    WIDGETS("Widgets", Icons.Outlined.Widgets, Icons.Filled.Widgets),
-    SETUPS("Setups", Icons.Outlined.AutoAwesome, Icons.Filled.AutoAwesome),
-    WALLPAPERS("Wallpapers", Icons.Outlined.Wallpaper, Icons.Filled.Wallpaper),
-    SETTINGS("Settings", Icons.Outlined.Tune, Icons.Filled.Tune)
+/** Screens that sit above the five-destination shell and dismiss back to it. */
+private sealed interface AppOverlay {
+    data object Setups : AppOverlay
+    data object Wallpapers : AppOverlay
+    data class Builder(val existing: CustomWidget? = null) : AppOverlay
 }
 
 @Composable
-fun DotWidgetsApp(
-    onOpenWeather: () -> Unit
-) {
+fun DotWidgetsApp() {
     val context = LocalContext.current
-    val prefs = remember { PreferencesManager.getInstance(context) }
-    val currentAccent by prefs.accent.collectAsState()
-    // The theme primary is the app accent, made readable on light backgrounds.
-    val accentColor = MaterialTheme.colorScheme.primary
-
+    val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableIntStateOf(0) }
-    val battery = remember { BatteryHelper.getBatteryStatus(context) }
+    var overlay by remember { mutableStateOf<AppOverlay?>(null) }
+
+    val navItems = remember {
+        listOf(
+            DotNavItem("Home", Icons.Outlined.Home, Icons.Filled.Home),
+            DotNavItem("Explore", Icons.Outlined.Widgets, Icons.Filled.Widgets),
+            DotNavItem("My Widgets", Icons.Outlined.AutoAwesome, Icons.Filled.AutoAwesome),
+            DotNavItem("Settings", Icons.Outlined.Tune, Icons.Filled.Tune)
+        )
+    }
+
+    BackHandler(enabled = overlay != null) { overlay = null }
 
     Scaffold(
-        topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(
-                        text = "Dot Widgets",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Box(modifier = Modifier.padding(top = 8.dp).size(6.dp).clip(CircleShape).background(accentColor))
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .clip(com.example.ui.theme.DotShape.small)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(6.dp)
-                            .clip(CircleShape)
-                            .background(if (battery.isCharging) accentColor else com.example.ui.theme.DotTheme.colors.success)
-                    )
-                    Text(
-                        text = "${battery.level}%",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
-        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            Column(modifier = Modifier.fillMaxWidth().navigationBarsPadding()) {
-                androidx.compose.material3.HorizontalDivider(thickness = 0.5.dp, color = com.example.ui.theme.DotTheme.colors.divider)
-                NavigationBar(containerColor = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
-                    MainTab.entries.forEachIndexed { i, tab ->
-                        val selected = selectedTab == i
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = { selectedTab = i },
-                            icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
-                            label = { Text(tab.label, style = MaterialTheme.typography.bodySmall) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = accentColor,
-                                selectedTextColor = MaterialTheme.colorScheme.onBackground,
-                                unselectedIconColor = com.example.ui.theme.DotTheme.colors.textMuted,
-                                unselectedTextColor = com.example.ui.theme.DotTheme.colors.textMuted,
-                                indicatorColor = accentColor.copy(alpha = 0.12f)
-                            ),
-                            modifier = Modifier.testTag("nav_${tab.name.lowercase()}")
-                        )
-                    }
-                }
+            // The menu stays on every screen, including Builder / Setups / Wallpapers, so the user
+            // can move around without backing out first.
+            Box(Modifier.fillMaxWidth().navigationBarsPadding()) {
+                BottomNav(
+                    items = navItems,
+                    selectedIndex = selectedTab,
+                    onSelect = {
+                        overlay = null
+                        selectedTab = it
+                    },
+                    onPlus = { overlay = AppOverlay.Builder() }
+                )
             }
         }
     ) { innerPadding ->
         Surface(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .statusBarsPadding(),
             color = MaterialTheme.colorScheme.background
         ) {
-            androidx.compose.animation.Crossfade(selectedTab, label = "tabs") { tab ->
-                when (tab) {
-                    0 -> BrowserScreen(onSelectWidget = {})
-                    1 -> SetupsScreen()
-                    2 -> WallpapersScreen()
-                    else -> SettingsScreen()
+            when (val current = overlay) {
+                AppOverlay.Setups -> SetupsScreen()
+                AppOverlay.Wallpapers -> WallpapersScreen()
+                is AppOverlay.Builder -> CustomWidgetBuilderScreen(
+                    existing = current.existing,
+                    onDismiss = { overlay = null },
+                    onSaved = {
+                        overlay = null
+                        scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context, force = true) }
+                    }
+                )
+                null -> Crossfade(
+                    targetState = selectedTab,
+                    animationSpec = tween(200),
+                    label = "tabs"
+                ) { tab ->
+                    when (tab) {
+                        0 -> HomeScreen(
+                            onExplore = { selectedTab = 1 },
+                            onBuilder = { overlay = AppOverlay.Builder() },
+                            onSetups = { overlay = AppOverlay.Setups },
+                            onWallpapers = { overlay = AppOverlay.Wallpapers }
+                        )
+                        1 -> BrowserScreen(onSelectWidget = {})
+                        2 -> MyWidgetsScreen(
+                            onCreate = { overlay = AppOverlay.Builder() },
+                            onEditCustom = { custom -> overlay = AppOverlay.Builder(custom) }
+                        )
+                        else -> SettingsScreen()
+                    }
                 }
             }
         }

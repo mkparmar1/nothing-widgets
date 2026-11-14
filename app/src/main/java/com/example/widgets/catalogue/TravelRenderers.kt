@@ -68,7 +68,6 @@ object TravelRenderers {
         val kit = RenderKit(spec, canvas)
         kit.background()
         val city = spec.options.string("city", "London")
-        kit.header("WEATHER • ${city.uppercase()}")
         WeatherRenderers.renderCurrentWeather(context, spec, canvas, cityNameOverride = city)
     }
 

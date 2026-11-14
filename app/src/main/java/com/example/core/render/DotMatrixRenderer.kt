@@ -72,6 +72,7 @@ object DotMatrixRenderer {
 
     /** Skin of the widget being drawn, for renderers that draw their own shapes. */
     val currentSkin: Skin get() = skin.get() ?: Skin.DOT
+    val hasCornerDot: Boolean get() = cornerDot.get() != false
 
     /** Dot shape of the widget being drawn, so photo filters can match it. */
     val currentDotStyle: DotStyle get() = dotStyle.get() ?: DotStyle.ROUND
@@ -180,6 +181,7 @@ object DotMatrixRenderer {
         accentIndices: Set<Int> = emptySet(),
         accentColor: Int = onColor
     ) {
+        WidgetLayoutRecorder.recordDotText(text, startX, startY, dotGap, dotRadius)
         paintOn.color = onColor
         paintOff.color = offColor
 
@@ -358,10 +360,11 @@ object DotMatrixRenderer {
     ): Float {
         if (textLength <= 0) return preferredGap
         val factor = (GlyphTable.WIDTH * textLength) + ((textLength - 1) * 1.5f)
-        val maxGapWidth = if (factor > 0) maxAllowedWidth / factor else preferredGap
-        val maxGapHeight = maxAllowedHeight / GlyphTable.HEIGHT.toFloat()
+        val dotExtent = 0.76f
+        val maxGapWidth = if (factor > 0) maxAllowedWidth / (factor + dotExtent) else preferredGap
+        val maxGapHeight = maxAllowedHeight / (GlyphTable.HEIGHT + dotExtent)
         val fitted = minOf(preferredGap, maxGapWidth, maxGapHeight)
-        return fitted.coerceAtLeast(3.0f)
+        return fitted.coerceAtLeast(1.0f)
     }
 
     /**
@@ -385,6 +388,7 @@ object DotMatrixRenderer {
             }
             finalText = if (finalText.isNotEmpty()) "$finalText…" else ""
         }
+        WidgetLayoutRecorder.recordLabel(finalText, x, y, paint, finalText != text)
         canvas.drawText(finalText, x, y, paint)
         paint.textSize = originalSize
         paint.typeface = originalTypeface

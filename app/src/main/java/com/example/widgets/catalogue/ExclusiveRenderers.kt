@@ -88,8 +88,9 @@ object ExclusiveRenderers {
         val cols = 24
         val rows = 6
         val top = kit.pad + 26f * d
+        val footerSpace = 18f * d
         val cellW = kit.maxW / cols
-        val cellH = (kit.height - top - kit.pad) / rows
+        val cellH = (kit.height - top - kit.pad - footerSpace) / rows
         val r = min(cellW, cellH) * 0.34f
         for (i in 0 until totalDots) {
             val col = i % cols
@@ -117,6 +118,36 @@ object ExclusiveRenderers {
         kit.header(if (status.isCharging) "FUEL • CHARGING" else "FUEL GAUGE", if (status.isCharging) kit.accentColor else kit.greyColor)
 
         val level = "${status.level}%"
+        if (spec.sizeBucket == com.example.core.bitmap.SizeBucket.L) {
+            kit.dotTextCentered(level, kit.height * 0.34f, kit.height * 0.30f, kit.height * 0.052f, kit.maxW * 0.72f,
+                setOf(level.lastIndex))
+            kit.labelCentered(if (status.isCharging) "CHARGING NOW" else "BATTERY REMAINING", kit.height * 0.55f, kit.textPaint(kit.greyColor, 11f, 15f))
+            val dots = 30
+            val filled = (status.level * dots + 50) / 100
+            val gap = kit.maxW / (dots - 1)
+            val y = kit.height * 0.62f
+            for (i in 0 until dots) {
+                val color = when {
+                    i < filled -> kit.onColor
+                    i == filled && status.isCharging -> kit.accentColor
+                    else -> kit.offColor
+                }
+                canvas.drawCircle(kit.pad + i * gap, y, if (i < filled) 3.6f * d else 2.6f * d, kit.fill(color))
+            }
+            val eta = when {
+                status.level >= 100 -> "FULLY CHARGED"
+                status.isCharging && status.chargeTimeRemainingMs > 0 -> {
+                    val mins = (status.chargeTimeRemainingMs / 60_000L).toInt()
+                    "FULL IN ${if (mins >= 60) "${mins / 60}H ${mins % 60}M" else "${mins}M"}"
+                }
+                status.isCharging -> "CHARGING"
+                else -> "ABOUT ${(status.level / 1.4f).toInt()}H LEFT"
+            }
+            kit.labelCentered(eta, kit.height * 0.76f, kit.textPaint(kit.accentColor, 12f, 16f))
+            kit.labelCentered("${100 - status.level}% TO EMPTY", kit.height * 0.86f, kit.textPaint(kit.greyColor, 10f, 13f))
+            return
+        }
+
         kit.dotTextCentered(level, kit.height * 0.42f, kit.height * 0.34f, 10f * d, kit.maxW * 0.7f, setOf(level.length - 1))
 
         val dots = 20

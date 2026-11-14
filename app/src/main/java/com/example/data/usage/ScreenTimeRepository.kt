@@ -4,6 +4,7 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Build
+import com.example.data.demo.DemoData
 import com.example.ui.permissions.AppPermission
 import java.util.Calendar
 
@@ -21,12 +22,16 @@ object ScreenTimeRepository {
     private var cached: ScreenTime? = null
 
     fun isAvailable(context: Context) =
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && AppPermission.UsageAccess.isGranted(context)
+        DemoData.current() != null || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && AppPermission.UsageAccess.isGranted(context))
 
     /** Last value computed by [refresh], or null without access. */
-    fun current(context: Context): ScreenTime? = if (isAvailable(context)) cached else null
+    fun current(context: Context): ScreenTime? {
+        DemoData.current()?.let { return it.screenTime }
+        return if (isAvailable(context)) cached else null
+    }
 
     fun refresh(context: Context) {
+        if (DemoData.current() != null) return
         if (!isAvailable(context)) return
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         val todayStart = Calendar.getInstance().apply {

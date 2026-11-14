@@ -56,15 +56,15 @@ object UniqueSensorRenderers {
             preferredGap = kit.height * 0.050f,
             accentIndices = accentIndices
         )
-        kit.labelCentered(detail, kit.height * 0.58f, kit.textPaint(kit.onColor, 8f))
-        kit.labelCentered(footnote, kit.height * 0.68f, kit.textPaint(kit.greyColor, 5.5f))
+        kit.labelCentered(detail, kit.height * 0.68f, kit.textPaint(kit.onColor, 8f))
+        kit.labelCentered(footnote, kit.height * 0.78f, kit.textPaint(kit.greyColor, 5.5f))
         DotMatrixRenderer.drawDotRun(
             canvas = kit.canvas,
             current = barCurrent,
             max = barMax,
             totalDots = barDots,
             startX = kit.pad,
-            startY = kit.height * 0.82f,
+            startY = kit.height * 0.90f,
             dotRadius = kit.height * 0.013f,
             dotGap = kit.maxW / (barDots - 1),
             onColor = kit.onColor,
@@ -530,9 +530,20 @@ object UniqueSensorRenderers {
             if (phase.daysToNew == 0) "NEW MOON TODAY" else "NEW MOON IN ${phase.daysToNew}D"
         }
 
-        DotMatrixRenderer.drawFittedLabel(canvas, phase.name, rightX, cy - (14f * d), rightW, kit.textPaint(kit.onColor, 12f, 16f))
-        DotMatrixRenderer.drawFittedLabel(canvas, "$illumPct% ILLUMINATED", rightX, cy + (6f * d), rightW, kit.textPaint(kit.accentColor, 11f, 14f))
-        DotMatrixRenderer.drawFittedLabel(canvas, next, rightX, cy + (24f * d), rightW, kit.textPaint(kit.greyColor, 10f, 13f))
+        val compact = spec.sizeBucket == com.example.core.bitmap.SizeBucket.S
+        val phaseLabel = if (compact) {
+            if (phase.isWaxing) "WAXING" else "WANING"
+        } else phase.name
+        val illuminationLabel = if (compact) "$illumPct% LIT" else "$illumPct% ILLUMINATED"
+        val nextLabel = if (!compact) next else when {
+            phase.isWaxing && phase.daysToFull == 0 -> "FULL TODAY"
+            phase.isWaxing -> "FULL IN ${phase.daysToFull}D"
+            phase.daysToNew == 0 -> "NEW TODAY"
+            else -> "NEW IN ${phase.daysToNew}D"
+        }
+        DotMatrixRenderer.drawFittedLabel(canvas, phaseLabel, rightX, cy - (14f * d), rightW, kit.textPaint(kit.onColor, 12f, 16f))
+        DotMatrixRenderer.drawFittedLabel(canvas, illuminationLabel, rightX, cy + (6f * d), rightW, kit.textPaint(kit.accentColor, 11f, 14f))
+        DotMatrixRenderer.drawFittedLabel(canvas, nextLabel, rightX, cy + (24f * d), rightW, kit.textPaint(kit.greyColor, 10f, 13f))
     }
 
     /**
@@ -640,12 +651,12 @@ object UniqueSensorRenderers {
      */
     fun renderCompass(context: Context, spec: WidgetSpec, canvas: Canvas) {
         if (!CompassRepository.hasSensor(context)) {
-            RenderKit.message(spec, canvas, "COMPASS", "NO MAGNETIC SENSOR ON THIS DEVICE")
+            RenderKit.message(spec, canvas, "COMPASS", "NO COMPASS SENSOR")
             return
         }
         val heading = CompassRepository.headingDegrees(context)
         if (heading == null) {
-            RenderKit.message(spec, canvas, "COMPASS", "HOLD FLAT TO READ THE COMPASS")
+            RenderKit.message(spec, canvas, "COMPASS", "HOLD PHONE FLAT")
             return
         }
 

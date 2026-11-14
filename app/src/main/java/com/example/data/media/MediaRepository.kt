@@ -8,6 +8,7 @@ import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
 import android.os.SystemClock
+import com.example.data.demo.DemoData
 
 /** Snapshot of the media session that's currently playing (or was last active). */
 data class NowPlaying(
@@ -41,6 +42,7 @@ object MediaRepository {
     }
 
     fun nowPlaying(context: Context): NowPlaying? {
+        DemoData.current()?.let { return it.nowPlaying }
         val controller = activeController(context) ?: return null
         val meta = controller.metadata ?: return null
         val state = controller.playbackState

@@ -64,8 +64,8 @@ object BatteryRenderers {
 
         // Center percentage text auto-fitted inside the inner circle
         val pctStr = "$level%"
-        val maxTextW = radius * 1.35f
-        val maxTextH = radius * 0.85f
+        val maxTextW = radius * 1.12f
+        val maxTextH = radius * 0.72f
         val dotGap = DotMatrixRenderer.fitDotGap(pctStr.length, maxTextW, maxTextH, 6.5f * spec.density)
         val textW = DotMatrixRenderer.measureTextWidth(pctStr.length, dotGap)
         val textH = 7 * dotGap

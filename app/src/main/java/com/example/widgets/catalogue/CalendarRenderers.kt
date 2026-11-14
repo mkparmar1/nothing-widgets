@@ -45,13 +45,13 @@ object CalendarRenderers {
         }
 
         // Large dot matrix day number
-        val maxAllowedH = spec.heightPx * 0.44f
+        val maxAllowedH = spec.heightPx * 0.34f
         val dotGap = DotMatrixRenderer.fitDotGap(dayNumber.length, maxW * 0.65f, maxAllowedH, 11f * spec.density)
         val dotRadius = dotGap * 0.38f
         val textWidth = DotMatrixRenderer.measureTextWidth(dayNumber.length, dotGap)
 
         val startX = pad
-        val startY = spec.heightPx * 0.32f
+        val startY = spec.heightPx * 0.34f
 
         DotMatrixRenderer.drawText(
             canvas = canvas,

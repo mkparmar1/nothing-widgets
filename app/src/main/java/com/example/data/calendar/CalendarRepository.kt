@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.CalendarContract
 import androidx.core.content.ContextCompat
+import com.example.data.demo.DemoData
 import java.util.Calendar
 
 data class CalendarEvent(
@@ -25,6 +26,7 @@ object CalendarRepository {
 
     /** Today's events (all-day ones first), or null when calendar access isn't granted. */
     fun today(context: Context): List<CalendarEvent>? {
+        DemoData.current()?.let { return it.calendarEvents }
         if (!hasPermission(context)) return null
         val start = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -36,6 +38,9 @@ object CalendarRepository {
 
     /** Events from now through the next [days] days that haven't finished, or null without access. */
     fun upcoming(context: Context, days: Int): List<CalendarEvent>? {
+        DemoData.current()?.let { snapshot ->
+            return snapshot.calendarEvents.filter { it.endMs > System.currentTimeMillis() }.sortedBy { it.beginMs }
+        }
         if (!hasPermission(context)) return null
         val now = System.currentTimeMillis()
         val end = Calendar.getInstance().apply {

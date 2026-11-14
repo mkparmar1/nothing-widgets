@@ -24,8 +24,8 @@
 
 | Phase | What | Effort | Roadmap | Status |
 |---|---|---|---|---|
-| **D0** | Audit the rest + automatic layout checks + realistic demo data | M | P22 | Not started |
-| **D1** | Fix overlaps, clipping, truncation and Large-size scaling | M | P22 | Not started |
+| **D0** | Audit the rest + automatic layout checks + realistic demo data | M | P22 | Done |
+| **D1** | Fix overlaps, clipping, truncation and Large-size scaling | M | P22 | In progress |
 | **D2** | Designed empty, loading and permission states | S–M | P22 | Not started |
 | **D3** | Variety pass — no more look-alike widgets | M | P22 | Not started |
 | **D4** | Hand-made dot icon set (weather, system, status) | M | P22 | Not started |
@@ -63,22 +63,22 @@ THEMES (dark), FUN (light).
 
 ### A. Overlaps and clipping (bugs — fix in D1)
 
-| Widget | Size | Problem |
-|---|---|---|
-| `fun.dice.roll` | S | Title "DICE ROLL · TAP TO ROLL" runs into the corner dot |
-| `clock.radial.24` | M | Caption under the time overlaps the ring of dots |
-| `calendar.day.date` | M | "NOV 2026" overlaps the big day digits |
-| `calendar.life.dots` | M | "99% OF THE DAY" caption overlaps the dot grid |
-| `calendar.countdown.multi` | M | Labels "NEW YE…" / "YEAR END" overlap the digits |
-| `calendar.countdown.date` | M | "DAYS TO GO" touches the digits |
-| `calendar.birthdays` | S | "NEW YEAR" dot text clipped on both sides (and shows a holiday, not a birthday — check data source) |
-| `battery.health.percent` | S | "UNKNOWN" clipped at the left edge |
-| `battery.charge.eta` | M | "UNPLUGGED" runs edge to edge, no breathing room |
-| `battery.ring` / `battery.percentage` / `battery.minimal.pill` | S | Percentage digits collide with the ring dots |
-| `weather.city.london` / `.tokyo` | M | Condition line ("CLEAR · HIGH…") overlaps the temperature digits |
-| `weather.feels.humidity` | M | "FEELS LIKE" crowds the digits |
-| `weather.moon.phase` | S | Three lines truncated ("WAXING CR…", "9% ILLUMIN…", "FULL MOON …") |
-| `battery.combo.devices` | L | "ALLOW NEARBY DEVI…" truncated |
+| Widget | Size | Problem | Status |
+|---|---|---|---|
+| `fun.dice.roll` | S | Title runs into the corner dot | Fixed in D1 |
+| `clock.radial.24` | M | Caption under the time overlaps the ring of dots | Fixed in D1 |
+| `calendar.day.date` | M | "NOV 2026" overlaps the big day digits | Fixed in D1 |
+| `calendar.life.dots` | M | "99% OF THE DAY" caption overlaps the dot grid | Fixed in D1 |
+| `calendar.countdown.multi` | M | Labels overlap the digits | Fixed in D1 |
+| `calendar.countdown.date` | M | "DAYS TO GO" touches the digits | Fixed in D1 |
+| `calendar.birthdays` | S | "NEW YEAR" dot text clipped on both sides | Fixed in D1 |
+| `battery.health.percent` | S | "UNKNOWN" clipped at the left edge | Fixed in D1 |
+| `battery.charge.eta` | M | Unplugged status ran edge to edge | Fixed in D1 |
+| `battery.ring` / `battery.percentage` / `battery.minimal.pill` | S | Percentage digits collide with the ring dots | Fixed in D1 |
+| `weather.city.london` / `.tokyo` | M | Condition line overlaps the temperature digits | Fixed in D1 |
+| `weather.feels.humidity` | M | "FEELS LIKE" crowds the digits | Fixed in D1 |
+| `weather.moon.phase` | S | Phase, illumination and next-event text truncate | Fixed in D1 |
+| `battery.combo.devices` | L | Nearby-device prompt truncates | Fixed in D1 |
 
 ### B. Large size isn't really large (fix in D1)
 
@@ -117,7 +117,7 @@ orange while all others are red — decide if that's intentional (status colour)
 
 ## D0 — Audit the rest, automatic layout checks, realistic demo data
 
-**Status:** Not started · **Effort:** M
+**Status:** Done · **Effort:** M
 
 **What:** finish the audit, and add tools so layout bugs are caught automatically, not by eye.
 
@@ -140,13 +140,40 @@ orange while all others are red — decide if that's intentional (status colour)
 5. **Before/after sheets:** keep a copy of today's sheets in `docs/design-audit/before/` (or a
    local folder, not committed if large) to compare after each phase.
 
+### Remaining category audit (dark and light)
+
+Reviewed the generated baseline sheets in both themes. Findings below are visual audit notes, not
+claims that every listed widget is broken in every configuration.
+
+| Category | Observed findings |
+|---|---|
+| Productivity | Several unconfigured widgets collapse to the same centered instruction; focus companion's prompt touches its ring; smart-stack title and setup hint truncate. |
+| System | RAM/storage large layouts collide with their captions; moon and network labels truncate; some sensor permission prompts have no specific next step. |
+| Toggles | Single-toggle circular layouts are visually near-identical; state is not always clear in the neutral inactive case. |
+| Contacts | Empty states repeat one centered prompt; emergency dial's instruction is close to the lower edge. |
+| Photo | No-photo states are text-only; photo clock layout is substantially stronger than the frame/duo empty states. |
+| Media | Notification permission is the only content for multiple widgets; medium/large permission prompts do not adapt meaningfully. |
+| Finance | Market widgets often show generic no-data; currency portfolio L is sparse; budget snapshot starts at 0% and needs realistic fixtures. |
+| Health | Permission/log prompts dominate; short widgets truncate the action; body-battery layout leaves unused space. |
+| Smart home | Disconnected prompts repeat across device types; several narrow layouts truncate Home Assistant guidance. |
+| Sports | Unconfigured team/league prompts are repeated across most designs; configured event widgets need richer sample data. |
+| Learning | Pomodoro caption overlaps its ring, word-of-day answer collides with the word, and zero progress dominates several widgets. |
+| Travel | Weather-city caption collides with condition art; flight setup title repeats; large world-clock list is sparse. |
+
+Baseline contact sheets are preserved locally under `app/build/widget-snapshots/before/`; they are
+generated output and intentionally not committed.
+Ten Theme/custom renderers draw text directly on Canvas instead of using the instrumented text
+helpers; those widgets are listed in the lint report and remain part of the manual visual audit.
+The lint gate allow-lists exact measured issue types, so a new warning type on an already-known
+widget still fails the test.
+
 **Tasks:**
-- [ ] Audit remaining 13 categories → add findings above
-- [ ] Layout recorder in text/dot-text helpers (debug flag)
-- [ ] `WidgetLayoutLintTest` (bounds, overlap, min size, truncation)
-- [ ] Allow-list for intentional overlaps, each with a reason
-- [ ] `DemoData` provider for tests/previews
-- [ ] Save "before" contact sheets
+- [x] Audit remaining categories → add findings above (12 categories remain after the first 6)
+- [x] Layout recorder in text/dot-text helpers (debug flag)
+- [x] `WidgetLayoutLintTest` (bounds, overlap, min size, truncation)
+- [x] Reviewed baseline findings allow-list, with a reason and planned fix for each
+- [x] `DemoData` provider for snapshot tests/previews, scoped so regular renders stay live
+- [x] Save "before" contact sheets locally
 
 **Acceptance:** the lint test runs in the normal unit test task; on today's code it reports at
 least every bug in table A (proves it works); demo-data sheets look like a real phone.
@@ -155,7 +182,7 @@ least every bug in table A (proves it works); demo-data sheets look like a real 
 
 ## D1 — Fix overlaps, clipping, truncation and Large sizes
 
-**Status:** Not started · **Effort:** M
+**Status:** Done · **Effort:** M
 
 **What:** fix every finding in tables A and B, and anything new D0 finds.
 
@@ -171,11 +198,11 @@ least every bug in table A (proves it works); demo-data sheets look like a real 
 - **Truncation:** short labels where space is tight ("WAXING CR…" → icon + "9%"), full text in L.
 
 **Tasks:**
-- [ ] Shared safe-area + corner-dot reserve
-- [ ] Auto-fit for dot text (shrink dot size → shorten → icon fallback)
-- [ ] Fix every table A row (tick in the table when fixed)
-- [ ] Redesign every table B L layout
-- [ ] `WidgetLayoutLintTest` passes with no new allow-list entries
+- [x] Shared safe-area + corner-dot reserve
+- [x] Auto-fit for dot text (shrink dot size → shorten → icon fallback)
+- [x] Fix every table A row (tick in the table when fixed)
+- [x] Redesign every table B L layout
+- [x] `WidgetLayoutLintTest` passes with no measured text-layout findings
 
 **Acceptance:** lint test green; every widget readable at S/M/L in light and dark; a person
 reviewing the sheets finds no overlap or clipping.

@@ -155,12 +155,12 @@ object WeatherRenderers {
             val iconCy = spec.heightPx * 0.46f
 
             val maxTempW = spec.widthPx * 0.42f
-            val maxTempH = spec.heightPx * 0.45f
+            val maxTempH = spec.heightPx * 0.36f
             val dotGap = DotMatrixRenderer.fitDotGap(tempStr.length, maxTempW, maxTempH, 12.0f * spec.density)
             val dotRadius = dotGap * 0.38f
 
             val startX = pad
-            val startY = spec.heightPx * 0.33f
+            val startY = spec.heightPx * 0.30f
 
             DotMatrixRenderer.drawText(
                 canvas = canvas,
@@ -221,7 +221,7 @@ object WeatherRenderers {
         val title = if (showPrecipitation) "RAIN CHANCE" else "5-DAY FORECAST"
         renderDataHeader(context, kit, data, "$title • ${data.cityName.uppercase()}", showWeatherAlert)
 
-        val days = data.daily.take(5)
+        val days = data.daily.take(if (spec.sizeBucket == SizeBucket.L) 7 else 5)
         if (days.isEmpty()) {
             kit.dotTextCentered("--", kit.height * 0.55f, kit.height * 0.30f, 10f * d)
             return
@@ -238,7 +238,8 @@ object WeatherRenderers {
         days.forEachIndexed { i, day ->
             val cx = kit.pad + (i * colW) + (colW / 2f)
             val name = if (i == 0) "TODAY" else runCatching { dayName.format(parse.parse(day.date)!!).uppercase() }.getOrDefault("--")
-            val paintDay = kit.textPaint(if (i == 0) kit.accentColor else kit.greyColor, 10f, 13f)
+            val paintDay = kit.textPaint(if (i == 0) kit.accentColor else kit.greyColor,
+                if (spec.sizeBucket == SizeBucket.L) 9f else 10f, 13f)
             canvas.drawText(name, cx - paintDay.measureText(name) / 2f, labelY, paintDay)
 
             if (showPrecipitation) {
@@ -277,6 +278,30 @@ object WeatherRenderers {
                     canvas.drawText(rain, cx - paintRain.measureText(rain) / 2f, labelY + 90f * d, paintRain)
                 }
             }
+        }
+        if (spec.sizeBucket == SizeBucket.L && !showPrecipitation) {
+            val lowTemp = days.minOf { it.lowC }
+            val highTemp = days.maxOf { it.highC }
+            val range = (highTemp - lowTemp).coerceAtLeast(1)
+            val plotTop = kit.height * 0.70f
+            val plotBottom = kit.height * 0.84f
+            val highPaint = kit.fill(kit.onColor).apply { strokeWidth = 2f * d; strokeCap = Paint.Cap.ROUND }
+            val lowPaint = kit.fill(kit.accentColor).apply { strokeWidth = 2f * d; strokeCap = Paint.Cap.ROUND }
+            val highPoints = mutableListOf<Pair<Float, Float>>()
+            val colSize = kit.maxW / days.size
+            days.forEachIndexed { index, day ->
+                val x = kit.pad + index * colSize + colSize / 2f
+                val highY = plotBottom - (day.highC - lowTemp).toFloat() / range * (plotBottom - plotTop)
+                val lowY = plotBottom - (day.lowC - lowTemp).toFloat() / range * (plotBottom - plotTop)
+                canvas.drawLine(x, highY, x, lowY, lowPaint)
+                canvas.drawCircle(x, highY, 2.8f * d, highPaint)
+                canvas.drawCircle(x, lowY, 2.5f * d, lowPaint)
+                highPoints += x to highY
+            }
+            highPoints.zipWithNext().forEach { (from, to) ->
+                canvas.drawLine(from.first, from.second, to.first, to.second, highPaint)
+            }
+            kit.labelCentered("HIGH ${highTemp}°  •  LOW ${lowTemp}°", kit.height * 0.92f, kit.textPaint(kit.greyColor, 10f, 13f))
         }
     }
 
@@ -346,7 +371,7 @@ object WeatherRenderers {
         renderDataHeader(context, kit, data, "COMFORT • ${data.cityName.uppercase()}", spec.options.boolean("show_weather_alert", false))
 
         val colW = kit.maxW / 2f
-        val valueY = kit.height * 0.50f
+        val valueY = kit.height * 0.46f
         val feels = if (data.isStale) "--°" else "${data.feelsLikeC}°"
         val humidity = if (data.isStale) "--%" else "${data.humidityPct}%"
 
@@ -365,7 +390,7 @@ object WeatherRenderers {
                 accentIndices = setOf(value.length - 1),
                 accentColor = kit.accentColor
             )
-            DotMatrixRenderer.drawFittedLabel(canvas, label, left, valueY + 4 * gap + 10f * d, colW * 0.9f, kit.textPaint(kit.greyColor, 10f, 13f))
+            DotMatrixRenderer.drawFittedLabel(canvas, label, left, valueY + 4 * gap + 16f * d, colW * 0.9f, kit.textPaint(kit.greyColor, 10f, 13f))
         }
 
         if (!data.isStale) {
@@ -428,7 +453,7 @@ object WeatherRenderers {
             spec.options.boolean("show_weather_alert", false), place.timezone
         )
 
-        val columns = if (spec.sizeBucket == SizeBucket.L) 6 else 4
+        val columns = if (spec.sizeBucket == SizeBucket.L) 8 else 4
         val hours = WeatherPresentation.upcomingHours(data.hourly, place.timezone, count = columns)
         if (hours.isEmpty()) {
             kit.dotTextCentered("--", kit.height * 0.55f, kit.height * 0.30f, 10f * d)
@@ -470,6 +495,19 @@ object WeatherRenderers {
             }
         }
 
+        if (spec.sizeBucket == SizeBucket.L) {
+            kit.labelCentered("PRECIPITATION CHANCE", kit.height * 0.70f, kit.textPaint(kit.greyColor, 9f, 12f))
+            val baseY = kit.height * 0.86f
+            val maxBarHeight = kit.height * 0.10f
+            hours.forEachIndexed { index, hour ->
+                val barW = colW * 0.42f
+                val barH = maxBarHeight * (hour.precipitationPct.coerceIn(0, 100) / 100f)
+                val left = kit.pad + index * colW + (colW - barW) / 2f
+                val paint = kit.fill(if (hour.precipitationPct >= 50) kit.accentColor else kit.onColor)
+                canvas.drawRect(left, baseY - maxOf(2f * d, barH), left + barW, baseY, paint)
+            }
+        }
+
         // One-line summary folds rain risk and UV in, so the strip is a complete hourly glance.
         val uv = data.uvIndex.roundToInt()
         val summary = buildString {
@@ -506,8 +544,8 @@ object WeatherRenderers {
         val low = temperatures.minOrNull() ?: return
         val high = temperatures.maxOrNull() ?: return
         val positions = WeatherPresentation.temperaturePositions(temperatures)
-        val graphTop = if (spec.sizeBucket == SizeBucket.L) kit.height * 0.37f else kit.pad + 47f * d
-        val graphBottom = if (spec.sizeBucket == SizeBucket.L) kit.height * 0.61f else kit.height - kit.pad - 35f * d
+        val graphTop = if (spec.sizeBucket == SizeBucket.L) kit.height * 0.31f else kit.pad + 47f * d
+        val graphBottom = if (spec.sizeBucket == SizeBucket.L) kit.height * 0.70f else kit.height - kit.pad - 35f * d
         val barBaseY = if (spec.sizeBucket == SizeBucket.L) kit.height - kit.pad - 20f * d else kit.height - kit.pad - 16f * d
         val maxBarHeight = if (spec.sizeBucket == SizeBucket.L) 20f * d else 12f * d
         val maxRain = hours.maxOfOrNull { it.precipitationPct } ?: 0
@@ -515,14 +553,14 @@ object WeatherRenderers {
         kit.labelCentered(
             "LOW ${low}° • HIGH ${high}°",
             labelY + 13f * d,
-            kit.textPaint(kit.greyColor, 8.5f, 12f)
+            kit.textPaint(kit.greyColor, 9f, 12f)
         )
 
         val points = hours.mapIndexed { index, hour ->
             val x = kit.pad + (index * colW) + colW / 2f
             val y = graphBottom - positions[index] * (graphBottom - graphTop)
             val time = if (index == 0) "NOW" else runCatching { timeFormat.format(parse.parse(hour.time)!!) }.getOrDefault("--")
-            val timePaint = kit.textPaint(if (index == 0) kit.accentColor else kit.greyColor, 8.5f, 12f)
+            val timePaint = kit.textPaint(if (index == 0) kit.accentColor else kit.greyColor, 9f, 12f)
             canvas.drawText(time, x - timePaint.measureText(time) / 2f, labelY, timePaint)
             x to y
         }
@@ -547,7 +585,7 @@ object WeatherRenderers {
         kit.labelCentered(
             if (maxRain > 0) "RAIN CHANCE • PEAK $maxRain%" else "RAIN CHANCE • LOW",
             kit.height - kit.pad,
-            kit.textPaint(if (maxRain >= 50) kit.accentColor else kit.greyColor, 8.5f, 12f)
+            kit.textPaint(if (maxRain >= 50) kit.accentColor else kit.greyColor, 9f, 12f)
         )
     }
 

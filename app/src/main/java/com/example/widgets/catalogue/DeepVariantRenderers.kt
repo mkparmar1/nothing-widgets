@@ -8,6 +8,7 @@ import android.os.Environment
 import android.os.StatFs
 import android.os.SystemClock
 import com.example.core.astro.Astronomy
+import com.example.core.bitmap.SizeBucket
 import com.example.core.render.ColorRule
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.GlyphTable
@@ -69,7 +70,7 @@ object DeepVariantRenderers {
         kit.header("24H RADIAL")
         val cx = kit.width / 2f
         val cy = kit.height * 0.52f
-        val radius = minOf(kit.width, kit.height) * 0.30f
+        val radius = minOf(kit.width, kit.height) * 0.25f
         DotMatrixRenderer.drawDotRing(canvas, cx, cy, radius, 24, hour, radius * 0.10f, kit.onColor, kit.offColor, kit.accentColor)
         val str = String.format(Locale.US, "%02d:%02d", hour, minute)
         val paint = kit.textPaint(kit.onColor, 12f, 16f)
@@ -204,7 +205,7 @@ object DeepVariantRenderers {
         WeatherRenderers.renderDataHeader(context, kit, data, "WIND", spec.options.boolean("show_weather_alert", false))
         kit.dotTextCentered(if (data.isStale) "--" else "${data.windKmh}", kit.height * 0.42f, kit.height * 0.34f, 11f * kit.d,
             accentIndices = setOf(1))
-        kit.labelCentered("KM/H", kit.height * 0.66f, kit.textPaint(kit.greyColor, 10f, 13f))
+        kit.labelCentered("KM/H", kit.height * 0.73f, kit.textPaint(kit.greyColor, 10f, 13f))
         val dir = spec.options.string("direction", "N").uppercase()
         kit.labelCentered(dir, kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.accentColor, 12f, 16f))
     }
@@ -219,7 +220,7 @@ object DeepVariantRenderers {
         WeatherRenderers.renderDataHeader(context, kit, data, "PRESSURE", spec.options.boolean("show_weather_alert", false))
         kit.dotTextCentered("$hpa", kit.height * 0.42f, kit.height * 0.32f, 10f * kit.d,
             accentIndices = setOf(3))
-        kit.labelCentered("HPA", kit.height * 0.64f, kit.textPaint(kit.greyColor, 10f, 13f))
+        kit.labelCentered("HPA", kit.height * 0.72f, kit.textPaint(kit.greyColor, 10f, 13f))
         val lo = 980
         val hi = 1040
         val frac = ((hpa - lo).toFloat() / (hi - lo)).coerceIn(0f, 1f)
@@ -284,7 +285,7 @@ object DeepVariantRenderers {
             aqi <= 150 -> "UNHEALTHY SENS."
             else -> "UNHEALTHY"
         }
-        kit.labelCentered(band, kit.height * 0.68f, kit.textPaint(kit.accentColor, 10f, 13f))
+        kit.labelCentered(band, kit.height * 0.75f, kit.textPaint(kit.accentColor, 10f, 13f))
         DotMatrixRenderer.drawDotRun(
             canvas = canvas, current = aqi, max = 200, totalDots = 20,
             startX = kit.pad, startY = kit.height - kit.pad - 5f * kit.d, dotRadius = 2.2f * kit.d,
@@ -340,7 +341,7 @@ object DeepVariantRenderers {
         val b = BatteryHelper.getBatteryStatus(context)
         kit.header("BATTERY TEMP")
         val temp = b.temperatureC.roundToInt()
-        kit.dotTextCentered("$temp°", kit.height * 0.44f, kit.height * 0.36f, 11f * kit.d,
+        kit.dotTextCentered("$temp°", kit.height * 0.40f, kit.height * 0.30f, 11f * kit.d,
             accentIndices = setOf(2))
         val status = when {
             temp >= 45 -> "HOT"
@@ -348,7 +349,7 @@ object DeepVariantRenderers {
             temp <= 0 -> "COLD"
             else -> "NORMAL"
         }
-        kit.labelCentered(status, kit.height * 0.70f, kit.textPaint(kit.accentColor, 10f, 13f))
+        kit.labelCentered(status, kit.height * 0.66f, kit.textPaint(kit.accentColor, 10f, 13f))
         val dots = 20
         val frac = ((temp.coerceIn(0, 50)).toFloat() / 50f)
         DotMatrixRenderer.drawDotRun(
@@ -380,10 +381,11 @@ object DeepVariantRenderers {
                 val mins = (b.chargeTimeRemainingMs / 60_000L).toInt()
                 String.format(Locale.US, "%d:%02d", mins / 60, mins % 60)
             }
-            !b.isCharging -> "UNPLUGGED"
+            !b.isCharging -> "NOT CHARGING"
             else -> "--:--"
         }
         kit.dotTextCentered(str, kit.height * 0.48f, if (str.length > 4) kit.height * 0.26f else kit.height * 0.36f, 9f * kit.d,
+            maxWidth = kit.maxW * if (str == "NOT CHARGING") 0.78f else 1f,
             accentIndices = if (str.contains(":")) RenderKit.colonIndices(str) else emptySet())
         kit.labelCentered("${b.level}% NOW", kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.greyColor, 10f, 13f))
     }
@@ -407,7 +409,8 @@ object DeepVariantRenderers {
         val b = BatteryHelper.getBatteryStatus(context)
         kit.header("BATTERY HEALTH")
         val health = b.health
-        kit.dotTextCentered(health.take(8), kit.height * 0.46f, kit.height * 0.24f, 8f * kit.d,
+        val healthLabel = if (health == "UNKNOWN") "N/A" else health.take(8)
+        kit.dotTextCentered(healthLabel, kit.height * 0.46f, kit.height * 0.24f, 8f * kit.d,
             accentIndices = if (health == "GOOD") emptySet() else setOf(0))
         val state = if (health == "GOOD") "OPTIMAL" else "CHECK"
         kit.labelCentered(state, kit.height - kit.pad - 2f * kit.d, kit.textPaint(if (health == "GOOD") kit.greyColor else kit.accentColor, 10f, 13f))
@@ -444,20 +447,41 @@ object DeepVariantRenderers {
         val cols = 7
         val rows = 6
         val cellW = kit.maxW / cols
-        val gridTop = kit.pad + 24f * kit.d
-        val cellH = (kit.height - gridTop - kit.pad) / rows
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        val gridTop = kit.pad + (if (isLarge) 42f else 24f) * kit.d
+        val gridBottom = kit.height - kit.pad - if (isLarge) 28f * kit.d else 0f
+        val cellH = (gridBottom - gridTop) / rows
+        val dayPaint = if (isLarge) kit.textPaint(kit.onColor, 10f, 13f) else null
+        if (isLarge) {
+            listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { column, label ->
+                val x = kit.pad + column * cellW + cellW / 2f
+                val paint = kit.textPaint(kit.greyColor, 9f, 12f)
+                canvas.drawText(label, x - paint.measureText(label) / 2f, gridTop - 8f * kit.d, paint)
+            }
+        }
         for (d in 1..daysInMonth) {
             val idx = firstDow + d - 1
             val col = idx % cols
             val row = idx / cols
             val x = kit.pad + col * cellW + cellW / 2f
             val y = gridTop + row * cellH + cellH / 2f
+            if (isLarge && dayPaint != null) {
+                val label = d.toString()
+                if (d == today) canvas.drawCircle(x, y - dayPaint.textSize * 0.30f, dayPaint.textSize * 0.78f, kit.fill(kit.accentColor))
+                val paint = if (d == today) kit.textPaint(if (spec.isDark) 0xFF000000.toInt() else 0xFFFFFFFF.toInt(), 10f, 13f) else dayPaint
+                canvas.drawText(label, x - paint.measureText(label) / 2f, y + paint.textSize * 0.34f, paint)
+                continue
+            }
             val paint = when {
                 d == today -> kit.fill(kit.accentColor)
                 d < today -> kit.fill(kit.onColor)
                 else -> kit.fill(kit.offColor)
             }
             canvas.drawCircle(x, y, if (d == today) 3.2f * kit.d else 2.4f * kit.d, paint)
+        }
+        if (isLarge) {
+            kit.labelCentered("DAY $today OF $daysInMonth  •  ${daysInMonth - today} LEFT",
+                kit.height - kit.pad, kit.textPaint(kit.greyColor, 10f, 13f))
         }
     }
 
@@ -478,7 +502,10 @@ object DeepVariantRenderers {
         val name = spec.options.string("name", PreferencesManager.getInstance(context).getEventName()).uppercase()
         val eventDate = PreferencesManager.getInstance(context).getEventDate()
         kit.header("BIRTHDAY")
-        kit.dotTextCentered(name.take(10), kit.height * 0.44f, kit.height * 0.26f, 8f * kit.d)
+        kit.dotTextCentered(
+            name.take(8), kit.height * 0.44f, kit.height * 0.26f, 8f * kit.d,
+            maxWidth = kit.maxW * 0.68f, shortText = name.take(4), fallbackText = "?"
+        )
         val days = daysUntil(eventDate)
         kit.labelCentered(if (days == null) "SET A DATE" else if (days == 0) "TODAY!" else "IN $days DAYS",
             kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.accentColor, 11f, 14f))
@@ -490,19 +517,38 @@ object DeepVariantRenderers {
         kit.header("MOON THIS MONTH")
         val cal = Calendar.getInstance()
         val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
-        // Sample moon phase at ~4 points through the month and plot illumination as bars.
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        val today = Astronomy.moonPhase()
+        if (isLarge) {
+            kit.labelCentered("${today.name} • ${(today.illumination * 100).roundToInt()}% LIT",
+                kit.height * 0.30f, kit.textPaint(kit.accentColor, 12f, 16f))
+        }
         val samples = 12
         val barW = kit.maxW / samples
-        val baseY = kit.height - kit.pad - 14f * kit.d
+        val chartTop = if (isLarge) kit.height * 0.42f else kit.height * 0.48f
+        val baseY = if (isLarge) kit.height * 0.76f else kit.height - kit.pad - 14f * kit.d
+        val chartH = baseY - chartTop
         for (i in 0 until samples) {
             val dayOffset = (i.toFloat() / samples * daysInMonth).roundToInt().coerceAtLeast(1)
             val c2 = Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH, dayOffset) }
             val illum = Astronomy.moonPhase(c2.timeInMillis).illumination.toFloat()
-            val barH = illum * kit.height * 0.30f
-            canvas.drawRect(kit.pad + i * barW + barW * 0.2f, baseY - barH, kit.pad + i * barW + barW * 0.8f, baseY, kit.fill(kit.onColor))
+            val barH = illum * chartH
+            val color = if (isLarge && dayOffset == cal.get(Calendar.DAY_OF_MONTH)) kit.accentColor else kit.onColor
+            canvas.drawRect(kit.pad + i * barW + barW * 0.2f, baseY - barH, kit.pad + i * barW + barW * 0.8f, baseY, kit.fill(color))
+            if (isLarge && i % 3 == 0) {
+                val label = dayOffset.toString()
+                val paint = kit.textPaint(kit.greyColor, 8.5f, 11f)
+                val x = kit.pad + i * barW + barW / 2f
+                canvas.drawText(label, x - paint.measureText(label) / 2f, baseY + 13f * kit.d, paint)
+            }
         }
-        val today = Astronomy.moonPhase()
-        kit.labelCentered("${today.name} ${(today.illumination * 100).roundToInt()}%", kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.accentColor, 10f, 13f))
+        if (isLarge) {
+            kit.labelCentered("NEW  •  FIRST QUARTER  •  FULL  •  LAST QUARTER",
+                kit.height * 0.90f, kit.textPaint(kit.greyColor, 9f, 12f))
+        } else {
+            kit.labelCentered("${today.name} ${(today.illumination * 100).roundToInt()}%",
+                kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.accentColor, 10f, 13f))
+        }
     }
 
     fun renderCalendarQuarterProgress(context: Context, spec: WidgetSpec, canvas: Canvas) {
@@ -540,13 +586,13 @@ object DeepVariantRenderers {
         val colW = kit.maxW / 2f
         listOf("${prefs.getEventName().take(6).uppercase()}" to (eventDays?.toString() ?: "--"), "YEAR END" to "$yearEndDays").forEachIndexed { i, (label, value) ->
             val left = kit.pad + i * colW
-            val gap = DotMatrixRenderer.fitDotGap(value.length, colW * 0.8f, kit.height * 0.32f, 10f * kit.d)
+            val gap = DotMatrixRenderer.fitDotGap(value.length, colW * 0.8f, kit.height * 0.28f, 10f * kit.d)
             DotMatrixRenderer.drawText(
-                canvas = canvas, text = value, startX = left, startY = kit.height * 0.42f,
+                canvas = canvas, text = value, startX = left, startY = kit.height * 0.39f,
                 dotRadius = gap * 0.38f, dotGap = gap, onColor = kit.onColor, offColor = kit.offColor,
                 accentIndices = setOf(value.length - 1), accentColor = kit.accentColor
             )
-            DotMatrixRenderer.drawFittedLabel(canvas, label, left, kit.height * 0.72f, colW * 0.9f, kit.textPaint(kit.greyColor, 9f, 12f))
+            DotMatrixRenderer.drawFittedLabel(canvas, label, left, kit.height * 0.76f, colW * 0.9f, kit.textPaint(kit.greyColor, 9f, 12f))
         }
     }
 
@@ -588,7 +634,7 @@ object DeepVariantRenderers {
         kit.header("BURNDOWN")
         kit.dotTextCentered("$remaining", kit.height * 0.44f, kit.height * 0.34f, 11f * kit.d,
             accentIndices = setOf(1))
-        kit.labelCentered("$done / $total DONE", kit.height * 0.68f, kit.textPaint(kit.greyColor, 10f, 13f))
+        kit.labelCentered("$done / $total DONE", kit.height * 0.75f, kit.textPaint(kit.greyColor, 10f, 13f))
         // Burndown line from total (left) to remaining (right) across the canvas.
         val y0 = kit.pad + 30f * kit.d
         val y1 = kit.height - kit.pad - 16f * kit.d
@@ -634,7 +680,7 @@ object DeepVariantRenderers {
         kit.header("CPU")
         kit.dotTextCentered("$cores", kit.height * 0.44f, kit.height * 0.34f, 11f * kit.d,
             accentIndices = setOf(0))
-        kit.labelCentered("CORES ACTIVE", kit.height * 0.68f, kit.textPaint(kit.greyColor, 10f, 13f))
+        kit.labelCentered("CORES ACTIVE", kit.height * 0.75f, kit.textPaint(kit.greyColor, 10f, 13f))
         DotMatrixRenderer.drawDotRun(
             canvas = canvas, current = cores, max = 8, totalDots = 8,
             startX = kit.pad, startY = kit.height - kit.pad - 5f * kit.d, dotRadius = 2.6f * kit.d,
@@ -722,7 +768,7 @@ object DeepVariantRenderers {
         kit.header("STORAGE")
         kit.dotTextCentered(String.format(Locale.US, "%.0f", freeGb), kit.height * 0.44f, kit.height * 0.32f, 10f * kit.d,
             accentIndices = setOf(2))
-        kit.labelCentered("GB FREE", kit.height * 0.68f, kit.textPaint(kit.greyColor, 10f, 13f))
+        kit.labelCentered("GB FREE", kit.height * 0.75f, kit.textPaint(kit.greyColor, 10f, 13f))
         DotMatrixRenderer.drawDotRun(
             canvas = canvas, current = pct, max = 100, totalDots = 20,
             startX = kit.pad, startY = kit.height - kit.pad - 5f * kit.d, dotRadius = 2.2f * kit.d,

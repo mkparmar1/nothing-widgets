@@ -195,7 +195,7 @@ object MediaAndFunRenderers {
             textSize = (10f * spec.density).coerceAtMost(14f)
             isFakeBoldText = true
         }
-        DotMatrixRenderer.drawFittedLabel(canvas, "DICE ROLL: ${die1 + die2} • TAP TO ROLL", pad, pad + 12f * spec.density, maxW, paintLabel)
+        DotMatrixRenderer.drawFittedLabel(canvas, "DICE ${die1 + die2} • TAP", pad, pad + 12f * spec.density, maxW * 0.72f, paintLabel)
 
         val maxAvailableH = spec.heightPx - pad - (40f * spec.density)
         val diceSize = minOf(52f * spec.density, maxAvailableH * 0.75f, maxW * 0.40f)

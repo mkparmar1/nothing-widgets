@@ -4,14 +4,18 @@ import androidx.compose.ui.graphics.Color
 
 val Black = Color(0xFF000000)
 val Ink900 = Color(0xFF0A0A0A)
+/** Card fill in v2 (was 0xFF181818). */
+val Ink800 = Color(0xFF141414)
 val Ink700 = Color(0xFF1C1C1C)
+/** Hairline outlines between cards and the page. */
+val Ink600 = Color(0xFF262626)
 val Ink500 = Color(0xFF3D3D3D)
 val Ash = Color(0xFF8A8A8A)
 val Fog = Color(0xFFD4D4D4)
 val Paper = Color(0xFFF2F2F2)
 val White = Color(0xFFFFFFFF)
 
-val AccentRed = Color(0xFFD71920)
+val AccentRed = Color(0xFFE0162B)
 val AccentAmber = Color(0xFFF2A516)
 val AccentLime = Color(0xFFB8E000)
 val AccentCyan = Color(0xFF00C2D1)

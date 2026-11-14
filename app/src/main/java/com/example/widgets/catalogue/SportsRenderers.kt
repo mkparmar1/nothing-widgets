@@ -64,10 +64,10 @@ object SportsRenderers {
         kit.background()
         val rows = SportsRepository.table(context)
         val league = spec.options.string("league", "LEAGUE").uppercase()
-        kit.header("$league TABLE")
         if (rows.isEmpty()) {
             empty(kit, "$league TABLE", "SET UP A LEAGUE IN THE APP"); return
         }
+        kit.header("$league TABLE")
         val limit = spec.options.int("rows", if (spec.sizeBucket.name == "L") 8 else 5).coerceIn(3, 12)
         val top = kit.pad + 24f * kit.d
         val rowH = (kit.height - top - kit.pad) / rows.take(limit).size.coerceAtLeast(1)

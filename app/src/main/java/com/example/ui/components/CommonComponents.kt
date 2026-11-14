@@ -150,6 +150,7 @@ fun SectionHeader(
     title: String,
     subtitle: String? = null,
     modifier: Modifier = Modifier,
+    onSeeAll: (() -> Unit)? = null,
     action: (@Composable () -> Unit)? = null
 ) {
     Row(
@@ -160,7 +161,7 @@ fun SectionHeader(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineMedium,
+                style = com.example.ui.theme.DotType.Section,
                 color = MaterialTheme.colorScheme.onBackground
             )
             if (subtitle != null) {
@@ -172,8 +173,17 @@ fun SectionHeader(
                 )
             }
         }
-        if (action != null) {
-            action()
+        when {
+            action != null -> action()
+            onSeeAll != null -> Text(
+                text = "See all",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(com.example.ui.theme.DotShape.pill)
+                    .clickable(onClick = onSeeAll)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            )
         }
     }
 }

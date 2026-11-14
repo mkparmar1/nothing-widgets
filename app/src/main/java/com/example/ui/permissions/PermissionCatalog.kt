@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.content.ContextCompat
+import com.example.data.demo.DemoData
 import com.example.data.media.MediaListenerService
 import com.example.widgets.base.DeviceToggles
 import com.example.widgets.base.WidgetAlarmScheduler
@@ -111,6 +112,7 @@ sealed class AppPermission(
         Icons.Default.MusicNote
     ) {
         override fun isGranted(context: Context): Boolean {
+            if (DemoData.current() != null) return true
             val enabled = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners") ?: return false
             val me = ComponentName(context, MediaListenerService::class.java)
             return enabled.split(":").any { ComponentName.unflattenFromString(it) == me }

@@ -18,7 +18,7 @@ object SmartHomeRenderers {
 
     private fun connectPrompt(kit: RenderKit, title: String) {
         kit.header(title)
-        kit.labelCentered("CONNECT HOME ASSISTANT IN THE APP", kit.height * 0.55f, kit.textPaint(kit.greyColor, 10f, 13f))
+        kit.labelCentered("LINK HOME ASSISTANT", kit.height * 0.55f, kit.textPaint(kit.greyColor, 10f, 13f))
     }
 
     private fun entities(context: Context, spec: WidgetSpec): List<HomeEntity> {
@@ -135,10 +135,10 @@ object SmartHomeRenderers {
         val kit = RenderKit(spec, canvas)
         kit.background()
         val name = spec.options.string("scene", "MOVIE NIGHT").uppercase()
-        kit.header("SCENE")
         if (!HomeAssistantRepository.isConfigured(context)) {
             connectPrompt(kit, "SCENE"); return
         }
+        kit.header("SCENE")
         val cx = kit.width / 2f
         val cy = kit.height * 0.56f
         val radius = minOf(kit.width, kit.height) * 0.24f

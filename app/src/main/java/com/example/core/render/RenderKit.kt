@@ -20,6 +20,10 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
     val width = spec.widthPx.toFloat()
     val height = spec.heightPx.toFloat()
     val d = spec.density
+    private val cornerDotReserve = if (DotMatrixRenderer.hasCornerDot) {
+        maxOf(18f * d, spec.cornerRadiusDp * d * 0.72f + 8f * d - pad)
+    } else 0f
+    val safeTextWidth = (maxW - cornerDotReserve).coerceAtLeast(0f)
 
     /** 1 u = 1% of the widget's short side. Text sized in u scales with the widget. */
     val u = minOf(width, height) / 100f
@@ -41,7 +45,8 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
     fun header(text: String, color: Int = greyColor, widthFraction: Float = 0.75f) {
         if (!spec.showLabel) return
         val label = if (DotMatrixRenderer.currentSkin == Skin.TERMINAL) "> $text" else text
-        DotMatrixRenderer.drawFittedLabel(canvas, label, pad, pad + 12f * d, maxW * widthFraction, textPaint(color, 10.5f, 14f))
+        val availableWidth = minOf(maxW * widthFraction, safeTextWidth)
+        DotMatrixRenderer.drawFittedLabel(canvas, label, pad, pad + 12f * d, availableWidth, textPaint(color, 10.5f, 14f))
     }
 
     fun textPaint(color: Int, sizeDp: Float, maxPx: Float, bold: Boolean = true) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -69,13 +74,24 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
         preferredGap: Float,
         maxWidth: Float = maxW,
         accentIndices: Set<Int> = emptySet(),
-        color: Int = onColor
+        color: Int = onColor,
+        shortText: String? = null,
+        fallbackText: String? = null
     ): Float {
-        val gap = DotMatrixRenderer.fitDotGap(text.length, maxWidth, maxHeight, preferredGap)
-        val textW = DotMatrixRenderer.measureTextWidth(text.length, gap)
+        val minReadableGap = 2.5f * d
+        val fullGap = DotMatrixRenderer.fitDotGap(text.length, maxWidth, maxHeight, preferredGap)
+        val shortened = shortText?.takeIf {
+            fullGap < minReadableGap &&
+                DotMatrixRenderer.fitDotGap(it.length, maxWidth, maxHeight, preferredGap) >= minReadableGap
+        }
+        val candidate = shortened ?: text
+        val candidateGap = DotMatrixRenderer.fitDotGap(candidate.length, maxWidth, maxHeight, preferredGap)
+        val chosenText = if (candidateGap < minReadableGap && fallbackText != null) fallbackText else candidate
+        val gap = DotMatrixRenderer.fitDotGap(chosenText.length, maxWidth, maxHeight, preferredGap)
+        val textW = DotMatrixRenderer.measureTextWidth(chosenText.length, gap)
         DotMatrixRenderer.drawText(
             canvas = canvas,
-            text = text,
+            text = chosenText,
             startX = (width - textW) / 2f,
             startY = centerY - (GlyphTable.HEIGHT - 1) * gap / 2f,
             dotRadius = gap * 0.38f,

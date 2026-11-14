@@ -21,7 +21,7 @@ object HealthRenderers {
     private fun requireSteps(context: Context, spec: WidgetSpec, canvas: Canvas, title: String): Int? {
         val steps = StepRepository.todaySteps(context)
         if (steps == null) {
-            RenderKit.message(spec, canvas, title, "ALLOW ACTIVITY ACCESS IN THE APP")
+            RenderKit.message(spec, canvas, title, "ALLOW ACTIVITY ACCESS")
         }
         return steps
     }
@@ -263,7 +263,7 @@ object HealthRenderers {
         val goal = spec.options.int("goal", 10).coerceIn(1, 120)
         kit.header("MINDFULNESS")
         if (min <= 0 && !spec.options.boolean("show_zero", false)) {
-            kit.labelCentered("LOG MINDFUL MINUTES IN THE APP", kit.height * 0.55f, kit.textPaint(kit.greyColor, 10f, 13f))
+            kit.labelCentered("LOG MEDITATION", kit.height * 0.55f, kit.textPaint(kit.greyColor, 10f, 13f))
             return
         }
         kit.dotTextCentered("$min", kit.height * 0.50f, kit.height * 0.36f, 11f * kit.d)

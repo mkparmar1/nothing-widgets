@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import com.example.data.demo.DemoData
 
 data class BatteryStatus(
     val level: Int,
@@ -24,6 +25,7 @@ data class BatteryStatus(
 object BatteryHelper {
 
     fun getBatteryStatus(context: Context): BatteryStatus {
+        DemoData.current()?.let { return it.battery }
         return try {
             val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             val intent = context.registerReceiver(null, filter)

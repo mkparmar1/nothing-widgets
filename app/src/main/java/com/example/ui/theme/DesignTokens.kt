@@ -1,5 +1,6 @@
 package com.example.ui.theme
 
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -27,16 +28,17 @@ data class DotColors(
     val danger: Color
 )
 
+/** v2 dark palette: near-black page, two card tones, hairline outlines, white/grey text. */
 val DarkDotColors = DotColors(
-    background = Color(0xFF101010),
-    surface = Color(0xFF181818),
-    surfaceSecondary = Color(0xFF222222),
-    surfaceElevated = Color(0xFF292929),
-    textPrimary = Color(0xFFF5F5F5),
-    textSecondary = Color(0xFFA5A5A5),
+    background = Color(0xFF0A0A0A),
+    surface = Color(0xFF141414),
+    surfaceSecondary = Color(0xFF1C1C1C),
+    surfaceElevated = Color(0xFF1C1C1C),
+    textPrimary = Color(0xFFFFFFFF),
+    textSecondary = Color(0xFFA3A3A3),
     textMuted = Color(0xFF8C8C8C),
-    border = Color(0xFF333333),
-    divider = Color(0xFF292929),
+    border = Color(0xFF262626),
+    divider = Color(0xFF262626),
     dotPattern = Color(0x0FFFFFFF),
     success = Color(0xFF72A88C),
     info = Color(0xFF779BC2),
@@ -44,6 +46,7 @@ val DarkDotColors = DotColors(
     danger = Color(0xFFE5484D)
 )
 
+/** Same structure as dark, inverted. Muted stays above 4.5:1 on [background]. */
 val LightDotColors = DotColors(
     background = Color(0xFFF5F5F3),
     surface = Color(0xFFFFFFFF),
@@ -51,7 +54,7 @@ val LightDotColors = DotColors(
     surfaceElevated = Color(0xFFFFFFFF),
     textPrimary = Color(0xFF111111),
     textSecondary = Color(0xFF5F5F5F),
-    textMuted = Color(0xFF747474),
+    textMuted = Color(0xFF6B6B6B),
     border = Color(0xFFDEDEDC),
     divider = Color(0xFFE7E7E5),
     dotPattern = Color(0x12000000),
@@ -79,10 +82,21 @@ object DotSpacing {
 }
 
 object DotShape {
+    /** Chips, badges, small technical tags. */
     val small = RoundedCornerShape(8.dp)
-    val medium = RoundedCornerShape(12.dp)
-    val large = RoundedCornerShape(16.dp)
-    val xLarge = RoundedCornerShape(24.dp)
+    /** Buttons and inputs. */
+    val button = RoundedCornerShape(16.dp)
+    /** Cards and sheets. */
+    val card = RoundedCornerShape(20.dp)
+    /** Hero banners and the floating nav bar shell. */
+    val hero = RoundedCornerShape(24.dp)
+    /** Full pill: filter chips, segment tabs, nav bar. */
+    val pill = CircleShape
+
+    // Kept so existing screens inherit the v2 scale without a sweeping rename.
+    val medium = button
+    val large = card
+    val xLarge = hero
 }
 
 object DotIconSize {

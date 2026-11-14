@@ -9,6 +9,7 @@ import com.example.core.bitmap.SizeResolver
 import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.ThemeMode
+import com.example.data.demo.DemoData
 import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetSpec
 import org.junit.Assert.assertTrue
@@ -35,34 +36,36 @@ class WidgetRenderSnapshotTest {
         val failures = mutableListOf<String>()
         val byCategory = linkedMapOf<String, MutableList<Pair<String, Bitmap>>>()
 
-        for (isDark in listOf(true, false)) {
-            val themeKey = if (isDark) "dark" else "light"
-            for (definition in WidgetRegistry.getAll()) {
-                for (size in definition.sizes) {
-                    val dims = SizeResolver.resolveDimensions(context, size)
-                    val spec = WidgetSpec(
-                        widthPx = dims.widthPx,
-                        heightPx = dims.heightPx,
-                        density = dims.density,
-                        sizeBucket = size,
-                        accent = AccentOption.RED,
-                        bgMode = BackgroundMode.SOLID,
-                        themeMode = if (isDark) ThemeMode.FORCE_DARK else ThemeMode.FORCE_LIGHT,
-                        isDark = isDark,
-                        cornerRadiusDp = 20,
-                        showLabel = true,
-                        tapAction = definition.defaultTap
-                    )
-                    val bitmap = Bitmap.createBitmap(dims.widthPx, dims.heightPx, Bitmap.Config.ARGB_8888)
-                    try {
-                        definition.render(context, spec, Canvas(bitmap))
-                        File(outDir, "${definition.id}_${size.name}_$themeKey.png").outputStream().use {
-                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+        DemoData.withSnapshot {
+            for (isDark in listOf(true, false)) {
+                val themeKey = if (isDark) "dark" else "light"
+                for (definition in WidgetRegistry.getAll()) {
+                    for (size in definition.sizes) {
+                        val dims = SizeResolver.resolveDimensions(context, size)
+                        val spec = WidgetSpec(
+                            widthPx = dims.widthPx,
+                            heightPx = dims.heightPx,
+                            density = dims.density,
+                            sizeBucket = size,
+                            accent = AccentOption.RED,
+                            bgMode = BackgroundMode.SOLID,
+                            themeMode = if (isDark) ThemeMode.FORCE_DARK else ThemeMode.FORCE_LIGHT,
+                            isDark = isDark,
+                            cornerRadiusDp = 20,
+                            showLabel = true,
+                            tapAction = definition.defaultTap
+                        )
+                        val bitmap = Bitmap.createBitmap(dims.widthPx, dims.heightPx, Bitmap.Config.ARGB_8888)
+                        try {
+                            definition.render(context, spec, Canvas(bitmap))
+                            File(outDir, "${definition.id}_${size.name}_$themeKey.png").outputStream().use {
+                                bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                            }
+                            byCategory.getOrPut("${definition.category.name}_$themeKey") { mutableListOf() } +=
+                                "${definition.id} [$size]" to bitmap
+                        } catch (e: Throwable) {
+                            failures += "${definition.id} [$size] $themeKey: $e"
                         }
-                        byCategory.getOrPut("${definition.category.name}_$themeKey") { mutableListOf() } +=
-                            "${definition.id} [$size]" to bitmap
-                    } catch (e: Throwable) {
-                        failures += "${definition.id} [$size] $themeKey: $e"
                     }
                 }
             }
@@ -94,31 +97,33 @@ class WidgetRenderSnapshotTest {
         )
 
         val bySize = linkedMapOf<SizeBucket, MutableList<Pair<String, Bitmap>>>()
-        for (id in TIER_1_AND_2) {
-            val def = WidgetRegistry.getById(id) ?: continue
-            for ((bucket, dp) in realSizes) {
-                if (bucket !in def.sizes) continue
-                val dims = SizeResolver.resolveDimensions(context, bucket, dp.first, dp.second)
-                val spec = WidgetSpec(
-                    widthPx = dims.widthPx,
-                    heightPx = dims.heightPx,
-                    density = dims.density,
-                    sizeBucket = bucket,
-                    accent = AccentOption.RED,
-                    bgMode = BackgroundMode.SOLID,
-                    themeMode = ThemeMode.FORCE_DARK,
-                    isDark = true,
-                    cornerRadiusDp = 20,
-                    showLabel = true,
-                    tapAction = def.defaultTap
-                )
-                val bitmap = Bitmap.createBitmap(dims.widthPx, dims.heightPx, Bitmap.Config.ARGB_8888)
-                try {
-                    def.render(context, spec, Canvas(bitmap))
-                    items += "$id [$bucket @ ${dp.first}×${dp.second}dp]" to bitmap
-                    bySize.getOrPut(bucket) { mutableListOf() } += "$id [$bucket]" to bitmap
-                } catch (e: Throwable) {
-                    failures += "$id [$bucket ${dp.first}×${dp.second}dp]: $e"
+        DemoData.withSnapshot {
+            for (id in TIER_1_AND_2) {
+                val def = WidgetRegistry.getById(id) ?: continue
+                for ((bucket, dp) in realSizes) {
+                    if (bucket !in def.sizes) continue
+                    val dims = SizeResolver.resolveDimensions(context, bucket, dp.first, dp.second)
+                    val spec = WidgetSpec(
+                        widthPx = dims.widthPx,
+                        heightPx = dims.heightPx,
+                        density = dims.density,
+                        sizeBucket = bucket,
+                        accent = AccentOption.RED,
+                        bgMode = BackgroundMode.SOLID,
+                        themeMode = ThemeMode.FORCE_DARK,
+                        isDark = true,
+                        cornerRadiusDp = 20,
+                        showLabel = true,
+                        tapAction = def.defaultTap
+                    )
+                    val bitmap = Bitmap.createBitmap(dims.widthPx, dims.heightPx, Bitmap.Config.ARGB_8888)
+                    try {
+                        def.render(context, spec, Canvas(bitmap))
+                        items += "$id [$bucket @ ${dp.first}×${dp.second}dp]" to bitmap
+                        bySize.getOrPut(bucket) { mutableListOf() } += "$id [$bucket]" to bitmap
+                    } catch (e: Throwable) {
+                        failures += "$id [$bucket ${dp.first}×${dp.second}dp]: $e"
+                    }
                 }
             }
         }

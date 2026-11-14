@@ -84,13 +84,19 @@ object LiveDataRenderers {
         val totalMin = (totalMs / 60_000L).toInt()
         val avg = totalMin / days.size
         val summary = "AVG ${avg / 60}H${String.format(Locale.US, "%02d", avg % 60)}M"
-        kit.labelCentered(summary, kit.height * 0.26f, kit.textPaint(kit.onColor, 11f, 15f))
+        val isLarge = spec.sizeBucket == SizeBucket.L
+        if (isLarge) {
+            kit.labelCentered("7-DAY TOTAL ${totalMin / 60}H${String.format(Locale.US, "%02d", totalMin % 60)}M", kit.height * 0.24f, kit.textPaint(kit.onColor, 11f, 15f))
+            kit.labelCentered(summary, kit.height * 0.33f, kit.textPaint(kit.greyColor, 10f, 13f))
+        } else {
+            kit.labelCentered(summary, kit.height * 0.34f, kit.textPaint(kit.onColor, 11f, 15f))
+        }
 
         val labels = listOf("M", "T", "W", "T", "F", "S", "S")
         val todayDow = (java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7
-        val bottom = kit.height - kit.pad - 14f * d
-        val top = kit.height * 0.34f
-        val maxDots = 9
+        val bottom = kit.height - kit.pad - (if (isLarge) 24f else 14f) * d
+        val top = if (isLarge) kit.height * 0.43f else kit.height * 0.42f
+        val maxDots = if (isLarge) 14 else 9
         val maxMs = days.maxOrNull()?.coerceAtLeast(1L) ?: 1L
         val colW = kit.maxW / days.size
         val dotGap = (bottom - top) / maxDots
@@ -103,7 +109,7 @@ object LiveDataRenderers {
                 canvas.drawCircle(cx, bottom - k * dotGap, if (on) 3.0f * d else 2.0f * d, kit.fill(color))
             }
             val label = labels[i]
-            val p = kit.textPaint(if (i == todayDow) kit.accentColor else kit.greyColor, 8f, 11f)
+            val p = kit.textPaint(if (i == todayDow) kit.accentColor else kit.greyColor, if (isLarge) 10f else 8f, 13f)
             canvas.drawText(label, cx - p.measureText(label) / 2f, bottom + 12f * d, p)
         }
     }
@@ -215,12 +221,12 @@ object LiveDataRenderers {
         slots: Int
     ) {
         val d = kit.d
-        val cols = 2
+        val cols = if (slots == 3) 3 else 2
         val rows = if (slots >= 4) 2 else 1
         val cellW = kit.maxW / cols
         val areaTop = kit.pad + 26f * d
         val cellH = (kit.height - areaTop - kit.pad) / rows
-        val radius = minOf(cellW * 0.30f, cellH * 0.30f)
+        val radius = minOf(cellW * if (slots == 3) 0.27f else 0.30f, cellH * 0.30f)
 
         items.forEachIndexed { i, (name, level, charging) ->
             val col = i % cols
@@ -242,12 +248,12 @@ object LiveDataRenderers {
             val pct = level?.let { "$it%" } ?: "--"
             val paintPct = kit.textPaint(if (charging) kit.accentColor else kit.onColor, 12f, 18f)
             canvas.drawText(pct, cx - paintPct.measureText(pct) / 2f, cy + paintPct.textSize / 3f, paintPct)
-            val paintName = kit.textPaint(kit.greyColor, 8f, 12f)
+            val paintName = kit.textPaint(kit.greyColor, 10f, 13f)
             DotMatrixRenderer.drawFittedLabel(canvas, name, cx - cellW * 0.45f, cy + radius + 16f * d, cellW * 0.9f, paintName)
         }
 
         if (items.size == 1) {
-            val hint = "ALLOW NEARBY DEVICES IN THE APP"
+            val hint = "PAIR DEVICES"
             val cx = kit.pad + cellW + cellW / 2f
             DotMatrixRenderer.drawFittedLabel(canvas, hint, cx - cellW * 0.45f, areaTop + cellH * 0.40f + 6f * d, cellW * 0.9f, kit.textPaint(kit.greyColor, 9f, 13f))
         }

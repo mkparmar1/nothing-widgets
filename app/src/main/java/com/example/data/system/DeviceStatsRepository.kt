@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.PowerManager
 import android.os.SystemClock
 import com.example.data.battery.BatteryHelper
+import com.example.data.demo.DemoData
 import com.example.ui.permissions.AppPermission
 import org.json.JSONArray
 import org.json.JSONObject
@@ -79,10 +80,14 @@ object DeviceStatsRepository {
         prefs(context).edit().putString("battery_history", arr.toString()).apply()
     }
 
-    fun batteryHistory(context: Context): List<BatterySample> = runCatching {
-        val arr = JSONArray(prefs(context).getString("battery_history", "[]"))
-        (0 until arr.length()).map { arr.getJSONObject(it) }.map { BatterySample(it.getLong("t"), it.getInt("l"), it.optBoolean("c")) }
-    }.getOrDefault(emptyList())
+    fun batteryHistory(context: Context): List<BatterySample> {
+        DemoData.current()?.let { return it.batteryHistory }
+        return runCatching {
+            val arr = JSONArray(prefs(context).getString("battery_history", "[]"))
+            (0 until arr.length()).map { arr.getJSONObject(it) }
+                .map { BatterySample(it.getLong("t"), it.getInt("l"), it.optBoolean("c")) }
+        }.getOrDefault(emptyList())
+    }
 
     // ---------- Mobile data today (Usage access) ----------
 
