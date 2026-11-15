@@ -245,7 +245,7 @@ fun DotWidgetsApp() {
                             onSetups = { overlay = AppOverlay.Setups },
                             onWallpapers = { overlay = AppOverlay.Wallpapers }
                         )
-                        1 -> BrowserScreen(onSelectWidget = {})
+                        1 -> BrowserScreen()
                         2 -> MyWidgetsScreen(
                             onCreate = { overlay = AppOverlay.Builder() },
                             onEditCustom = { custom -> overlay = AppOverlay.Builder(custom) }

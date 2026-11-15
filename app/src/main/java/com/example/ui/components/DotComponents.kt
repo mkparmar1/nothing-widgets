@@ -217,7 +217,7 @@ fun DotChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: Mod
         modifier = modifier
             .pressScale(source, 0.95f)
             .heightIn(min = 40.dp)
-            .clip(DotShape.medium)
+            .clip(DotShape.pill)
             .background(fill)
             .selectable(selected = selected, interactionSource = source, indication = androidx.compose.material3.ripple(), role = Role.Tab, onClick = onClick)
             .padding(horizontal = DotSpacing.lg)

@@ -103,7 +103,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
   back from any sub-screen returns to Home.
 
 ### R2 — Explore (Widgets) restyle
-**Status:** Not started · **Effort:** M
+**Status:** Done · **Effort:** M
 
 - Keep `BrowserScreen` logic (search, categories, counts, "Only in", Recommended, All).
 - New `WidgetCard`; grid 2-up on phones, 3-up ≥ 600 dp; category chips pill style.
@@ -112,7 +112,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 - Acceptance: 233 widgets still listed; search and chips unchanged in behaviour; scroll 60 fps.
 
 ### R3 — Widget Details (new, light)
-**Status:** Not started · **Effort:** S
+**Status:** Done · **Effort:** S
 
 - Big preview (all sizes in a pager), title, description, tags (Clock · Minimal · Dark), size
   badges, permissions needed, **Customize** and **Add to Home Screen**.
@@ -249,8 +249,8 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 |---|---|---|
 | §2 Design system | Done (component test pending) | |
 | R1 | Done | |
-| R2 | Not started | |
-| R3 | Not started | |
+| R2 | Done | |
+| R3 | Done | |
 | R4 | Not started | |
 | R5 | Partial (actions pending) | |
 | R6 | Not started | |
@@ -265,3 +265,4 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 |---|---|---|
 | 2026-11-14 | Plan written from the 4 reference images in `docs/design/` | — |
 | 2026-11-14 | §2 tokens + v2 components; R1 Home + floating nav; R5 tab (partial) | — |
+| 2026-11-14 | R2 Explore grid + pill chips; R3 Widget Details with size pager, tags, permissions and defaults add; Robolectric coverage | — |
