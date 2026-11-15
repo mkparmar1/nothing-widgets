@@ -73,6 +73,12 @@ class WidgetSetupScreenTest {
         compose.waitForIdle()
     }
 
+    /** Opens one of the four pinned tabs (Skin, Shape, Accent, Size). */
+    private fun openTab(index: Int) {
+        compose.onNodeWithTag("setup_tab_$index").performClick()
+        compose.waitForIdle()
+    }
+
     private fun reveal(tag: String) {
         val page = compose.onNodeWithTag("setup_scroll")
         val pageTop = page.fetchSemanticsNode().boundsInRoot.top
@@ -84,6 +90,7 @@ class WidgetSetupScreenTest {
     @Test
     fun `every skin frame and size is selectable`() {
         launch()
+        openTab(0)
         Skin.entries.forEach { skin ->
             tap("skin_${skin.name.lowercase()}")
             assertEquals(skin, latest?.skin)
@@ -92,6 +99,7 @@ class WidgetSetupScreenTest {
             tap("frame_${frame.name.lowercase()}")
             assertEquals(frame, latest?.frame)
         }
+        openTab(3)
         listOf(SizeBucket.M, SizeBucket.S).forEach { size ->
             tap("size_${size.name.lowercase()}")
             assertEquals(size, latest?.size)
@@ -101,6 +109,7 @@ class WidgetSetupScreenTest {
     @Test
     fun `accents background opacity and theme update the state`() {
         launch()
+        openTab(2)
         AccentOption.entries.forEach { accent ->
             tap("accent_option_${accent.name.lowercase()}")
             assertEquals(accent, latest?.accent)
@@ -112,6 +121,7 @@ class WidgetSetupScreenTest {
         compose.waitForIdle()
         assertNotNull("custom colour applied", latest?.customAccent)
 
+        openTab(1)
         mapOf(
             "background_transparent" to BackgroundMode.TRANSPARENT,
             "background_scrim" to BackgroundMode.SCRIM,
@@ -127,6 +137,7 @@ class WidgetSetupScreenTest {
         compose.waitForIdle()
         assertEquals(0.5f, latest!!.bgAlpha, 0.02f)
 
+        openTab(2)
         mapOf(
             "theme_dark" to ThemeMode.FORCE_DARK,
             "theme_light" to ThemeMode.FORCE_LIGHT,

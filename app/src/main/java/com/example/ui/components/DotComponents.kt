@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -674,7 +675,9 @@ fun SegmentTabs(
     items: List<String>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** When set, each tab gets the tag `"${tagPrefix}_$index"` for UI tests. */
+    tagPrefix: String? = null
 ) {
     val colors = DotTheme.colors
     Row(
@@ -694,6 +697,7 @@ fun SegmentTabs(
                     .heightIn(min = 40.dp)
                     .clip(DotShape.pill)
                     .background(if (selected) colors.surface else Color.Transparent)
+                    .then(if (tagPrefix != null) Modifier.testTag("${tagPrefix}_$index") else Modifier)
                     .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(index) })
                     .padding(horizontal = DotSpacing.xs)
             ) {

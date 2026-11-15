@@ -120,7 +120,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 - Acceptance: works for every widget incl. custom and collection widgets; lock-safe badge shows.
 
 ### R4 — Customizer (setup sheet rework)
-**Status:** Not started · **Effort:** L
+**Status:** Done · **Effort:** L
 
 - Pinned live preview with size pager; tabs:
   - **Skin:** skin carousel, frame, dot style.
@@ -251,7 +251,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | R1 | Done | |
 | R2 | Done | |
 | R3 | Done | |
-| R4 | Not started | |
+| R4 | Done | |
 | R5 | Partial (actions pending) | |
 | R6 | Not started | |
 | R7 | Not started | |
@@ -266,3 +266,4 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | 2026-11-14 | Plan written from the 4 reference images in `docs/design/` | — |
 | 2026-11-14 | §2 tokens + v2 components; R1 Home + floating nav; R5 tab (partial) | — |
 | 2026-11-14 | R2 Explore grid + pill chips; R3 Widget Details with size pager, tags, permissions and defaults add; Robolectric coverage | — |
+| 2026-11-15 | R4 tabbed customizer (Skin / Shape / Accent / Size) with pinned size-pager preview; WidgetSetupScreenTest updated | — |

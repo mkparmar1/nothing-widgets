@@ -13,16 +13,19 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -41,10 +44,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,6 +80,7 @@ import com.example.core.time.TimeFormat
 import com.example.data.db.WidgetInstance
 import com.example.data.photos.BackgroundImageStore
 import com.example.data.prefs.PreferencesManager
+import com.example.ui.components.SegmentTabs
 import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.permissions.AppPermission
 import com.example.widgets.base.TapAction
@@ -85,6 +91,7 @@ import com.example.widgets.collection.CollectionWidgets
 import com.example.widgets.collection.StackMode
 import com.example.widgets.collection.StackTimeSlot
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -312,54 +319,105 @@ fun WidgetSetupContent(
         onStateChange(next)
     }
 
-    // Pin the preview while scrolling on normal screens; on short ones (landscape, large text) it
-    // scrolls with the options so they always get the room.
-    // Its own surface, so it reads correctly whatever window or sheet hosts it.
+    val sizes = remember(definition.id) { definition.sizes.toList() }
+    val canPageSizes = lockedSize == null && sizes.size > 1
+    val scope = rememberCoroutineScope()
+    var tab by remember(definition.id) { mutableStateOf(SetupTab.SKIN) }
+    val startPage = sizes.indexOf(state.size).coerceAtLeast(0)
+    val pagerState = rememberPagerState(initialPage = startPage, pageCount = { if (canPageSizes) sizes.size else 1 })
+    // Swiping the preview is the same choice as tapping a size card.
+    LaunchedEffect(pagerState.currentPage, canPageSizes) {
+        if (canPageSizes) {
+            val target = sizes.getOrNull(pagerState.currentPage)
+            if (target != null && target != state.size) update(state.copy(size = target))
+        }
+    }
+    val scrollState = rememberScrollState()
+    // Each tab starts at the top, like a fresh page.
+    LaunchedEffect(tab) { scrollState.scrollTo(0) }
+
+    // The preview and tabs stay pinned; only the selected tab's options scroll. Its own surface, so
+    // it reads correctly whatever window or sheet hosts it.
     BoxWithConstraints(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
-        val pinPreview = constraints.hasBoundedHeight && maxHeight >= PIN_PREVIEW_MIN_HEIGHT
-        val header: @Composable () -> Unit = {
-            Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 4.dp, bottom = 12.dp)) {
+        // On short windows (landscape, large font) keep a smaller preview and drop the caption so
+        // the tab content still gets room.
+        val compact = constraints.hasBoundedHeight && maxHeight < 520.dp
+        val previewHeight = when {
+            !constraints.hasBoundedHeight -> 160.dp
+            compact -> (maxHeight * 0.24f).coerceIn(80.dp, 120.dp)
+            else -> (maxHeight * 0.30f).coerceIn(96.dp, 176.dp)
+        }
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 4.dp, bottom = if (compact) 4.dp else 8.dp)) {
                 Text(
                     definition.title,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    definition.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = mutedText(),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (!compact) {
+                    Text(
+                        definition.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = mutedText(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
-            val aspect = spec.widthPx.toFloat() / spec.heightPx.coerceAtLeast(1)
+
             PreviewStage {
-                WidgetBitmapPreview(
-                    definition = definition,
-                    spec = spec,
+                Box(
                     modifier = Modifier
-                        .heightIn(max = PREVIEW_MAX_HEIGHT)
-                        .widthIn(max = PREVIEW_MAX_HEIGHT * aspect)
+                        .fillMaxWidth()
+                        .height(previewHeight)
                         .testTag("config_live_preview"),
-                    refreshKey = contentVersion
-                )
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (canPageSizes) {
+                        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                            SetupPreview(
+                                definition = definition,
+                                state = state,
+                                size = sizes[page],
+                                accentColor = resolvedAccent,
+                                isDark = isDark,
+                                refreshKey = contentVersion,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    } else {
+                        SetupPreview(
+                            definition = definition,
+                            state = state,
+                            size = state.size,
+                            accentColor = resolvedAccent,
+                            isDark = isDark,
+                            refreshKey = contentVersion,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
-        }
+            if (canPageSizes) PageDots(count = sizes.size, selected = pagerState.currentPage)
+            Spacer(Modifier.height(12.dp))
+            SegmentTabs(
+                items = SetupTab.entries.map { it.label },
+                selectedIndex = tab.ordinal,
+                onSelect = { tab = SetupTab.entries[it] },
+                modifier = Modifier.padding(horizontal = PagePadding),
+                tagPrefix = "setup_tab"
+            )
 
-        Column(modifier = Modifier.fillMaxWidth()) {
-            if (pinPreview) header()
-
-            // ---- Scrolling options
+            // ---- Scrolling options for the selected tab
             Column(
                 modifier = Modifier
                     .weight(1f, fill = false)
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 16.dp)
+                    .verticalScroll(scrollState)
+                    .padding(top = 4.dp, bottom = 16.dp)
                     .testTag("setup_scroll")
             ) {
-                if (!pinPreview) header()
                 definition.requiredPermissions.forEach { permission ->
                     Spacer(Modifier.height(16.dp))
                     Box(Modifier.padding(horizontal = PagePadding)) {
@@ -367,47 +425,51 @@ fun WidgetSetupContent(
                     }
                 }
 
-                // Notes, to-dos, shortcuts, photos... (only for widgets with their own content)
-                Box(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 16.dp)) {
-                    WidgetContentEditor(definition.id, state.accent) { contentVersion++ }
+                if (tab == SetupTab.SIZE) {
+                    // Notes, to-dos, shortcuts, photos... (only for widgets with their own content)
+                    Box(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 16.dp)) {
+                        WidgetContentEditor(definition.id, state.accent) { contentVersion++ }
+                    }
+
+                    if (CollectionWidgets.isStack(definition.id)) {
+                        Box(Modifier.padding(horizontal = PagePadding)) { StackItemsSection(state, ui, update) }
+                    }
+
+                    ClockFormatSection(definition.id, state, ui, update)
                 }
 
-                if (CollectionWidgets.isStack(definition.id)) {
-                    Box(Modifier.padding(horizontal = PagePadding)) { StackItemsSection(state, ui, update) }
-                }
+                if (tab == SetupTab.SKIN) {
+                    SetupSection("Skin", trailing = state.skin.label) {
+                        SkinCarousel(definition, spec, state.skin, ui) { update(state.copy(skin = it)) }
+                    }
 
-                ClockFormatSection(definition.id, state, ui, update)
-
-                SetupSection("Skin", trailing = state.skin.label) {
-                    SkinCarousel(definition, spec, state.skin, ui) { update(state.copy(skin = it)) }
-                }
-
-                SetupSection("Frame") {
-                    CarouselRow(spacing = 8.dp) {
-                        Frame.entries.forEach { f ->
-                            SelectChip(
-                                label = f.label,
-                                selected = f == state.frame,
-                                accent = ui,
-                                modifier = Modifier.testTag("frame_${f.name.lowercase()}"),
-                                leading = { FrameGlyph(f, Color(resolvedAccent)) }
-                            ) { update(state.copy(frame = f)) }
+                    SetupSection("Frame") {
+                        CarouselRow(spacing = 8.dp) {
+                            Frame.entries.forEach { f ->
+                                SelectChip(
+                                    label = f.label,
+                                    selected = f == state.frame,
+                                    accent = ui,
+                                    modifier = Modifier.testTag("frame_${f.name.lowercase()}"),
+                                    leading = { FrameGlyph(f, Color(resolvedAccent)) }
+                                ) { update(state.copy(frame = f)) }
+                            }
                         }
                     }
-                }
 
-                // Dot shapes only apply to the dot-based skins.
-                AnimatedVisibility(visible = state.skin == Skin.DOT || state.skin == Skin.PAPER || state.skin == Skin.NEON) {
-                    SetupSection("Dot style") {
-                        CarouselRow(spacing = 8.dp) {
-                            DotStyle.entries.forEach { style ->
-                                SelectChip(style.label, style == state.dotStyle, ui) { update(state.copy(dotStyle = style)) }
+                    // Dot shapes only apply to the dot-based skins.
+                    AnimatedVisibility(visible = state.skin == Skin.DOT || state.skin == Skin.PAPER || state.skin == Skin.NEON) {
+                        SetupSection("Dot style") {
+                            CarouselRow(spacing = 8.dp) {
+                                DotStyle.entries.forEach { style ->
+                                    SelectChip(style.label, style == state.dotStyle, ui) { update(state.copy(dotStyle = style)) }
+                                }
                             }
                         }
                     }
                 }
 
-                if (lockedSize == null && definition.sizes.size > 1) {
+                if (tab == SetupTab.SIZE && lockedSize == null && definition.sizes.size > 1) {
                     SetupSection("Size") {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = PagePadding),
@@ -420,25 +482,31 @@ fun WidgetSetupContent(
                                     selected = size == state.size,
                                     accent = ui,
                                     modifier = Modifier.weight(1f).testTag("size_${size.name.lowercase()}"),
-                                    onClick = { update(state.copy(size = size)) }
+                                    onClick = {
+                                        update(state.copy(size = size))
+                                        scope.launch { pagerState.animateScrollToPage(sizes.indexOf(size)) }
+                                    }
                                 ) { SizeGlyph(size, size == state.size, ui) }
                             }
                         }
                     }
                 }
 
-                SetupSection(
-                    "Accent colour",
-                    trailing = if (state.customAccent != null) WidgetAccent.toHex(state.customAccent!!) else state.accent.displayName
-                ) {
-                    AccentSwatches(
-                        selected = state.accent,
-                        customAccent = state.customAccent,
-                        onSelect = { update(state.copy(accent = it, customAccent = null)) },
-                        onCustom = { update(state.copy(customAccent = it)) }
-                    )
+                if (tab == SetupTab.ACCENT) {
+                    SetupSection(
+                        "Accent colour",
+                        trailing = if (state.customAccent != null) WidgetAccent.toHex(state.customAccent!!) else state.accent.displayName
+                    ) {
+                        AccentSwatches(
+                            selected = state.accent,
+                            customAccent = state.customAccent,
+                            onSelect = { update(state.copy(accent = it, customAccent = null)) },
+                            onCustom = { update(state.copy(customAccent = it)) }
+                        )
+                    }
                 }
 
+                if (tab == SetupTab.SHAPE) {
                 SetupSection("Background") {
                     SegmentedControl(
                         options = BackgroundMode.entries.map { SegmentOption(it, it.displayName) },
@@ -473,56 +541,61 @@ fun WidgetSetupContent(
                     }
                 }
 
-                // Theme widgets paint their own full artwork, so they don't take a photo.
-                if (definition.category != com.example.widgets.base.Category.THEMES) {
-                    BackgroundImageSection(state, spec, ui, update)
-                }
+                    // Theme widgets paint their own full artwork, so they don't take a photo.
+                    if (definition.category != com.example.widgets.base.Category.THEMES) {
+                        BackgroundImageSection(state, spec, ui, update)
+                    }
 
-                SetupSection("Theme") {
-                    SegmentedControl(
-                        options = listOf(
-                            SegmentOption(ThemeMode.AUTO, "System", Icons.Default.BrightnessAuto),
-                            SegmentOption(ThemeMode.FORCE_DARK, "Dark", Icons.Default.DarkMode),
-                            SegmentOption(ThemeMode.FORCE_LIGHT, "Light", Icons.Default.LightMode)
-                        ),
-                        selected = state.theme,
-                        accent = ui,
-                        tagPrefix = "theme"
-                    ) { update(state.copy(theme = it)) }
-                }
-
-                SetupSection("Corners") {
-                    SegmentedControl(
-                        // FULL_ROUND makes a pill (or a circle on square widgets).
-                        options = listOf(0, 12, 20, 28, FULL_ROUND).map { SegmentOption(it, if (it == FULL_ROUND) "Full" else "$it") },
-                        selected = state.cornerRadius,
-                        accent = ui,
-                        tagPrefix = "corner"
-                    ) { update(state.copy(cornerRadius = it)) }
-                    Spacer(Modifier.height(12.dp))
-                    SettingsGroup {
-                        ToggleRow(
-                            title = "Show label",
-                            subtitle = "The small uppercase title on the widget",
-                            checked = state.showLabel,
-                            accent = ui
-                        ) { update(state.copy(showLabel = it)) }
+                    SetupSection("Corners") {
+                        SegmentedControl(
+                            // FULL_ROUND makes a pill (or a circle on square widgets).
+                            options = listOf(0, 12, 20, 28, FULL_ROUND).map { SegmentOption(it, if (it == FULL_ROUND) "Full" else "$it") },
+                            selected = state.cornerRadius,
+                            accent = ui,
+                            tagPrefix = "corner"
+                        ) { update(state.copy(cornerRadius = it)) }
+                        Spacer(Modifier.height(12.dp))
+                        SettingsGroup {
+                            ToggleRow(
+                                title = "Show label",
+                                subtitle = "The small uppercase title on the widget",
+                                checked = state.showLabel,
+                                accent = ui
+                            ) { update(state.copy(showLabel = it)) }
+                        }
                     }
                 }
 
-                if (definition.options.isNotEmpty()) {
-                    AdvancedOptionsSection(definition = definition, state = state, accent = ui, update = update)
+                if (tab == SetupTab.ACCENT) {
+                    SetupSection("Theme") {
+                        SegmentedControl(
+                            options = listOf(
+                                SegmentOption(ThemeMode.AUTO, "System", Icons.Default.BrightnessAuto),
+                                SegmentOption(ThemeMode.FORCE_DARK, "Dark", Icons.Default.DarkMode),
+                                SegmentOption(ThemeMode.FORCE_LIGHT, "Light", Icons.Default.LightMode)
+                            ),
+                            selected = state.theme,
+                            accent = ui,
+                            tagPrefix = "theme"
+                        ) { update(state.copy(theme = it)) }
+                    }
                 }
 
-                SetupSection("Tap action") {
-                    SettingsGroup {
-                        val actions = listOf(
-                            TapAction.DEFAULT, TapAction.OPEN_CLOCK, TapAction.OPEN_CALENDAR,
-                            TapAction.OPEN_BATTERY, TapAction.OPEN_WEATHER, TapAction.NONE
-                        )
-                        actions.forEachIndexed { i, action ->
-                            RadioRow(action.displayName, action == state.tapAction, ui) { update(state.copy(tapAction = action)) }
-                            if (i < actions.lastIndex) GroupDivider()
+                if (tab == SetupTab.SIZE) {
+                    if (definition.options.isNotEmpty()) {
+                        AdvancedOptionsSection(definition = definition, state = state, accent = ui, update = update)
+                    }
+
+                    SetupSection("Tap action") {
+                        SettingsGroup {
+                            val actions = listOf(
+                                TapAction.DEFAULT, TapAction.OPEN_CLOCK, TapAction.OPEN_CALENDAR,
+                                TapAction.OPEN_BATTERY, TapAction.OPEN_WEATHER, TapAction.NONE
+                            )
+                            actions.forEachIndexed { i, action ->
+                                RadioRow(action.displayName, action == state.tapAction, ui) { update(state.copy(tapAction = action)) }
+                                if (i < actions.lastIndex) GroupDivider()
+                            }
                         }
                     }
                 }
@@ -566,11 +639,76 @@ fun WidgetSetupContent(
     }
 }
 
-/** Tallest the pinned preview gets, so options stay reachable on short screens. */
-private val PREVIEW_MAX_HEIGHT = 168.dp
+/** The four customization pages, in the order the mockup shows them. */
+private enum class SetupTab(val label: String) {
+    SKIN("Skin"),
+    SHAPE("Shape"),
+    ACCENT("Accent"),
+    SIZE("Size")
+}
 
-/** Below this height the preview scrolls away instead of staying pinned. */
-private val PIN_PREVIEW_MIN_HEIGHT = 560.dp
+/** One page of the pinned preview pager, rendered at that size's real proportions. */
+@Composable
+private fun SetupPreview(
+    definition: WidgetDefinition,
+    state: WidgetSetupState,
+    size: SizeBucket,
+    accentColor: Int,
+    isDark: Boolean,
+    refreshKey: Int,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val dims = remember(size) { SizeResolver.resolveDimensions(context, size) }
+    val pageSpec = remember(size, state, accentColor, isDark) {
+        WidgetSpec(
+            widthPx = dims.widthPx,
+            heightPx = dims.heightPx,
+            density = dims.density,
+            sizeBucket = size,
+            accent = state.accent,
+            accentColor = accentColor,
+            bgMode = state.background,
+            bgAlpha = state.bgAlpha,
+            themeMode = state.theme,
+            isDark = state.skin.resolveDark(isDark),
+            cornerRadiusDp = state.cornerRadius,
+            showLabel = state.showLabel,
+            tapAction = state.tapAction,
+            configJson = state.copy(size = size).toConfigJson(definition.id)
+        )
+    }
+    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+        val aspect = pageSpec.widthPx.toFloat() / pageSpec.heightPx.coerceAtLeast(1)
+        WidgetBitmapPreview(
+            definition = definition,
+            spec = pageSpec,
+            modifier = Modifier.width(minOf(maxWidth, maxHeight * aspect)),
+            refreshKey = refreshKey
+        )
+    }
+}
+
+/** Page indicator under the size pager. */
+@Composable
+private fun PageDots(count: Int, selected: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(count) { index ->
+            Box(
+                Modifier
+                    .padding(horizontal = 3.dp)
+                    .height(6.dp)
+                    .width(if (index == selected) 18.dp else 6.dp)
+                    .clip(CircleShape)
+                    .background(if (index == selected) MaterialTheme.colorScheme.primary else mutedText().copy(alpha = 0.35f))
+            )
+        }
+    }
+}
 
 @Composable
 private fun PermissionBanner(permission: AppPermission, accentColor: Color) {
