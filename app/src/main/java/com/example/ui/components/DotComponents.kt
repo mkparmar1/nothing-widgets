@@ -207,7 +207,13 @@ fun DotBadge(text: String, modifier: Modifier = Modifier, color: Color = DotThem
 
 /** Filter chip: a quiet pill that fills with the accent when selected. */
 @Composable
-fun DotChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun DotChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null
+) {
     val colors = DotTheme.colors
     val accent = MaterialTheme.colorScheme.primary
     val fill by animateColorAsState(if (selected) accent else colors.surface, tween(160), label = "chip")
@@ -223,7 +229,13 @@ fun DotChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: Mod
             .selectable(selected = selected, interactionSource = source, indication = androidx.compose.material3.ripple(), role = Role.Tab, onClick = onClick)
             .padding(horizontal = DotSpacing.lg)
     ) {
-        Text(label, style = MaterialTheme.typography.labelLarge, color = text, maxLines = 1)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, tint = text, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(label, style = MaterialTheme.typography.labelLarge, color = text, maxLines = 1)
+        }
     }
 }
 

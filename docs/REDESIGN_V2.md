@@ -148,7 +148,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
   placed shows a warning first.
 
 ### R6 — Builder restyle
-**Status:** Not started · **Effort:** S–M
+**Status:** Done · **Effort:** S–M
 
 - Mockup layout: preview on top, block chips with icons (Time · Date · Battery · Weather · Text ·
   Image · Progress · Steps · Next event · Divider · Spacer), canvas, **Build Widget** button.
@@ -253,7 +253,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | R3 | Done | |
 | R4 | Done | |
 | R5 | Done | |
-| R6 | Not started | |
+| R6 | Done | |
 | R7 | Not started | |
 | R8 | Not started | |
 | R9 | Parked (D-1) | |
@@ -268,3 +268,4 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | 2026-11-14 | R2 Explore grid + pill chips; R3 Widget Details with size pager, tags, permissions and defaults add; Robolectric coverage | — |
 | 2026-11-15 | R4 tabbed customizer (Skin / Shape / Accent / Size) with pinned size-pager preview; WidgetSetupScreenTest updated | — |
 | 2026-11-15 | R5 actions: edit placed widgets (customizer), add to home, duplicate, delete with placed warning; manager dialog removed; MyWidgetsScreenTest added | — |
+| 2026-11-15 | R6 builder restyle: live preview on top, icon block chips, restyled canvas, pinned Build widget bar, template and undo/redo rows | — |
