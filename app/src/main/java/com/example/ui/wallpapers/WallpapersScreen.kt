@@ -3,7 +3,6 @@ package com.example.ui.wallpapers
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -20,24 +19,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Wallpaper
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,18 +41,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.data.prefs.PreferencesManager
 import com.example.data.wallpapers.WallpaperItem
 import com.example.data.wallpapers.WallpaperManagerHelper
-import com.example.ui.components.EmptyStateView
+import com.example.ui.components.DotButton
+import com.example.ui.components.DotButtonStyle
+import com.example.ui.components.DotCard
+import com.example.ui.components.DotChip
+import com.example.ui.components.DotLabel
+import com.example.ui.components.DotMessage
+import com.example.ui.components.WallpaperCard
+import com.example.ui.theme.DotShape
+import com.example.ui.theme.DotSpacing
+import com.example.ui.theme.DotTheme
+import com.example.ui.theme.DotType
+import com.example.ui.theme.contentColorOn
 import kotlinx.coroutines.launch
 
 @Composable
@@ -66,257 +68,291 @@ fun WallpapersScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val prefs = remember { PreferencesManager.getInstance(context) }
-    val globalAccent by prefs.accent.collectAsState()
 
     val wallpapers = remember { WallpaperManagerHelper.WALLPAPERS }
     var selectedTag by remember { mutableStateOf("ALL") }
     var selectedWallpaper by remember { mutableStateOf<WallpaperItem?>(null) }
+    var appliedId by remember { mutableStateOf<Int?>(null) }
     var isApplying by remember { mutableStateOf(false) }
 
     val tags = remember(wallpapers) {
         listOf("ALL") + wallpapers.map { it.tag }.distinct()
     }
-
-    val filteredWallpapers = remember(selectedTag, wallpapers) {
+    val filtered = remember(selectedTag, wallpapers) {
         if (selectedTag == "ALL") wallpapers else wallpapers.filter { it.tag == selectedTag }
     }
+    val featured = filtered.firstOrNull()
+    val rest = filtered.drop(1)
 
-    Column(modifier = modifier.fillMaxSize()) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text(
-                text = "Wallpapers",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = "${wallpapers.size} dot-matrix designs, palette-matched to your widgets.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = com.example.ui.theme.DotTheme.colors.textSecondary
-            )
-        }
-
-        // Tag Filter Chips
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            tags.forEach { tag ->
-                val isSelected = tag == selectedTag
-                FilterChip(
-                    selected = isSelected,
-                    onClick = { selectedTag = tag },
-                    label = { Text(tag) },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary),
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = null,
-                    modifier = Modifier.testTag("wallpaper_tag_$tag")
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(DotSpacing.sm),
+        modifier = modifier.fillMaxSize().testTag("wallpapers_screen")
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column(
+                modifier = Modifier.padding(bottom = DotSpacing.xs),
+                verticalArrangement = Arrangement.spacedBy(DotSpacing.xs)
+            ) {
+                DotLabel("Appearance")
+                Text("Wallpapers", style = DotType.Hero, color = DotTheme.colors.textPrimary)
+                Text(
+                    "${wallpapers.size} dot-matrix designs, palette-matched to your widgets.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = DotTheme.colors.textSecondary
                 )
             }
         }
 
-        if (filteredWallpapers.isEmpty()) {
-            EmptyStateView(
-                title = "No Wallpapers Found",
-                message = "No wallpapers found for tag '$selectedTag'.",
-                actionLabel = "Show All",
-                onAction = { selectedTag = "ALL" },
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(3),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)
             ) {
-                items(filteredWallpapers, key = { it.id }) { item ->
-                    WallpaperThumb(
-                        item = item,
+                tags.forEach { tag ->
+                    DotChip(
+                        label = tagLabel(tag),
+                        selected = tag == selectedTag,
+                        onClick = { selectedTag = tag },
+                        modifier = Modifier.testTag("wallpaper_tag_$tag")
+                    )
+                }
+            }
+        }
+
+        if (featured == null) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                DotMessage(
+                    icon = Icons.Default.Wallpaper,
+                    title = "No wallpapers here",
+                    message = "Nothing matches the ${tagLabel(selectedTag).lowercase()} palette.",
+                    action = "Show all",
+                    onAction = { selectedTag = "ALL" }
+                )
+            }
+        } else {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                FeaturedWallpaperCard(
+                    item = featured,
+                    applied = appliedId == featured.id,
+                    onOpen = { selectedWallpaper = featured },
+                    onApply = { selectedWallpaper = featured }
+                )
+            }
+
+            if (rest.isNotEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(
+                        modifier = Modifier.padding(top = DotSpacing.xs),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "All wallpapers",
+                            style = DotType.Section,
+                            color = DotTheme.colors.textPrimary,
+                            modifier = Modifier.weight(1f)
+                        )
+                        DotLabel("${filtered.size}")
+                    }
+                }
+                items(rest, key = { it.id }) { item ->
+                    val thumb = remember(item.id) {
+                        WallpaperManagerHelper.renderWallpaperBitmap(item, 360, 500)
+                    }
+                    WallpaperCard(
+                        name = item.name,
+                        selected = appliedId == item.id,
                         onClick = { selectedWallpaper = item },
                         modifier = Modifier.testTag("wallpaper_item_${item.id}")
-                    )
+                    ) {
+                        Image(
+                            bitmap = thumb.asImageBitmap(),
+                            contentDescription = item.name,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
         }
     }
 
     selectedWallpaper?.let { item ->
-        Dialog(onDismissRequest = { selectedWallpaper = null }) {
-            val previewBitmap = remember(item.id) {
-                WallpaperManagerHelper.renderWallpaperBitmap(item, 720, 1440)
+        WallpaperConfirmDialog(
+            item = item,
+            applied = appliedId == item.id,
+            applying = isApplying,
+            onDismiss = { if (!isApplying) selectedWallpaper = null },
+            onConfirm = {
+                isApplying = true
+                scope.launch {
+                    val success = WallpaperManagerHelper.applyWallpaper(context, item)
+                    isApplying = false
+                    if (success) appliedId = item.id
+                    selectedWallpaper = null
+                    Toast.makeText(
+                        context,
+                        if (success) "Wallpaper applied successfully!" else "Could not set wallpaper",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
+        )
+    }
+}
 
+/** The filtered palette's headline tile: large preview, palette tag, and one apply action. */
+@Composable
+private fun FeaturedWallpaperCard(
+    item: WallpaperItem,
+    applied: Boolean,
+    onOpen: () -> Unit,
+    onApply: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = DotTheme.colors
+    val thumb = remember(item.id) {
+        WallpaperManagerHelper.renderWallpaperBitmap(item, 300, 500)
+    }
+    DotCard(modifier = modifier.fillMaxWidth().testTag("wallpaper_featured")) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(DotSpacing.lg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFF0A0A0A))
-                    .padding(16.dp)
+                    .width(92.dp)
+                    .height(152.dp)
+                    .clip(DotShape.small)
+                    .testTag("wallpaper_featured_thumb")
+                    .then(
+                        Modifier.clickable(onClick = onOpen)
+                    )
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = item.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "TAG: ${item.tag}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = com.example.ui.theme.DotTheme.colors.textSecondary
-                            )
-                        }
-                        IconButton(onClick = { selectedWallpaper = null }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
+                Image(
+                    bitmap = thumb.asImageBitmap(),
+                    contentDescription = item.name,
+                    modifier = Modifier.fillMaxSize()
+                )
+                if (applied) {
                     Box(
+                        contentAlignment = Alignment.Center,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(340.dp)
-                            .clip(RoundedCornerShape(16.dp))
+                            .align(Alignment.TopEnd)
+                            .padding(DotSpacing.xs)
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
                     ) {
-                        Image(
-                            bitmap = previewBitmap.asImageBitmap(),
-                            contentDescription = item.name,
-                            modifier = Modifier.fillMaxSize()
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = "Applied",
+                            tint = contentColorOn(MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.size(16.dp)
                         )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            isApplying = true
-                            scope.launch {
-                                val success = WallpaperManagerHelper.applyWallpaper(context, item)
-                                isApplying = false
-                                selectedWallpaper = null
-                                Toast.makeText(
-                                    context,
-                                    if (success) "Wallpaper applied successfully!" else "Could not set wallpaper",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        },
-                        enabled = !isApplying,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .testTag("apply_wallpaper_button")
-                    ) {
-                        if (isApplying) {
-                            CircularProgressIndicator(color = com.example.ui.theme.contentColorOn(MaterialTheme.colorScheme.primary), strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-                        } else {
-                            Icon(Icons.Default.Wallpaper, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Set as wallpaper", style = MaterialTheme.typography.labelLarge)
-                        }
                     }
                 }
             }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(DotSpacing.xs)
+            ) {
+                DotLabel("Featured")
+                Text(item.name, style = DotType.CardTitle, color = colors.textPrimary)
+                Text(
+                    "Palette ${tagLabel(item.tag)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textSecondary
+                )
+                Spacer(Modifier.height(DotSpacing.xs))
+                DotButton(
+                    text = if (applied) "Applied" else "Apply Wallpaper",
+                    onClick = onApply,
+                    icon = Icons.Default.Wallpaper,
+                    style = DotButtonStyle.Primary,
+                    modifier = Modifier.fillMaxWidth().testTag("apply_wallpaper_featured")
+                )
+            }
         }
     }
 }
 
+/** Confirmation sheet: nothing is applied until the person taps "Set wallpaper". */
 @Composable
-fun WallpaperThumb(
+private fun WallpaperConfirmDialog(
     item: WallpaperItem,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    applied: Boolean,
+    applying: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
 ) {
-    val thumb = remember(item.id) {
-        WallpaperManagerHelper.renderWallpaperBitmap(item, 240, 480)
-    }
-
-    Box(
-        modifier = modifier
-            .aspectRatio(9f / 16f)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(item.bgHex))
-            .clickable { onClick() }
-    ) {
-        Image(
-            bitmap = thumb.asImageBitmap(),
-            contentDescription = item.name,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // The designs are deliberately sparse, so show what they're for: a clock in the matching accent.
-        WallpaperSampleWidget(
-            item = item,
+    Dialog(onDismissRequest = onDismiss) {
+        val colors = DotTheme.colors
+        val preview = remember(item.id) {
+            WallpaperManagerHelper.renderWallpaperBitmap(item, 720, 1280)
+        }
+        Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 32.dp, start = 8.dp, end = 8.dp)
-        )
-
-        // Tag badge bottom
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color(0xCC000000))
-                .padding(horizontal = 4.dp, vertical = 2.dp)
+                .fillMaxWidth(0.94f)
+                .clip(DotShape.hero)
+                .background(colors.surface)
+                .padding(DotSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(DotSpacing.md)
         ) {
-            Text(
-                text = item.tag,
-                color = Color.White,
-                style = MaterialTheme.typography.labelSmall
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    DotLabel("Apply wallpaper")
+                    Text(item.name, style = DotType.CardTitle, color = colors.textPrimary)
+                    Text(
+                        "Palette ${tagLabel(item.tag)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.textSecondary
+                    )
+                }
+                IconButton(
+                    onClick = onDismiss,
+                    enabled = !applying,
+                    modifier = Modifier.testTag("close_wallpaper_preview")
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.textSecondary)
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(9f / 16f)
+                    .clip(DotShape.medium)
+            ) {
+                Image(
+                    bitmap = preview.asImageBitmap(),
+                    contentDescription = item.name,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+                DotButton(
+                    text = "Cancel",
+                    onClick = onDismiss,
+                    enabled = !applying,
+                    style = DotButtonStyle.Secondary,
+                    modifier = Modifier.weight(1f)
+                )
+                DotButton(
+                    text = if (applied) "Set again" else "Set wallpaper",
+                    onClick = onConfirm,
+                    icon = Icons.Default.Wallpaper,
+                    loading = applying,
+                    style = DotButtonStyle.Primary,
+                    modifier = Modifier.weight(1f).testTag("apply_wallpaper_button")
+                )
+            }
         }
     }
 }
 
-/** A wide dot clock in the wallpaper's accent, as it would sit on that wallpaper. */
-@Composable
-private fun WallpaperSampleWidget(item: WallpaperItem, modifier: Modifier = Modifier) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val definition = remember { com.example.widgets.base.WidgetRegistry.getById("clock.dotdigital.m") } ?: return
-    val dims = remember { com.example.core.bitmap.SizeResolver.resolveDimensions(context, com.example.core.bitmap.SizeBucket.M) }
-    val paper = item.bgHex == 0xFFF2F2F2.toInt()
-    val spec = remember(item.id) {
-        com.example.widgets.base.WidgetSpec(
-            widthPx = dims.widthPx,
-            heightPx = dims.heightPx,
-            density = dims.density,
-            sizeBucket = com.example.core.bitmap.SizeBucket.M,
-            accent = com.example.core.theme.AccentOption.PURE,
-            // Violet and rose have no named accent, so pass the colour itself.
-            accentColor = item.accentHex,
-            bgMode = com.example.core.theme.BackgroundMode.TRANSPARENT,
-            themeMode = if (paper) com.example.core.theme.ThemeMode.FORCE_LIGHT else com.example.core.theme.ThemeMode.FORCE_DARK,
-            isDark = !paper,
-            cornerRadiusDp = 16,
-            showLabel = false,
-            tapAction = definition.defaultTap,
-            configJson = org.json.JSONObject().put(com.example.core.theme.WidgetAccent.CUSTOM_KEY, com.example.core.theme.WidgetAccent.toHex(item.accentHex)).toString()
-        )
-    }
-    com.example.ui.components.WidgetBitmapPreview(definition = definition, spec = spec, modifier = modifier.fillMaxWidth())
+private fun tagLabel(tag: String): String = when (tag) {
+    "ALL" -> "All"
+    "MONO" -> "Mono"
+    else -> tag.lowercase().replaceFirstChar { it.uppercase() }
 }

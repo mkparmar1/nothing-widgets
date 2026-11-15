@@ -5,8 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,20 +16,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -42,25 +36,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.core.bitmap.SizeResolver
+import com.example.core.theme.AccentOption
+import com.example.core.theme.BackgroundMode
+import com.example.core.theme.ThemeMode
 import com.example.data.prefs.PreferencesManager
 import com.example.data.setups.CommunityRepository
 import com.example.data.setups.SetupBundle
 import com.example.data.setups.SetupRepository
 import com.example.data.setups.SetupShareRepository
+import com.example.data.setups.SetupStyle
 import com.example.data.wallpapers.WallpaperManagerHelper
-import com.example.ui.components.TagPill
+import com.example.ui.components.DotButton
+import com.example.ui.components.DotButtonStyle
+import com.example.ui.components.DotCard
+import com.example.ui.components.DotChip
+import com.example.ui.components.DotLabel
+import com.example.ui.components.DotMessage
+import com.example.ui.components.DotSetupCard
+import com.example.ui.components.WidgetBitmapPreview
+import com.example.ui.components.dotFieldColors
+import com.example.ui.theme.DotShape
+import com.example.ui.theme.DotSpacing
+import com.example.ui.theme.DotTheme
+import com.example.ui.theme.DotType
+import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
+import com.example.widgets.base.WidgetSpec
 import kotlinx.coroutines.launch
 
 @Composable
@@ -72,6 +80,11 @@ fun SetupsScreen(
     val prefs = remember { PreferencesManager.getInstance(context) }
     val setups = remember { SetupRepository.SETUPS }
     val community = remember { CommunityRepository.picks(context) }
+
+    // null = All, so the chips read like a segmented filter row.
+    var filter by remember { mutableStateOf<SetupStyle?>(null) }
+    val curated = remember(filter, setups) { setups.filter { filter == null || it.style == filter } }
+    val looks = remember(filter, community) { community.filter { filter == null || it.style == filter } }
 
     val applyBundle: (SetupBundle) -> Unit = remember {
         { setup ->
@@ -89,54 +102,96 @@ fun SetupsScreen(
     }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        modifier = modifier.fillMaxSize().testTag("setups_screen"),
+        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(DotSpacing.lg)
     ) {
         item {
-            Column(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.xs)) {
+                DotLabel("Library")
                 Text(
-                    text = "Curated setups",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground
+                    "Setups",
+                    style = DotType.Hero,
+                    color = DotTheme.colors.textPrimary
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Matching wallpaper + widget combination + accent in one tap.",
+                    "Wallpaper, accent and widgets, matched for you in one tap.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = com.example.ui.theme.DotTheme.colors.textSecondary
+                    color = DotTheme.colors.textSecondary
                 )
             }
         }
 
         item { SetupShareCard() }
 
-        items(setups, key = { it.id }) { setup ->
-            SetupCard(
-                setup = setup,
-                onApply = { applyBundle(setup) },
-                modifier = Modifier.testTag("setup_card_${setup.id}")
-            )
-        }
-
-        if (community.isNotEmpty()) {
-            item {
-                Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    Text(
-                        text = "Curated looks",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Ready-made home screen ideas, picked by Dot Widgets.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = com.example.ui.theme.DotTheme.colors.textSecondary
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)
+            ) {
+                DotChip(
+                    label = "All",
+                    selected = filter == null,
+                    onClick = { filter = null },
+                    modifier = Modifier.testTag("setup_filter_all")
+                )
+                SetupStyle.entries.forEach { style ->
+                    DotChip(
+                        label = style.label,
+                        selected = filter == style,
+                        onClick = { filter = if (filter == style) null else style },
+                        modifier = Modifier.testTag("setup_filter_${style.name.lowercase()}")
                     )
                 }
             }
+        }
 
-            items(community, key = { it.id }) { pick ->
+        if (curated.isEmpty() && looks.isEmpty()) {
+            item {
+                DotMessage(
+                    icon = Icons.Default.AutoAwesome,
+                    title = "No setups here",
+                    message = "Nothing matches the ${filter?.label?.lowercase()} filter yet.",
+                    action = "Show all",
+                    onAction = { filter = null }
+                )
+            }
+        }
+
+        if (curated.isNotEmpty()) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Curated setups",
+                        style = DotType.Section,
+                        color = DotTheme.colors.textPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    DotLabel("${curated.size}")
+                }
+            }
+            items(curated, key = { it.id }) { setup ->
+                SetupBundleCard(
+                    setup = setup,
+                    onApply = { applyBundle(setup) },
+                    modifier = Modifier.testTag("setup_card_${setup.id}")
+                )
+            }
+        }
+
+        if (looks.isNotEmpty()) {
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Curated looks",
+                        style = DotType.Section,
+                        color = DotTheme.colors.textPrimary,
+                        modifier = Modifier.weight(1f)
+                    )
+                    DotLabel("${looks.size}")
+                }
+            }
+            items(looks, key = { it.id }) { pick ->
                 val bundle = remember(pick.id) {
                     SetupBundle(
                         id = pick.id,
@@ -145,10 +200,11 @@ fun SetupsScreen(
                         accent = pick.accent,
                         wallpaperIndex = pick.wallpaperIndex,
                         widgetIds = pick.widgetIds,
-                        description = pick.tagline
+                        description = pick.tagline,
+                        style = pick.style
                     )
                 }
-                SetupCard(
+                SetupBundleCard(
                     setup = bundle,
                     onApply = { applyBundle(bundle) },
                     modifier = Modifier.testTag("community_card_${pick.id}")
@@ -158,139 +214,61 @@ fun SetupsScreen(
     }
 }
 
+/**
+ * A setup card with a wallpaper strip and mini widget previews in the setup's accent.
+ * [modifier] carries the card's identity tag; the apply button gets its own tag.
+ */
 @Composable
-fun SetupCard(
+private fun SetupBundleCard(
     setup: SetupBundle,
     onApply: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isApplying by remember { mutableStateOf(false) }
-
-    val wallpaperThumbnail = remember(setup.id) {
-        WallpaperManagerHelper.renderWallpaperBitmap(WallpaperManagerHelper.forAccent(setup.accent, setup.wallpaperIndex), 360, 640)
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(setup.accent.color)
-                        // A hairline so the White setup's dot shows on the light theme.
-                        .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f), CircleShape)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = setup.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = setup.tagline,
-            style = MaterialTheme.typography.bodyMedium,
-            color = com.example.ui.theme.DotTheme.colors.textSecondary
+    val wallpaper = remember(setup.id) {
+        WallpaperManagerHelper.renderWallpaperBitmap(
+            WallpaperManagerHelper.forAccent(setup.accent, setup.wallpaperIndex),
+            200,
+            360
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Visual Preview Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // The setup as it will look: its wallpaper with its widgets on top, in its accent.
-            SetupPhonePreview(setup = setup, wallpaper = wallpaperThumbnail)
-
-            // Included widgets column
-            Column(
+    }
+    DotSetupCard(
+        title = setup.title,
+        caption = setup.tagline,
+        accent = setup.accent.color,
+        onApply = onApply,
+        modifier = modifier,
+        applyModifier = Modifier.testTag("apply_setup_${setup.id}"),
+        previews = {
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(184.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .width(44.dp)
+                    .height(72.dp)
+                    .clip(DotShape.small)
+                    .testTag("setup_preview_${setup.id}")
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "INCLUDED WIDGETS:",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = com.example.ui.theme.DotTheme.colors.textSecondary
-                    )
-                    setup.widgetIds.forEach { widgetId ->
-                        val widgetDef = WidgetRegistry.getById(widgetId)
-                        val title = widgetDef?.title ?: widgetId
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = com.example.ui.theme.readableAccent(setup.accent.color)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = title,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-
-                // Tonal: the setup's accent as a soft tint with accent text, so a list of setups isn't
-                // a wall of full-colour buttons. Readable for every accent on the dark card.
-                val onAccent = com.example.ui.theme.readableAccent(setup.accent.color)
-                Button(
-                    onClick = {
-                        if (!isApplying) {
-                            isApplying = true
-                            onApply()
-                            isApplying = false
-                        }
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = onAccent.copy(alpha = 0.14f),
-                        contentColor = onAccent
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(42.dp)
-                        .testTag("apply_setup_${setup.id}")
-                ) {
-                    if (isApplying) {
-                        CircularProgressIndicator(color = onAccent, strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
-                    } else {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Apply setup", style = MaterialTheme.typography.labelLarge)
+                Image(
+                    bitmap = wallpaper.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            setup.widgetIds.take(2).forEach { widgetId ->
+                WidgetRegistry.getById(widgetId)?.let { definition ->
+                    Box(Modifier.width(68.dp)) {
+                        WidgetBitmapPreview(
+                            definition = definition,
+                            spec = miniSpec(definition, setup.accent)
+                        )
                     }
                 }
             }
+            Spacer(Modifier.weight(1f))
+            DotLabel("${setup.widgetIds.size} widgets")
         }
-    }
+    )
 }
 
-/**
- * Export / import the user's own home-screen setup as a short shareable code. Export copies a
- * compressed code of every placed widget's config (plus the accent) to the clipboard; import stores
- * those configs so the config screen pre-fills them on the next add, and applies the shared accent.
- */
+/** Export / import the user's own home-screen setup as a short shareable code. */
 @Composable
 fun SetupShareCard(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -298,28 +276,24 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
     var showImport by remember { mutableStateOf(false) }
     var importCode by remember { mutableStateOf("") }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp)
-    ) {
+    DotCard(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Share your setup",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
+            "Share your setup",
+            style = DotType.CardTitle,
+            color = DotTheme.colors.textPrimary
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(Modifier.height(DotSpacing.xs))
         Text(
-            text = "Export your placed widgets as a code, or import a friend's.",
+            "Export your placed widgets as a code, or import a friend's.",
             style = MaterialTheme.typography.bodySmall,
-            color = com.example.ui.theme.DotTheme.colors.textSecondary
+            color = DotTheme.colors.textSecondary
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(
+        Spacer(Modifier.height(DotSpacing.md))
+        Row(horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+            DotButton(
+                text = "Export",
+                icon = Icons.Default.Upload,
+                style = DotButtonStyle.Secondary,
                 onClick = {
                     scope.launch {
                         val result = SetupShareRepository.export(context)
@@ -336,26 +310,15 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
                         }
                     }
                 },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier.weight(1f).height(42.dp).testTag("export_setup")
-            ) {
-                Text("Export", style = MaterialTheme.typography.labelLarge)
-            }
-            Button(
+                modifier = Modifier.weight(1f).testTag("export_setup")
+            )
+            DotButton(
+                text = "Import",
+                icon = Icons.Default.Download,
+                style = DotButtonStyle.Secondary,
                 onClick = { importCode = ""; showImport = true },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                modifier = Modifier.weight(1f).height(42.dp).testTag("import_setup")
-            ) {
-                Text("Import", style = MaterialTheme.typography.labelLarge)
-            }
+                modifier = Modifier.weight(1f).testTag("import_setup")
+            )
         }
     }
 
@@ -365,7 +328,7 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
             title = { Text("Import setup code") },
             text = {
                 OutlinedTextField(
-                    colors = com.example.ui.components.dotFieldColors(),
+                    colors = dotFieldColors(),
                     value = importCode,
                     onValueChange = { importCode = it },
                     singleLine = false,
@@ -402,52 +365,24 @@ fun SetupShareCard(modifier: Modifier = Modifier) {
     }
 }
 
-/** A miniature phone: the setup's wallpaper with its widgets drawn on it in the setup's accent. */
 @Composable
-private fun SetupPhonePreview(setup: SetupBundle, wallpaper: android.graphics.Bitmap) {
+private fun miniSpec(definition: WidgetDefinition, accent: AccentOption): WidgetSpec {
     val context = LocalContext.current
-    Box(
-        modifier = Modifier
-            .width(104.dp)
-            .height(184.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .testTag("setup_preview_${setup.id}")
-    ) {
-        Image(
-            bitmap = wallpaper.asImageBitmap(),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize()
+    val size = definition.sizes.first()
+    val dims = remember(size) { SizeResolver.resolveDimensions(context, size) }
+    return remember(definition.id, size, accent) {
+        WidgetSpec(
+            widthPx = dims.widthPx,
+            heightPx = dims.heightPx,
+            density = dims.density,
+            sizeBucket = size,
+            accent = accent,
+            bgMode = BackgroundMode.SOLID,
+            themeMode = ThemeMode.AUTO,
+            isDark = true,
+            cornerRadiusDp = 20,
+            showLabel = true,
+            tapAction = definition.defaultTap
         )
-        Column(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            setup.widgetIds.mapNotNull { WidgetRegistry.getById(it) }.take(3).forEach { def ->
-                val size = def.sizes.first()
-                val dims = remember(size) { com.example.core.bitmap.SizeResolver.resolveDimensions(context, size) }
-                val spec = remember(def.id, setup.accent) {
-                    com.example.widgets.base.WidgetSpec(
-                        widthPx = dims.widthPx,
-                        heightPx = dims.heightPx,
-                        density = dims.density,
-                        sizeBucket = size,
-                        accent = setup.accent,
-                        bgMode = com.example.core.theme.BackgroundMode.SOLID,
-                        themeMode = com.example.core.theme.ThemeMode.FORCE_DARK,
-                        isDark = true,
-                        cornerRadiusDp = 20,
-                        showLabel = true,
-                        tapAction = def.defaultTap
-                    )
-                }
-                val aspect = dims.widthPx.toFloat() / dims.heightPx.coerceAtLeast(1)
-                com.example.ui.components.WidgetBitmapPreview(
-                    definition = def,
-                    spec = spec,
-                    modifier = Modifier.heightIn(max = 44.dp).widthIn(max = 44.dp * aspect)
-                )
-            }
-        }
     }
 }

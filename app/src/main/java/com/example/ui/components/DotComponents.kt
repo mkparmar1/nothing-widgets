@@ -540,6 +540,7 @@ fun DotSetupCard(
     modifier: Modifier = Modifier,
     onOpen: (() -> Unit)? = null,
     applyLabel: String = "Apply Setup",
+    applyModifier: Modifier = Modifier,
     previews: @Composable RowScope.() -> Unit = {}
 ) {
     val colors = DotTheme.colors
@@ -579,7 +580,7 @@ fun DotSetupCard(
         DotButton(
             text = applyLabel,
             onClick = onApply,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().then(applyModifier),
             style = DotButtonStyle.Secondary,
             icon = Icons.Default.Check
         )

@@ -9,14 +9,22 @@ data class SetupBundle(
     val accent: AccentOption,
     val wallpaperIndex: Int,
     val widgetIds: List<String>,
-    val description: String
+    val description: String,
+    val style: SetupStyle = SetupStyle.CLASSIC
 )
+
+enum class SetupStyle(val label: String) {
+    MINIMAL("Minimal"),
+    BOLD("Bold"),
+    CLASSIC("Classic")
+}
 
 object SetupRepository {
 
     val SETUPS = listOf(
         SetupBundle(
             id = "setup_minimal_red",
+            style = SetupStyle.MINIMAL,
             title = "Minimal Red",
             tagline = "Signature red accent with clean digital time and battery run",
             accent = AccentOption.RED,
@@ -26,6 +34,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_monochrome_grid",
+            style = SetupStyle.MINIMAL,
             title = "Monochrome Grid",
             tagline = "Pure black and white with 4-in-1 quick action toggles",
             accent = AccentOption.PURE,
@@ -35,6 +44,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_data_dense",
+            style = SetupStyle.BOLD,
             title = "Data Dense",
             tagline = "Information matrix with battery, 5-day weather, and today agenda",
             accent = AccentOption.CYAN,
@@ -44,6 +54,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_clean_slate",
+            style = SetupStyle.CLASSIC,
             title = "Clean Slate",
             tagline = "Spacious analog dial with ambient step counter",
             accent = AccentOption.LIME,
@@ -53,6 +64,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_night_shift",
+            style = SetupStyle.CLASSIC,
             title = "Night Shift",
             tagline = "Warm amber tones for reduced glare and late night focus",
             accent = AccentOption.AMBER,
@@ -62,6 +74,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_terminal",
+            style = SetupStyle.BOLD,
             title = "Terminal Matrix",
             tagline = "Binary BCD clock with system toggles and daily thought",
             accent = AccentOption.LIME,
@@ -71,6 +84,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_paper_white",
+            style = SetupStyle.MINIMAL,
             title = "Paper Matrix",
             tagline = "High-key light aesthetic for daytime clarity",
             accent = AccentOption.RED,
@@ -80,6 +94,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_cyber_dot",
+            style = SetupStyle.BOLD,
             title = "Cyber Dot",
             tagline = "Retro snake mini arcade and cyan digital seconds",
             accent = AccentOption.CYAN,
@@ -89,6 +104,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_cyberpunk_engineer",
+            style = SetupStyle.BOLD,
             title = "Hardware Vitals Deck",
             tagline = "Live RAM, internal storage, audio visualizer and compass telemetry",
             accent = AccentOption.CYAN,
@@ -98,6 +114,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_cosmic_voyager",
+            style = SetupStyle.CLASSIC,
             title = "Cosmic Orbit",
             tagline = "Lunar phase matrix, solar tracker arc, and precision digital time",
             accent = AccentOption.AMBER,
@@ -107,6 +124,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_nothing_glyph",
+            style = SetupStyle.CLASSIC,
             title = "Light Strip Studio",
             tagline = "Light-strip battery ring, 4-up device dock and activity rings",
             accent = AccentOption.RED,
@@ -116,6 +134,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_high_output",
+            style = SetupStyle.CLASSIC,
             title = "High-Output Founder",
             tagline = "Annual progress countdown, task checklist, and chronometer timer",
             accent = AccentOption.LIME,
@@ -125,6 +144,7 @@ object SetupRepository {
         ),
         SetupBundle(
             id = "setup_global_nomad",
+            style = SetupStyle.CLASSIC,
             title = "Global Nomad",
             tagline = "Dual capsule London/NYC time, world weather, and crypto ticker",
             accent = AccentOption.PURE,

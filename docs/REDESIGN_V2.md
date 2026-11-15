@@ -156,12 +156,14 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 - Acceptance: `CustomWidgetBuilderTest` green; builder opens from the "+" nav button.
 
 ### R7 — Setups + Wallpapers restyle
-**Status:** Not started · **Effort:** M
+**Status:** Done · **Effort:** M
 
-- Setups: `SetupCard` with mini widget strip and **Apply Setup**; filter chips (All · Minimal ·
-  Bold · Classic); Share / Import stays at top.
-- Wallpapers: `WallpaperCard` full-bleed grid, selected check mark, **Apply Wallpaper** on the
-  featured card; filter chips (palette names as today).
+- Setups: `DotSetupCard` with wallpaper + mini widget strip and **Apply Setup**; filter chips (All ·
+  Minimal · Bold · Classic). `SetupBundle` / `CommunityPick` gained a `SetupStyle` (curated entries
+  set inline, community picks mapped by id, JSON `style` can override). Share / Import stays at top.
+- Wallpapers: featured card with **Apply Wallpaper**, then a 2-up full-bleed `WallpaperCard` grid
+  with the applied check mark; `DotChip` palette filters (same tags as before). The apply sheet is
+  still the only path to `applyWallpaper`.
 - Acceptance: apply flows unchanged; wallpaper never set without confirmation.
 
 ### R8 — Settings family restyle
@@ -254,7 +256,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | R4 | Done | |
 | R5 | Done | |
 | R6 | Done | |
-| R7 | Not started | |
+| R7 | Done | |
 | R8 | Not started | |
 | R9 | Parked (D-1) | |
 | R10 | Not started | |
@@ -269,3 +271,4 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | 2026-11-15 | R4 tabbed customizer (Skin / Shape / Accent / Size) with pinned size-pager preview; WidgetSetupScreenTest updated | — |
 | 2026-11-15 | R5 actions: edit placed widgets (customizer), add to home, duplicate, delete with placed warning; manager dialog removed; MyWidgetsScreenTest added | — |
 | 2026-11-15 | R6 builder restyle: live preview on top, icon block chips, restyled canvas, pinned Build widget bar, template and undo/redo rows | — |
+| 2026-11-15 | R7 setups restyle: style filters, DotSetupCard with wallpaper + mini widget strip; wallpapers: featured apply card, 2-up WallpaperCard grid, confirmation sheet; SetupsWallpapersScreenTest added | — |
