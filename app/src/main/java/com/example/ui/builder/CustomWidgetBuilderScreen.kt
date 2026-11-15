@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -364,59 +363,6 @@ fun CustomWidgetBuilderScreen(
                 enabled = !saving && name.isNotBlank() && blocks.isNotEmpty() && supportedSizes.isNotEmpty()
             ) { Text(if (saving) "Saving…" else if (existing == null) "Save widget" else "Save changes") }
         }
-    }
-}
-
-@Composable
-fun CustomWidgetManagerDialog(
-    widgets: List<CustomWidget>,
-    onCreate: () -> Unit,
-    onEdit: (CustomWidget) -> Unit,
-    onDelete: (CustomWidget) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var pendingDelete by remember { mutableStateOf<CustomWidget?>(null) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("My widgets") },
-        text = {
-            Column(
-                Modifier.height(320.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (widgets.isEmpty()) Text("Your saved designs will appear here.")
-                widgets.forEach { widget ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(widget.name, fontWeight = FontWeight.SemiBold)
-                            Text(
-                                "${BuilderLayout.parse(widget.layoutJson)?.blocks?.size ?: 0} blocks · " +
-                                    widget.supportedSizes.joinToString("/") { it.label.first().toString() },
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        TextButton(onClick = { onEdit(widget) }) { Text("Edit") }
-                        TextButton(onClick = { pendingDelete = widget }) { Text("Delete") }
-                    }
-                }
-            }
-        },
-        confirmButton = { Button(onClick = onCreate) { Text("Create widget") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Done") } }
-    )
-    pendingDelete?.let { widget ->
-        AlertDialog(
-            onDismissRequest = { pendingDelete = null },
-            title = { Text("Delete ${widget.name}?") },
-            text = { Text("Widgets already on your home screen will fall back to the default clock.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    pendingDelete = null
-                    onDelete(widget)
-                }) { Text("Delete") }
-            },
-            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } }
-        )
     }
 }
 

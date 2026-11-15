@@ -49,7 +49,7 @@
 | P23 | Photo art styles + sticker cut-out (D6) | #2    | M      | Not started |
 | P24 | "Dot Art" illustrated collection + mascot (D7) | #3 | L | Not started |
 | P25 | Builder sticker layer (D8)           | with N1  | M      | Not started |
-| P26 | **App redesign v2** (Home, new nav, Details, tabbed Customizer, My Widgets tab, restyled Settings) — plan in [`docs/REDESIGN_V2.md`](REDESIGN_V2.md) | **#1 (with P22)** | L | In progress — R1–R4 done, R5 actions next |
+| P26 | **App redesign v2** (Home, new nav, Details, tabbed Customizer, My Widgets tab, restyled Settings) — plan in [`docs/REDESIGN_V2.md`](REDESIGN_V2.md) | **#1 (with P22)** | L | In progress — R1–R5 done, R6 builder restyle next |
 
 **Phase 1 (done):** P1 → P2 → P3 → P4 → P5, all checked on a phone on 2026-11-13.
 **Current priority (#1):** design quality — full plan in

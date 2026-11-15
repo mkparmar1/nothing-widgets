@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +20,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddHome
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
@@ -59,6 +63,8 @@ import com.example.ui.components.EmptyStateView
 import com.example.ui.components.SegmentTabs
 import com.example.ui.components.SizeBadge
 import com.example.ui.components.WidgetBitmapPreview
+import com.example.ui.config.WidgetSetupState
+import com.example.ui.config.pinWidgetToHomeScreen
 import com.example.ui.theme.DotShape
 import com.example.ui.theme.DotSpacing
 import com.example.ui.theme.DotTheme
@@ -67,6 +73,7 @@ import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetRenderEngine
 import com.example.widgets.base.WidgetSpec
+import java.util.UUID
 import kotlinx.coroutines.launch
 
 private data class MyWidgetEntry(
@@ -74,13 +81,16 @@ private data class MyWidgetEntry(
     val title: String,
     val caption: String,
     val definition: WidgetDefinition?,
-    val custom: CustomWidget?
+    val custom: CustomWidget?,
+    /** Set for entries placed on the home screen. */
+    val instance: WidgetInstance? = null
 )
 
 @Composable
 fun MyWidgetsScreen(
     onCreate: () -> Unit,
     onEditCustom: (CustomWidget) -> Unit,
+    onEditInstance: (WidgetInstance, WidgetDefinition) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -91,20 +101,51 @@ fun MyWidgetsScreen(
     val customWidgets by remember(context) { CustomWidgetRepository.observe(context) }.collectAsState(initial = emptyList())
     val placed by remember(context) { AppDatabase.getInstance(context).widgetInstanceDao().observeAll() }.collectAsState(initial = emptyList())
 
-    LaunchedEffect(customWidgets) { WidgetRegistry.replaceCustom(customWidgets) }
+    // Custom definitions only exist in the registry after this runs, so entries are recomputed once
+    // it has (registryVersion), otherwise a fresh launch shows cards without previews or actions.
+    var registryVersion by remember { mutableIntStateOf(0) }
+    LaunchedEffect(customWidgets) {
+        WidgetRegistry.replaceCustom(customWidgets)
+        registryVersion++
+    }
 
     var filter by remember { mutableIntStateOf(0) }
     var deleteTarget by remember { mutableStateOf<CustomWidget?>(null) }
 
     val placedIds = remember(placed) { placed.map { it.widgetTypeId }.toSet() }
 
-    val active = remember(placed, customWidgets, accent) {
+    val active = remember(placed, customWidgets, accent, registryVersion) {
         placed.mapNotNull { instance -> instance.toEntry(customWidgets, accent) }
     }
-    val inactive = remember(placedIds, customWidgets, accent) {
+    val inactive = remember(placedIds, customWidgets, accent, registryVersion) {
         customWidgets
             .filter { it.widgetTypeId !in placedIds }
             .map { widget -> widget.toEntry(accent) }
+    }
+
+    val duplicate: (CustomWidget) -> Unit = { widget ->
+        scope.launch {
+            val copy = widget.copy(
+                id = UUID.randomUUID().toString(),
+                name = copyName(widget.name, customWidgets),
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            CustomWidgetRepository.save(context, copy)
+        }
+    }
+
+    val addToHome: (MyWidgetEntry) -> Unit = { entry ->
+        val definition = entry.definition
+        if (entry.instance == null && definition != null) {
+            scope.launch {
+                pinWidgetToHomeScreen(
+                    context,
+                    definition,
+                    WidgetSetupState.defaults(definition, prefs)
+                )
+            }
+        }
     }
     val entries = when (filter) {
         1 -> active
@@ -161,10 +202,23 @@ fun MyWidgetsScreen(
                 verticalArrangement = Arrangement.spacedBy(DotSpacing.md)
             ) {
                 items(entries, key = { it.id }) { entry ->
+                    val editAction: (() -> Unit)? = when {
+                        entry.custom != null -> ({ onEditCustom(entry.custom) })
+                        entry.instance != null && entry.definition != null -> ({
+                            onEditInstance(entry.instance, entry.definition)
+                        })
+                        else -> null
+                    }
                     MyWidgetRow(
                         entry = entry,
                         accent = accent,
-                        onEdit = entry.custom?.let { custom -> { onEditCustom(custom) } },
+                        onEdit = editAction,
+                        onAddToHome = if (entry.instance == null && entry.definition != null) {
+                            { addToHome(entry) }
+                        } else {
+                            null
+                        },
+                        onDuplicate = entry.custom?.let { custom -> { duplicate(custom) } },
                         onDelete = entry.custom?.let { custom -> { deleteTarget = custom } }
                     )
                 }
@@ -207,14 +261,21 @@ fun MyWidgetsScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MyWidgetRow(
     entry: MyWidgetEntry,
     accent: AccentOption,
     onEdit: (() -> Unit)?,
+    onAddToHome: (() -> Unit)?,
+    onDuplicate: (() -> Unit)?,
     onDelete: (() -> Unit)?
 ) {
-    DotCard(style = DotCardStyle.Standard, padding = DotSpacing.md, modifier = Modifier.fillMaxWidth()) {
+    DotCard(
+        style = DotCardStyle.Standard,
+        padding = DotSpacing.md,
+        modifier = Modifier.fillMaxWidth().testTag("my_widget_${entry.id}")
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -252,18 +313,35 @@ private fun MyWidgetRow(
                 }
             }
         }
-        if (onEdit != null || onDelete != null) {
-            Spacer(Modifier.height(DotSpacing.sm))
-            Row(horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+        if (onEdit != null || onAddToHome != null || onDuplicate != null || onDelete != null) {
+            Spacer(Modifier.height(DotSpacing.xs))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(DotSpacing.xs),
+                verticalArrangement = Arrangement.spacedBy(DotSpacing.xs)
+            ) {
                 if (onEdit != null) {
-                    TextButton(onClick = onEdit) {
+                    TextButton(onClick = onEdit, modifier = Modifier.testTag("my_widgets_edit")) {
                         Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(DotSpacing.xs))
                         Text("Edit")
                     }
                 }
+                if (onAddToHome != null) {
+                    TextButton(onClick = onAddToHome, modifier = Modifier.testTag("my_widgets_add_home")) {
+                        Icon(Icons.Default.AddHome, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(DotSpacing.xs))
+                        Text("Add to home")
+                    }
+                }
+                if (onDuplicate != null) {
+                    TextButton(onClick = onDuplicate, modifier = Modifier.testTag("my_widgets_duplicate")) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(DotSpacing.xs))
+                        Text("Duplicate")
+                    }
+                }
                 if (onDelete != null) {
-                    TextButton(onClick = onDelete) {
+                    TextButton(onClick = onDelete, modifier = Modifier.testTag("my_widgets_delete")) {
                         Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp), tint = DotTheme.colors.danger)
                         Spacer(Modifier.width(DotSpacing.xs))
                         Text("Delete", color = DotTheme.colors.danger)
@@ -282,8 +360,22 @@ private fun WidgetInstance.toEntry(customWidgets: List<CustomWidget>, accent: Ac
         title = definition?.title ?: custom?.name ?: widgetTypeId,
         caption = "On your home screen",
         definition = definition,
-        custom = custom
+        custom = custom,
+        instance = this
     )
+}
+
+/** First free name of the form "Name copy", "Name copy 2"... capped at the 40-char limit. */
+private fun copyName(name: String, existing: List<CustomWidget>): String {
+    val base = name.trim().ifEmpty { "Widget" }
+    val taken = existing.map { it.name }.toSet()
+    var index = 1
+    while (true) {
+        val suffix = if (index == 1) " copy" else " copy $index"
+        val candidate = (base + suffix).take(40)
+        if (candidate !in taken) return candidate
+        index++
+    }
 }
 
 private fun CustomWidget.toEntry(accent: AccentOption): MyWidgetEntry {

@@ -44,7 +44,7 @@ import com.example.data.builder.CustomWidget
 import com.example.data.builder.CustomWidgetRepository
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.builder.CustomWidgetBuilderScreen
-import com.example.ui.builder.CustomWidgetManagerDialog
+
 import com.example.ui.components.DotButton
 import com.example.ui.components.DotButtonStyle
 import com.example.ui.components.DotChip
@@ -81,7 +81,7 @@ fun BrowserScreen(modifier: Modifier = Modifier) {
     var selectedCategory by remember { mutableStateOf(Category.ALL) }
     var detailsFor by remember { mutableStateOf<WidgetDefinition?>(null) }
     var activeConfigWidget by remember { mutableStateOf<WidgetDefinition?>(null) }
-    var showCustomManager by remember { mutableStateOf(false) }
+
     var showBuilder by remember { mutableStateOf(false) }
     var editingCustom by remember { mutableStateOf<CustomWidget?>(null) }
 
@@ -187,11 +187,6 @@ fun BrowserScreen(modifier: Modifier = Modifier) {
                         },
                         style = DotButtonStyle.Secondary,
                         icon = Icons.Default.Add
-                    )
-                    DotButton(
-                        text = "Manage",
-                        onClick = { showCustomManager = true },
-                        style = DotButtonStyle.Ghost
                     )
                 }
             }
@@ -325,29 +320,6 @@ fun BrowserScreen(modifier: Modifier = Modifier) {
         )
     }
 
-    if (showCustomManager) {
-        CustomWidgetManagerDialog(
-            widgets = customWidgets,
-            onCreate = {
-                showCustomManager = false
-                editingCustom = null
-                showBuilder = true
-            },
-            onEdit = { widget ->
-                showCustomManager = false
-                editingCustom = widget
-                showBuilder = true
-            },
-            onDelete = { widget ->
-                scope.launch {
-                    CustomWidgetRepository.delete(context, widget)
-                    WidgetRenderEngine.updateAllPlacedWidgets(context, force = true)
-                }
-            },
-            onDismiss = { showCustomManager = false }
-        )
-    }
-
     if (showBuilder) {
         CustomWidgetBuilderScreen(
             existing = editingCustom,
@@ -358,7 +330,6 @@ fun BrowserScreen(modifier: Modifier = Modifier) {
             onSaved = {
                 showBuilder = false
                 editingCustom = null
-                showCustomManager = true
                 scope.launch {
                     WidgetRenderEngine.updateAllPlacedWidgets(context, force = true)
                 }

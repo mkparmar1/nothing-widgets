@@ -136,14 +136,14 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
   green; photo editor and dot filter unchanged.
 
 ### R5 — My Widgets tab (new)
-**Status:** Partial — tab, All/Active/Inactive, previews, edit and delete shipped; duplicate and add-to-home still open · **Effort:** M
+**Status:** Done · **Effort:** M
 
 - Tabs: **All / Active / Inactive**. Lists custom (builder) widgets *and* placed widgets.
   - Active = placed on the home screen (from `WidgetInstance`), Inactive = saved but not placed.
 - Card: preview, name, size, last refresh; actions: Edit (opens Customizer or Builder), Add to
   home, Duplicate, Delete.
-- Replaces the "My widgets" chip + `CustomWidgetManagerDialog` (keep the dialog code until R5 is
-  done, then remove).
+- Replaced the "My widgets" chip + `CustomWidgetManagerDialog` (both removed; the Explore "Custom"
+  category still has "Create widget").
 - Acceptance: a placed widget shows as Active within one refresh; deleting a custom widget that is
   placed shows a warning first.
 
@@ -252,7 +252,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | R2 | Done | |
 | R3 | Done | |
 | R4 | Done | |
-| R5 | Partial (actions pending) | |
+| R5 | Done | |
 | R6 | Not started | |
 | R7 | Not started | |
 | R8 | Not started | |
@@ -267,3 +267,4 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | 2026-11-14 | §2 tokens + v2 components; R1 Home + floating nav; R5 tab (partial) | — |
 | 2026-11-14 | R2 Explore grid + pill chips; R3 Widget Details with size pager, tags, permissions and defaults add; Robolectric coverage | — |
 | 2026-11-15 | R4 tabbed customizer (Skin / Shape / Accent / Size) with pinned size-pager preview; WidgetSetupScreenTest updated | — |
+| 2026-11-15 | R5 actions: edit placed widgets (customizer), add to home, duplicate, delete with placed warning; manager dialog removed; MyWidgetsScreenTest added | — |

@@ -49,7 +49,9 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.core.theme.ThemeMode
 import com.example.data.builder.CustomWidget
+import com.example.data.db.WidgetInstance
 import com.example.data.prefs.PreferencesManager
+import com.example.ui.config.EditPlacedWidgetScreen
 import com.example.ui.browse.BrowserScreen
 import com.example.ui.builder.CustomWidgetBuilderScreen
 import com.example.ui.components.BottomNav
@@ -65,6 +67,7 @@ import com.example.ui.setups.SetupsScreen
 import com.example.ui.theme.DotWidgetsTheme
 import com.example.ui.wallpapers.WallpapersScreen
 import com.example.ui.weather.WeatherDetailSheet
+import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -177,6 +180,7 @@ private sealed interface AppOverlay {
     data object Setups : AppOverlay
     data object Wallpapers : AppOverlay
     data class Builder(val existing: CustomWidget? = null) : AppOverlay
+    data class EditInstance(val instance: WidgetInstance, val definition: WidgetDefinition) : AppOverlay
 }
 
 @Composable
@@ -233,6 +237,14 @@ fun DotWidgetsApp() {
                         scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context, force = true) }
                     }
                 )
+                is AppOverlay.EditInstance -> EditPlacedWidgetScreen(
+                    instance = current.instance,
+                    definition = current.definition,
+                    onDismiss = {
+                        overlay = null
+                        scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context, force = true) }
+                    }
+                )
                 null -> Crossfade(
                     targetState = selectedTab,
                     animationSpec = tween(200),
@@ -248,7 +260,10 @@ fun DotWidgetsApp() {
                         1 -> BrowserScreen()
                         2 -> MyWidgetsScreen(
                             onCreate = { overlay = AppOverlay.Builder() },
-                            onEditCustom = { custom -> overlay = AppOverlay.Builder(custom) }
+                            onEditCustom = { custom -> overlay = AppOverlay.Builder(custom) },
+                            onEditInstance = { instance, definition ->
+                                overlay = AppOverlay.EditInstance(instance, definition)
+                            }
                         )
                         else -> SettingsScreen()
                     }
