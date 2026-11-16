@@ -2,9 +2,11 @@ package com.example
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import com.example.core.theme.AccentOption
 import com.example.ui.setups.SetupsScreen
 import com.example.ui.theme.DotWidgetsTheme
@@ -58,13 +60,19 @@ class SetupsWallpapersScreenTest {
         compose.onNodeWithTag("wallpapers_screen").assertIsDisplayed()
         compose.onNodeWithTag("wallpaper_featured").assertExists()
         compose.onNodeWithTag("apply_wallpaper_featured").assertExists()
+
+        compose.onNodeWithTag("wallpapers_screen").performScrollToNode(hasTestTag("wallpaper_item_1"))
         compose.onNodeWithTag("wallpaper_item_1").assertExists()
 
+        compose.onNodeWithTag("wallpapers_screen").performScrollToNode(hasTestTag("wallpaper_tag_MONO"))
         compose.onNodeWithTag("wallpaper_tag_MONO").performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("wallpaper_tag_MONO").assertIsSelected()
+
+        compose.onNodeWithTag("wallpapers_screen").performScrollToNode(hasTestTag("wallpaper_item_7"))
         compose.onNodeWithTag("wallpaper_item_7").assertExists()
 
+        compose.onNodeWithTag("wallpapers_screen").performScrollToNode(hasTestTag("apply_wallpaper_featured"))
         compose.onNodeWithTag("apply_wallpaper_featured").performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("apply_wallpaper_button").assertExists()

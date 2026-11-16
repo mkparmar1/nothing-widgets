@@ -193,7 +193,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 - Not started until decided.
 
 ### R10 — Polish + release
-**Status:** Not started · **Effort:** S–M
+**Status:** In progress · **Effort:** S–M
 
 - Light theme pass on every screen; font scale 130 % and 200 %; landscape; tablets (≥ 600 dp).
 - TalkBack labels for new components (ties to P17).
@@ -259,7 +259,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | R7 | Done | |
 | R8 | Done (uncommitted) | — |
 | R9 | Parked (D-1) | |
-| R10 | Not started | |
+| R10 | In progress | |
 
 ## Changelog
 
@@ -273,3 +273,4 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | 2026-11-15 | R6 builder restyle: live preview on top, icon block chips, restyled canvas, pinned Build widget bar, template and undo/redo rows | — |
 | 2026-11-15 | R7 setups restyle: style filters, DotSetupCard with wallpaper + mini widget strip; wallpapers: featured apply card, 2-up WallpaperCard grid, confirmation sheet; SetupsWallpapersScreenTest added |
 | 2026-11-16 | R8 settings family restyle: SettingsScreen with Appearance→Theme Preview, Widget Status (StatusHero), About, Permissions rows, merged Weather screen (WeatherSettingsCard); restyled ConnectionsCard/LooksCard/WeatherLocationCard/PermissionsScreen/ThemeStudioCard; SettingsPagesTest updated; new WeatherSettingsCard, SportsRepository, PhotoPlacementEditor tests | — |
+| 2026-11-17 | R10 start: light-theme fix in WeatherDetailSheet (theme surface, not hardcoded black); static colour audit clean (remaining fixed colours are wallpaper/photo-editor/widget-preview overlays); SettingsPagesTest gains light-theme, tablet (sw600dp) and 200% font-scale render tests; icon-only button TalkBack audit complete (all labelled) | — |

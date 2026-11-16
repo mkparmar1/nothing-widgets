@@ -2,6 +2,9 @@ package com.example
 
 import android.content.Context
 import android.graphics.Bitmap
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -112,6 +115,37 @@ class SettingsPagesTest {
         compose.setContent {
             DotWidgetsTheme(darkTheme = false, accentOption = AccentOption.RED) {
                 SettingsScreen()
+            }
+        }
+        compose.mainClock.advanceTimeBy(500)
+
+        compose.onNodeWithTag("settings_row_appearance").assertExists()
+    }
+
+    @Test
+    @Config(sdk = [34], qualifiers = "sw600dp-w600dp-h960dp")
+    fun `settings renders on a tablet width without crashing`() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            DotWidgetsTheme(accentOption = AccentOption.RED) {
+                SettingsScreen()
+            }
+        }
+        compose.mainClock.advanceTimeBy(500)
+
+        compose.onNodeWithTag("settings_row_appearance").assertExists()
+    }
+
+    @Test
+    fun `settings renders at 200 percent font scale without crashing`() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            CompositionLocalProvider(
+                LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)
+            ) {
+                DotWidgetsTheme(accentOption = AccentOption.RED) {
+                    SettingsScreen()
+                }
             }
         }
         compose.mainClock.advanceTimeBy(500)
