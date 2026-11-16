@@ -88,6 +88,9 @@ object WeatherRepository {
 
     private val TIMEZONE_ALIASES = mapOf("Asia/Calcutta" to "Asia/Kolkata")
     private const val PREFS = "dot_widgets_weather"
+    private const val KEY_NETWORK_ENABLED = "network_enabled"
+    private const val KEY_REFRESH_MINUTES = "refresh_minutes"
+    private const val DEFAULT_REFRESH_MINUTES = 15
 
     private val cache = ConcurrentHashMap<String, WeatherData>()
     private val inFlight = ConcurrentHashMap.newKeySet<String>()
@@ -103,10 +106,44 @@ object WeatherRepository {
     /** True when the user has picked a city or shared their location. */
     fun hasChosenPlace(context: Context): Boolean = savedPlace(context) != null
 
+    /** Weather widgets are allowed to refresh from the network. Off = use the last cached reading. */
+    fun isNetworkEnabled(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_NETWORK_ENABLED, true)
+
+    fun setNetworkEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_NETWORK_ENABLED, enabled).apply()
+        BitmapCache.clear()
+        val appContext = context.applicationContext
+        if (enabled) {
+            scope.launch {
+                fetchFreshWeather(currentPlace(appContext))
+                WidgetRenderEngine.updateAllPlacedWidgets(appContext)
+            }
+        } else {
+            scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(appContext) }
+        }
+    }
+
+    /** Minutes between background weather refreshes while widgets are visible. */
+    fun refreshMinutes(context: Context): Int =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .getInt(KEY_REFRESH_MINUTES, DEFAULT_REFRESH_MINUTES)
+            .coerceIn(5, 180)
+
+    fun setRefreshMinutes(context: Context, minutes: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putInt(KEY_REFRESH_MINUTES, minutes.coerceIn(5, 180)).apply()
+    }
+
     fun setPlace(context: Context, place: WeatherPlace?) {
         val editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
         if (place == null) {
-            editor.clear()
+            editor.remove("name")
+                .remove("lat")
+                .remove("lon")
+                .remove("tz")
+                .remove("region")
         } else {
             editor.putString("name", place.name)
                 .putString("lat", place.lat.toString())
@@ -118,7 +155,9 @@ object WeatherRepository {
         BitmapCache.clear()
         val appContext = context.applicationContext
         scope.launch {
-            fetchFreshWeather(currentPlace(appContext))
+            if (isNetworkEnabled(appContext)) {
+                fetchFreshWeather(currentPlace(appContext))
+            }
             WidgetRenderEngine.updateAllPlacedWidgets(appContext)
         }
     }
@@ -185,8 +224,12 @@ object WeatherRepository {
     @SuppressLint("MissingPermission")
     private suspend fun currentLocation(lm: LocationManager): Location? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
-        val provider = listOf(LocationManager.FUSED_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER)
-            .firstOrNull { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) } ?: return null
+        val providers = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) add(LocationManager.FUSED_PROVIDER)
+            add(LocationManager.NETWORK_PROVIDER)
+            add(LocationManager.GPS_PROVIDER)
+        }
+        val provider = providers.firstOrNull { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) } ?: return null
         return withTimeoutOrNull(10_000) {
             suspendCancellableCoroutine { cont ->
                 val signal = android.os.CancellationSignal()
@@ -212,7 +255,8 @@ object WeatherRepository {
         val cached = cache[key] ?: placeholder(place)
 
         val now = System.currentTimeMillis()
-        if (now - cached.fetchedAt > 15 * 60 * 1000L && inFlight.add(key)) {
+        val maxAgeMs = refreshMinutes(context) * 60_000L
+        if (isNetworkEnabled(context) && now - cached.fetchedAt > maxAgeMs && inFlight.add(key)) {
             val appContext = context.applicationContext
             scope.launch {
                 try {
@@ -230,8 +274,10 @@ object WeatherRepository {
     }
 
     /** Fresh fetch for the in-app weather sheet. */
-    suspend fun getWeather(context: Context, cityName: String? = null): WeatherData =
-        fetchFreshWeather(if (cityName == null) currentPlace(context) else preset(cityName))
+    suspend fun getWeather(context: Context, cityName: String? = null): WeatherData {
+        if (!isNetworkEnabled(context)) return getWeatherInstant(context, cityName)
+        return fetchFreshWeather(if (cityName == null) currentPlace(context) else preset(cityName))
+    }
 
     private fun keyFor(place: WeatherPlace) = "${place.name.lowercase()}@${"%.2f".format(Locale.US, place.lat)},${"%.2f".format(Locale.US, place.lon)}"
 

@@ -405,7 +405,6 @@ object WidgetRegistry {
             com.example.core.config.WidgetOption.Toggle("show_opponent", "Show opponent", default = true)
         )) { c, s, cv -> SportsRenderers.renderMatchCountdown(c, s, cv) })
         register(createDef("sports.f1.next.race", Category.SPORTS, "Next F1 Race", "Next Grand Prix on the calendar", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(
-            com.example.core.config.WidgetOption.Choice.of("series", "Series", listOf("F1", "F2", "MotoGP"), "F1"),
             com.example.core.config.WidgetOption.Toggle("show_circuit", "Show circuit", default = true)
         )) { c, s, cv -> SportsRenderers.renderF1NextRace(c, s, cv) })
         register(createDef("sports.cricket.overs", Category.SPORTS, "Cricket Score", "Runs/wickets with overs, from your sports feed", setOf(SizeBucket.M), TapAction.DEFAULT, options = listOf(

@@ -1,5 +1,6 @@
 package com.example.data.learn
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import org.json.JSONObject
@@ -13,10 +14,12 @@ import java.util.Locale
  * Nothing is fetched: word-of-the-day and the daily quiz are picked from assets so they work with
  * no connection, and study/reading/streak numbers are user-logged.
  */
-class LearnRepository private constructor(private val context: Context) {
+class LearnRepository private constructor(
+    @param:SuppressLint("StaticFieldLeak") private val appContext: Context
+) {
 
     private val prefs: SharedPreferences =
-        context.applicationContext.getSharedPreferences("dot_widgets_learn", Context.MODE_PRIVATE)
+        appContext.getSharedPreferences("dot_widgets_learn", Context.MODE_PRIVATE)
 
     // --- Study sessions today ---
     fun studySessionsToday(): Int =
@@ -100,7 +103,7 @@ class LearnRepository private constructor(private val context: Context) {
     }
 
     fun words(language: String): List<Word> = try {
-        val root = JSONObject(context.assets.open("words.json").bufferedReader().use { it.readText() })
+        val root = JSONObject(appContext.assets.open("words.json").bufferedReader().use { it.readText() })
         val arr = root.optJSONArray(language.lowercase()) ?: root.optJSONArray("en") ?: return emptyList()
         (0 until arr.length()).map {
             val o = arr.getJSONObject(it); Word(o.getString("word"), o.getString("meaning"))
@@ -110,7 +113,7 @@ class LearnRepository private constructor(private val context: Context) {
     }
 
     fun quizCategories(): List<String> = try {
-        val root = JSONObject(context.assets.open("quiz.json").bufferedReader().use { it.readText() })
+        val root = JSONObject(appContext.assets.open("quiz.json").bufferedReader().use { it.readText() })
         root.optJSONObject("categories")?.keys()?.asSequence()?.toList() ?: emptyList()
     } catch (_: Exception) {
         emptyList()
@@ -124,7 +127,7 @@ class LearnRepository private constructor(private val context: Context) {
     }
 
     fun quiz(category: String): List<QuizQuestion> = try {
-        val root = JSONObject(context.assets.open("quiz.json").bufferedReader().use { it.readText() })
+        val root = JSONObject(appContext.assets.open("quiz.json").bufferedReader().use { it.readText() })
         val arr = root.optJSONObject("categories")?.optJSONArray(category.uppercase()) ?: return emptyList()
         (0 until arr.length()).map {
             val o = arr.getJSONObject(it)

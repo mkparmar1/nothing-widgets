@@ -27,6 +27,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,6 +40,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -309,7 +311,6 @@ fun PermissionList(
             PermissionRow(
                 permission = permission,
                 granted = states[permission] == true,
-                accent = accent,
                 onAllow = {
                     when (permission) {
                         is AppPermission.Runtime -> runtimeLauncher.launch(permission.permissions)
@@ -323,57 +324,58 @@ fun PermissionList(
     }
 }
 
+/**
+ * One permission as a settings row with a switch: off means "ask for it", on means granted.
+ * Android does not let an app revoke a permission, so a granted switch is read-only.
+ */
 @Composable
 private fun PermissionRow(
     permission: AppPermission,
     granted: Boolean,
-    accent: AccentOption,
     onAllow: () -> Unit
 ) {
-    Column(
+    val colors = com.example.ui.theme.DotTheme.colors
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .padding(16.dp)
+            .clip(com.example.ui.theme.DotShape.card)
+            .background(colors.surface)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
             .testTag("permission_${permission.id}"),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(40.dp)
+                .clip(com.example.ui.theme.DotShape.button)
+                .background(colors.surfaceSecondary)
         ) {
-            Icon(permission.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+            Icon(
+                permission.icon,
+                contentDescription = null,
+                tint = if (granted) colors.success else colors.textPrimary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        Column(Modifier.weight(1f)) {
             Text(
                 text = permission.title,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = colors.textPrimary
+            )
+            Text(
+                text = permission.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.textSecondary
             )
         }
-        Text(
-            text = permission.description,
-            style = MaterialTheme.typography.bodyMedium,
-            color = com.example.ui.theme.DotTheme.colors.textSecondary
+        Switch(
+            checked = granted,
+            onCheckedChange = { if (!granted) onAllow() },
+            enabled = !granted,
+            modifier = Modifier.testTag("permission_switch_${permission.id}")
         )
-        if (granted) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.example.ui.theme.DotTheme.colors.success, modifier = Modifier.size(18.dp))
-                Text("Allowed", style = MaterialTheme.typography.labelLarge, color = com.example.ui.theme.DotTheme.colors.success, fontWeight = FontWeight.Bold)
-            }
-        } else {
-            Button(
-                onClick = onAllow,
-                shape = RoundedCornerShape(12.dp),
-                colors = com.example.ui.components.tonalButtonColors(MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(44.dp)
-            ) {
-                Text("Allow", fontWeight = FontWeight.Bold)
-            }
-        }
     }
 }

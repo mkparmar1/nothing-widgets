@@ -119,6 +119,8 @@ fun CustomWidgetBuilderScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     var sliderHistorySaved by remember { mutableStateOf(false) }
+    var showMoreBlockTypes by remember(existing?.id) { mutableStateOf(false) }
+    var showAdvancedSettings by remember(selectedId) { mutableStateOf(false) }
     val selected = blocks.firstOrNull { it.id == selectedId }
 
     // The preview redraws from a debounced copy so dragging a block doesn't re-render every frame.
@@ -214,7 +216,8 @@ fun CustomWidgetBuilderScreen(
                         color = DotTheme.colors.textPrimary
                     )
                     Text(
-                        "Drag blocks on the 16 Ã— 16 snap grid.",
+                        if (existing == null) "Start with a template, then make it yours."
+                        else "Tap a block to edit it, or drag it to move.",
                         style = MaterialTheme.typography.bodySmall,
                         color = DotTheme.colors.textSecondary
                     )
@@ -233,6 +236,42 @@ fun CustomWidgetBuilderScreen(
                     .padding(top = 8.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (existing == null && blocks.isEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+                        Text("Choose a starting point", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+                        Text(
+                            "Pick a ready-made layout. You can move, remove, or add blocks afterward.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = DotTheme.colors.textSecondary
+                        )
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
+                            verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
+                        ) {
+                            BuilderTemplates.all.forEachIndexed { index, (title, layout) ->
+                                DotCard(
+                                    modifier = Modifier.fillMaxWidth(0.48f).testTag("builder_template_$index"),
+                                    style = DotCardStyle.Interactive,
+                                    padding = DotSpacing.md,
+                                    onClick = {
+                                        change(layout.blocks)
+                                        selectedId = null
+                                    }
+                                ) {
+                                    Text(title, style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+                                    Text(
+                                        layout.blocks.take(3).joinToString(" + ") { it.type.displayLabel() },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = DotTheme.colors.textSecondary,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 BuilderPreview(
                     blocks = previewBlocks,
                     sizes = supportedSizes,
@@ -251,7 +290,7 @@ fun CustomWidgetBuilderScreen(
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
-                    Text("Available sizes", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+                    Text("Widget sizes", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
                         verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
@@ -270,38 +309,21 @@ fun CustomWidgetBuilderScreen(
                     }
                 }
 
-                if (existing == null && blocks.isEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
-                        Text("Start with a template", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
-                            verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
-                        ) {
-                            BuilderTemplates.all.forEachIndexed { index, (title, layout) ->
-                                DotButton(
-                                    text = title,
-                                    onClick = {
-                                        change(layout.blocks)
-                                        selectedId = null
-                                    },
-                                    style = DotButtonStyle.Secondary,
-                                    modifier = Modifier.testTag("builder_template_$index")
-                                )
-                            }
-                        }
-                    }
-                }
-
                 Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Canvas",
+                            "Arrange blocks",
                             style = DotType.CardTitle,
                             color = DotTheme.colors.textPrimary,
                             modifier = Modifier.weight(1f)
                         )
                         DotLabel("${blocks.size} / ${BuilderLayout.MAX_BLOCKS} blocks")
                     }
+                    Text(
+                        "Tap a block to select it. Drag it to move.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = DotTheme.colors.textSecondary
+                    )
                     BuilderCanvas(
                         blocks = blocks,
                         selectedId = selectedId,
@@ -348,139 +370,173 @@ fun CustomWidgetBuilderScreen(
                 }
 
                 Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
-                    Text("Add block", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+                    Text("Add content", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+                    Text(
+                        "Choose what you want to show on your widget.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = DotTheme.colors.textSecondary
+                    )
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
                         verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
                     ) {
-                        BuilderBlockType.entries.forEach { type ->
+                        val commonTypes = listOf(
+                            BuilderBlockType.TIME,
+                            BuilderBlockType.DATE,
+                            BuilderBlockType.WEATHER,
+                            BuilderBlockType.BATTERY,
+                            BuilderBlockType.TEXT
+                        )
+                        val types = if (showMoreBlockTypes) BuilderBlockType.entries else commonTypes
+                        types.forEach { type ->
                             DotChip(
                                 label = type.displayLabel(),
                                 selected = false,
                                 onClick = {
-                                    if (type == BuilderBlockType.IMAGE) {
-                                        photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                    } else {
-                                        val block = BuilderBlock(
-                                            type = type,
-                                            x = 1,
-                                            y = (blocks.size * 3).coerceAtMost(14),
-                                            width = 14,
-                                            height = 3,
-                                            text = if (type == BuilderBlockType.TEXT) "Your text" else ""
-                                        )
-                                        change(blocks + block)
-                                        selectedId = block.id
+                                    if (blocks.size < BuilderLayout.MAX_BLOCKS) {
+                                        if (type == BuilderBlockType.IMAGE) {
+                                            photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                        } else {
+                                            val block = BuilderBlock(
+                                                type = type,
+                                                x = 1,
+                                                y = (blocks.size * 3).coerceAtMost(14),
+                                                width = 14,
+                                                height = 3,
+                                                text = if (type == BuilderBlockType.TEXT) "Your text" else ""
+                                            )
+                                            change(blocks + block)
+                                            selectedId = block.id
+                                        }
                                     }
                                 },
                                 icon = type.icon(),
                                 modifier = Modifier.testTag("builder_add_${type.name.lowercase()}")
                             )
                         }
+                        DotButton(
+                            text = if (showMoreBlockTypes) "Fewer options" else "More options",
+                            onClick = { showMoreBlockTypes = !showMoreBlockTypes },
+                            style = DotButtonStyle.Ghost,
+                            modifier = Modifier.testTag("builder_more_block_types")
+                        )
                     }
                 }
 
                 selected?.let { block ->
-                    Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
-                        Text(
-                            "Block settings Â· ${block.type.displayLabel()}",
-                            style = DotType.CardTitle,
-                            color = DotTheme.colors.textPrimary
-                        )
-                        if (block.type == BuilderBlockType.TEXT || block.type == BuilderBlockType.DATE || block.type == BuilderBlockType.PROGRESS) {
-                            OutlinedTextField(
-                                value = block.text,
-                                onValueChange = { value ->
-                                    change(blocks.map { if (it.id == block.id) it.copy(text = value.take(120)) else it })
-                                },
-                                label = {
-                                    Text(
-                                        when (block.type) {
-                                            BuilderBlockType.DATE -> "Date format (e.g. EEE, d MMM)"
-                                            BuilderBlockType.PROGRESS -> "Progress 0â€“100 (blank = battery)"
-                                            else -> "Text"
+                    DotCard(padding = DotSpacing.md) {
+                        Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+                            Text(
+                                "Edit ${block.type.displayLabel()}",
+                                style = DotType.CardTitle,
+                                color = DotTheme.colors.textPrimary
+                            )
+                            if (block.type == BuilderBlockType.TEXT || block.type == BuilderBlockType.DATE || block.type == BuilderBlockType.PROGRESS) {
+                                OutlinedTextField(
+                                    value = block.text,
+                                    onValueChange = { value ->
+                                        change(blocks.map { if (it.id == block.id) it.copy(text = value.take(120)) else it })
+                                    },
+                                    label = {
+                                        Text(
+                                            when (block.type) {
+                                                BuilderBlockType.DATE -> "Date format (e.g. EEE, d MMM)"
+                                                BuilderBlockType.PROGRESS -> "Progress 0-100 (blank = battery)"
+                                                else -> "Text"
+                                            }
+                                        )
+                                    },
+                                    singleLine = true,
+                                    colors = dotFieldColors(),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            if (block.type == BuilderBlockType.IMAGE) {
+                                DotButton(
+                                    text = "Choose image",
+                                    onClick = {
+                                        photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                    },
+                                    style = DotButtonStyle.Secondary
+                                )
+                            }
+                            DotButton(
+                                text = if (showAdvancedSettings) "Hide fine-tuning" else "Size, position & style",
+                                onClick = { showAdvancedSettings = !showAdvancedSettings },
+                                style = DotButtonStyle.Ghost,
+                                modifier = Modifier.testTag("builder_advanced_layout")
+                            )
+                            if (showAdvancedSettings) {
+                                SliderRow(label = "Position X", value = block.x, range = 0f..15f, steps = 14) { value ->
+                                    changeFromSlider(blocks.map { if (it.id == block.id) it.copy(x = value.roundToInt()) else it })
+                                }
+                                SliderRow(label = "Position Y", value = block.y, range = 0f..15f, steps = 14) { value ->
+                                    changeFromSlider(blocks.map { if (it.id == block.id) it.copy(y = value.roundToInt()) else it })
+                                }
+                                SliderRow(label = "Width", value = block.width, range = 1f..16f, steps = 14) { value ->
+                                    changeFromSlider(blocks.map { if (it.id == block.id) it.copy(width = value.roundToInt()) else it })
+                                }
+                                SliderRow(label = "Height", value = block.height, range = 1f..16f, steps = 14) { value ->
+                                    changeFromSlider(blocks.map { if (it.id == block.id) it.copy(height = value.roundToInt()) else it })
+                                }
+                                SliderRow(label = "Text size", value = block.scale, range = 0.5f..2f, display = { "%.1fx".format(it) }) { value ->
+                                    changeFromSlider(blocks.map { if (it.id == block.id) it.copy(scale = value) else it })
+                                }
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
+                                    verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
+                                ) {
+                                    BuilderTextColor.entries.forEach { color ->
+                                        DotChip(
+                                            label = color.displayLabel(),
+                                            selected = color == block.color,
+                                            onClick = {
+                                                change(blocks.map { if (it.id == block.id) it.copy(color = color) else it })
+                                            }
+                                        )
+                                    }
+                                }
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
+                                    verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
+                                ) {
+                                    BuilderAlignment.entries.forEach { alignment ->
+                                        DotChip(
+                                            label = alignment.displayLabel(),
+                                            selected = alignment == block.alignment,
+                                            onClick = {
+                                                change(blocks.map { if (it.id == block.id) it.copy(alignment = alignment) else it })
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+                                DotButton(
+                                    text = "Duplicate",
+                                    onClick = {
+                                        if (blocks.size < BuilderLayout.MAX_BLOCKS) {
+                                            val copy = block.copy(
+                                                id = java.util.UUID.randomUUID().toString(),
+                                                x = (block.x + 1).coerceAtMost(15),
+                                                y = (block.y + 1).coerceAtMost(15)
+                                            )
+                                            change(blocks + copy)
+                                            selectedId = copy.id
                                         }
-                                    )
-                                },
-                                singleLine = true,
-                                colors = dotFieldColors(),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        if (block.type == BuilderBlockType.IMAGE) {
-                            DotButton(
-                                text = "Choose image",
-                                onClick = {
-                                    photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                },
-                                style = DotButtonStyle.Secondary
-                            )
-                        }
-                        SliderRow(label = "Position X", value = block.x, range = 0f..15f, steps = 14) { value ->
-                            changeFromSlider(blocks.map { if (it.id == block.id) it.copy(x = value.roundToInt()) else it })
-                        }
-                        SliderRow(label = "Position Y", value = block.y, range = 0f..15f, steps = 14) { value ->
-                            changeFromSlider(blocks.map { if (it.id == block.id) it.copy(y = value.roundToInt()) else it })
-                        }
-                        SliderRow(label = "Width", value = block.width, range = 1f..16f, steps = 14) { value ->
-                            changeFromSlider(blocks.map { if (it.id == block.id) it.copy(width = value.roundToInt()) else it })
-                        }
-                        SliderRow(label = "Height", value = block.height, range = 1f..16f, steps = 14) { value ->
-                            changeFromSlider(blocks.map { if (it.id == block.id) it.copy(height = value.roundToInt()) else it })
-                        }
-                        SliderRow(label = "Text size", value = block.scale, range = 0.5f..2f, display = { "%.1fÃ—".format(it) }) { value ->
-                            changeFromSlider(blocks.map { if (it.id == block.id) it.copy(scale = value) else it })
-                        }
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
-                            verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
-                        ) {
-                            BuilderTextColor.entries.forEach { color ->
-                                DotChip(
-                                    label = color.displayLabel(),
-                                    selected = color == block.color,
+                                    },
+                                    style = DotButtonStyle.Secondary,
+                                    enabled = blocks.size < BuilderLayout.MAX_BLOCKS
+                                )
+                                DotButton(
+                                    text = "Delete",
                                     onClick = {
-                                        change(blocks.map { if (it.id == block.id) it.copy(color = color) else it })
-                                    }
+                                        change(blocks.filterNot { it.id == block.id })
+                                        selectedId = null
+                                    },
+                                    style = DotButtonStyle.Destructive
                                 )
                             }
-                        }
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
-                            verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
-                        ) {
-                            BuilderAlignment.entries.forEach { alignment ->
-                                DotChip(
-                                    label = alignment.displayLabel(),
-                                    selected = alignment == block.alignment,
-                                    onClick = {
-                                        change(blocks.map { if (it.id == block.id) it.copy(alignment = alignment) else it })
-                                    }
-                                )
-                            }
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
-                            DotButton(
-                                text = "Duplicate",
-                                onClick = {
-                                    val copy = block.copy(
-                                        id = java.util.UUID.randomUUID().toString(),
-                                        x = (block.x + 1).coerceAtMost(15),
-                                        y = (block.y + 1).coerceAtMost(15)
-                                    )
-                                    change(blocks + copy)
-                                    selectedId = copy.id
-                                },
-                                style = DotButtonStyle.Secondary
-                            )
-                            DotButton(
-                                text = "Delete block",
-                                onClick = {
-                                    change(blocks.filterNot { it.id == block.id })
-                                    selectedId = null
-                                },
-                                style = DotButtonStyle.Destructive
-                            )
                         }
                     }
                 }

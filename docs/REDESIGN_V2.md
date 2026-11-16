@@ -167,7 +167,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 - Acceptance: apply flows unchanged; wallpaper never set without confirmation.
 
 ### R8 — Settings family restyle
-**Status:** Not started · **Effort:** M
+**Status:** In progress · **Effort:** M
 
 - Settings list with `SettingsRow` icon tiles.
 - Appearance: Themes carousel → **Theme Preview** screen (new): big preview, Dark / Light /
@@ -257,7 +257,7 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | R5 | Done | |
 | R6 | Done | |
 | R7 | Done | |
-| R8 | Not started | |
+| R8 | Done (uncommitted) | — |
 | R9 | Parked (D-1) | |
 | R10 | Not started | |
 
@@ -271,4 +271,5 @@ Each step ships on its own and keeps the app usable. Tick when done; record the 
 | 2026-11-15 | R4 tabbed customizer (Skin / Shape / Accent / Size) with pinned size-pager preview; WidgetSetupScreenTest updated | — |
 | 2026-11-15 | R5 actions: edit placed widgets (customizer), add to home, duplicate, delete with placed warning; manager dialog removed; MyWidgetsScreenTest added | — |
 | 2026-11-15 | R6 builder restyle: live preview on top, icon block chips, restyled canvas, pinned Build widget bar, template and undo/redo rows | — |
-| 2026-11-15 | R7 setups restyle: style filters, DotSetupCard with wallpaper + mini widget strip; wallpapers: featured apply card, 2-up WallpaperCard grid, confirmation sheet; SetupsWallpapersScreenTest added | — |
+| 2026-11-15 | R7 setups restyle: style filters, DotSetupCard with wallpaper + mini widget strip; wallpapers: featured apply card, 2-up WallpaperCard grid, confirmation sheet; SetupsWallpapersScreenTest added |
+| 2026-11-16 | R8 settings family restyle: SettingsScreen with Appearance→Theme Preview, Widget Status (StatusHero), About, Permissions rows, merged Weather screen (WeatherSettingsCard); restyled ConnectionsCard/LooksCard/WeatherLocationCard/PermissionsScreen/ThemeStudioCard; SettingsPagesTest updated; new WeatherSettingsCard, SportsRepository, PhotoPlacementEditor tests | — |

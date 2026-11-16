@@ -4,8 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.example.core.bitmap.SizeBucket
 import com.example.core.bitmap.SizeResolver
@@ -60,6 +63,18 @@ class SettingsPagesTest {
         compose.onNodeWithTag("non_affiliation").assertExists()
     }
 
+    @Test
+    fun `weather city choices wrap and accent swatches are accessible`() {
+        compose.setContent { DotWidgetsTheme(accentOption = AccentOption.RED) { SettingsScreen() } }
+
+        compose.onNodeWithTag("settings_row_data").performClick()
+        compose.onNodeWithTag("weather_city_tokyo").performScrollTo().assertIsDisplayed()
+
+        compose.onNodeWithTag("settings_back").performClick()
+        compose.onNodeWithTag("settings_row_appearance").performClick()
+        compose.onNodeWithContentDescription("Red accent").assertExists()
+    }
+
     private fun spec(): WidgetSpec {
         val dims = SizeResolver.resolveDimensions(context, SizeBucket.S)
         return WidgetSpec(
@@ -89,5 +104,18 @@ class SettingsPagesTest {
         ThemeRepository.setAnimationsEnabled(context, false)
         assertNull(ThemeAnimations.frames(context, "fun.theme.clock", spec()))
         assertFalse(ThemeRepository.animationsEnabled(context))
+    }
+
+    @Test
+    fun `settings renders in light theme without crashing`() {
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            DotWidgetsTheme(darkTheme = false, accentOption = AccentOption.RED) {
+                SettingsScreen()
+            }
+        }
+        compose.mainClock.advanceTimeBy(500)
+
+        compose.onNodeWithTag("settings_row_appearance").assertExists()
     }
 }

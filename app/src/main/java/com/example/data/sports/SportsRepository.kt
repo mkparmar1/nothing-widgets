@@ -2,11 +2,19 @@ package com.example.data.sports
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
+import com.example.widgets.base.WidgetRenderEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** A followed team plus its last-known fixtures/score, as cached for the Sports widgets. */
 data class TeamSnapshot(
@@ -34,6 +42,10 @@ data class TableRow(val team: String, val points: Int, val played: Int)
 object SportsRepository {
 
     private const val PREFS = "dot_widgets_sports"
+    private const val REFRESH_INTERVAL_MS = 60_000L
+
+    private val refreshInFlight = AtomicBoolean(false)
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     private fun prefs(context: Context): SharedPreferences =
         context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -41,17 +53,29 @@ object SportsRepository {
     /** Optional user-provided JSON feed URL (returns the [TeamSnapshot] shape). Empty = not set. */
     fun feedUrl(context: Context): String = prefs(context).getString("feed_url", "") ?: ""
 
-    fun setFeedUrl(context: Context, url: String) =
-        prefs(context).edit().putString("feed_url", url.trim()).apply()
+    fun setFeedUrl(context: Context, url: String) {
+        val p = prefs(context)
+        val normalized = url.trim()
+        if (p.getString("feed_url", "") == normalized) return
+        p.edit()
+            .putString("feed_url", normalized)
+            .remove("snapshot")
+            .remove("table")
+            .remove("last_fetch")
+            .apply()
+    }
 
     fun isConfigured(context: Context): Boolean = feedUrl(context).isNotBlank()
 
     /** Last-known snapshot for the followed team, or null until the user sets one up. */
-    fun snapshot(context: Context): TeamSnapshot? = try {
-        val raw = prefs(context).getString("snapshot", null) ?: return null
-        parseSnapshot(JSONObject(raw))
-    } catch (_: Exception) {
-        null
+    fun snapshot(context: Context): TeamSnapshot? {
+        refresh(context)
+        return try {
+            val raw = prefs(context).getString("snapshot", null) ?: return null
+            parseSnapshot(JSONObject(raw))
+        } catch (_: Exception) {
+            null
+        }
     }
 
     /** Stores a snapshot (used by the settings screen and by tests). */
@@ -59,20 +83,107 @@ object SportsRepository {
         prefs(context).edit().putString("snapshot", toJson(snap).toString()).apply()
     }
 
-    fun table(context: Context): List<TableRow> = try {
-        val arr = JSONArray(prefs(context).getString("table", "[]"))
-        (0 until arr.length()).map { i ->
-            val o = arr.getJSONObject(i)
-            TableRow(o.optString("team"), o.optInt("points"), o.optInt("played"))
+    fun table(context: Context): List<TableRow> {
+        refresh(context)
+        return try {
+            val arr = JSONArray(prefs(context).getString("table", "[]"))
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                TableRow(o.optString("team"), o.optInt("points"), o.optInt("played"))
+            }
+        } catch (_: Exception) {
+            emptyList()
         }
-    } catch (_: Exception) {
-        emptyList()
     }
 
     fun setTable(context: Context, rows: List<TableRow>) {
         val arr = JSONArray()
         rows.forEach { arr.put(JSONObject().put("team", it.team).put("points", it.points).put("played", it.played)) }
         prefs(context).edit().putString("table", arr.toString()).apply()
+    }
+
+    private fun refresh(context: Context) {
+        val appContext = context.applicationContext
+        val p = prefs(appContext)
+        val url = p.getString("feed_url", "").orEmpty()
+        if (url.isBlank() || System.currentTimeMillis() - p.getLong("last_fetch", 0L) < REFRESH_INTERVAL_MS) return
+        if (!refreshInFlight.compareAndSet(false, true)) return
+
+        p.edit().putLong("last_fetch", System.currentTimeMillis()).apply()
+        scope.launch {
+            try {
+                val feed = fetchFeed(url)
+                if (p.getString("feed_url", "").orEmpty() != url) {
+                    p.edit().remove("last_fetch").apply()
+                    return@launch
+                }
+                if (feed == null) {
+                    Log.w("SportsRepository", "Sports feed returned no supported data")
+                    return@launch
+                }
+                feed.snapshot?.let { setSnapshot(appContext, it) }
+                feed.table?.let { setTable(appContext, it) }
+                WidgetRenderEngine.updateAllPlacedWidgets(appContext)
+            } catch (e: Exception) {
+                Log.w("SportsRepository", "Could not refresh the sports feed", e)
+            } finally {
+                refreshInFlight.set(false)
+            }
+        }
+    }
+
+    private fun fetchFeed(url: String): SportsFeed? {
+        val connection = (URL(url).openConnection() as? HttpURLConnection)
+            ?: throw IllegalArgumentException("Unsupported sports feed URL")
+        connection.connectTimeout = 5000
+        connection.readTimeout = 5000
+        connection.requestMethod = "GET"
+        return try {
+            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                throw IllegalStateException("Sports feed returned HTTP ${connection.responseCode}")
+            }
+            connection.inputStream.bufferedReader().use { parseFeed(it.readText()) }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    internal data class SportsFeed(
+        val snapshot: TeamSnapshot?,
+        val table: List<TableRow>?
+    )
+
+    internal fun parseFeed(json: String): SportsFeed? = try {
+        val root = JSONObject(json)
+        val source = root.optJSONObject("snapshot") ?: root
+        val team = source.optString("team").trim()
+        val opponent = source.optString("opponent").trim()
+        val snapshot = if (team.isNotEmpty() && opponent.isNotEmpty()) {
+            TeamSnapshot(
+                team = team,
+                opponent = opponent,
+                league = source.optString("league"),
+                homeScore = if (source.has("homeScore")) source.optInt("homeScore") else source.optInt("home"),
+                awayScore = if (source.has("awayScore")) source.optInt("awayScore") else source.optInt("away"),
+                live = source.optBoolean("live"),
+                kickoffMs = if (source.has("kickoffMs")) source.optLong("kickoffMs") else source.optLong("kickoff"),
+                form = source.optString("form").filter { it == 'W' || it == 'D' || it == 'L' }.toList()
+            )
+        } else {
+            null
+        }
+        val tableArray = root.optJSONArray("table")
+        val table = tableArray?.let { rows ->
+            (0 until rows.length()).mapNotNull { i ->
+                val row = rows.optJSONObject(i) ?: return@mapNotNull null
+                row.optString("team").takeIf { it.isNotBlank() }?.let {
+                    TableRow(it, row.optInt("points"), row.optInt("played"))
+                }
+            }
+        }
+        if (snapshot == null && table == null) null else SportsFeed(snapshot, table)
+    } catch (_: Exception) {
+        null
     }
 
     // ---------------------------------------------------------------- F1 calendar (bundled, offline)
@@ -106,13 +217,19 @@ object SportsRepository {
     data class Race(val name: String, val circuit: String, val date: String, val daysAway: Int)
 
     /** The next race on or after today, wrapping to next season's opener when the calendar is done. */
-    fun nextRace(context: Context, series: String = "F1"): Race {
+    fun nextRace(context: Context, series: String = "F1"): Race =
+        nextRaceForDate(series, Date())
+
+    internal fun nextRaceForDate(series: String, today: Date): Race {
+        if (!series.equals("F1", ignoreCase = true)) {
+            return Race("Schedule unavailable", "", "TBA", 0)
+        }
         val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-        val today = fmt.parse(fmt.format(Date()))!!
-        val upcoming = F1_CALENDAR.firstOrNull { !fmt.parse(it.third)!!.before(today) }
-            ?: F1_CALENDAR.first()
+        val todayDate = fmt.parse(fmt.format(today))!!
+        val upcoming = F1_CALENDAR.firstOrNull { !fmt.parse(it.third)!!.before(todayDate) }
+            ?: return Race("2027 season", "TBA", "TBA", 0)
         val raceDate = fmt.parse(upcoming.third)!!
-        val days = ((raceDate.time - today.time) / 86_400_000L).toInt()
+        val days = ((raceDate.time - todayDate.time) / 86_400_000L).toInt()
         return Race(upcoming.first, upcoming.second, upcoming.third, days)
     }
 

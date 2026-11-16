@@ -4,13 +4,14 @@ import android.Manifest
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -18,14 +19,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,16 +32,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.core.theme.AccentOption
 import com.example.data.weather.WeatherPlace
 import com.example.data.weather.WeatherRepository
+import com.example.ui.components.DotButton
+import com.example.ui.components.DotButtonStyle
+import com.example.ui.components.DotCard
+import com.example.ui.components.DotLabel
+import com.example.ui.components.dotFieldColors
 import com.example.ui.permissions.AppPermission
+import com.example.ui.theme.DotSpacing
+import com.example.ui.theme.DotTheme
+import com.example.ui.theme.DotType
 import kotlinx.coroutines.launch
 
 /** Where weather and sunrise widgets get their data: device location, a searched city, or the time-zone guess. */
@@ -90,70 +94,75 @@ fun WeatherLocationCard(accent: AccentOption) {
         }
     }
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag("weather_location_card")
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Default.LocationOn, contentDescription = null, tint = com.example.ui.components.headerIconTint())
-                Text("Weather location", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    DotCard(modifier = Modifier.fillMaxWidth().testTag("weather_location_card")) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+            Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Column {
+                DotLabel("Weather")
+                Text("Location", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
             }
-            Text(
-                text = buildString {
-                    append(place.name)
-                    if (place.region.isNotBlank()) append(" • ${place.region.uppercase()}")
-                    if (!chosen) append(" (FROM TIME ZONE)")
-                },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            Button(
-                onClick = {
-                    if (AppPermission.Location.isGranted(context)) useDeviceLocation()
-                    else locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-                },
-                enabled = !busy,
-                shape = RoundedCornerShape(12.dp),
-                colors = com.example.ui.components.tonalButtonColors(MaterialTheme.colorScheme.primary),
-                modifier = Modifier.fillMaxWidth().height(44.dp).testTag("use_my_location")
-            ) {
-                Icon(Icons.Default.MyLocation, contentDescription = null)
-                Text("  USE MY LOCATION", fontWeight = FontWeight.Bold)
-            }
-
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                label = { Text("Or search a city") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { search() }),
-                trailingIcon = { TextButton(onClick = { search() }, enabled = !busy) { Text("Search", color = MaterialTheme.colorScheme.primary) } },
-                colors = com.example.ui.components.dotFieldColors(),
-                modifier = Modifier.fillMaxWidth().testTag("city_search")
-            )
-
-            results.forEach { result ->
-                Text(
-                    text = "${result.name}${if (result.region.isNotBlank()) " — ${result.region}" else ""}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { choose(result) }
-                        .padding(vertical = 8.dp)
-                )
-            }
-
-            if (chosen) {
-                TextButton(onClick = { choose(null) }) {
-                    Text("Use time zone instead", color = com.example.ui.theme.DotTheme.colors.textSecondary)
+        }
+        Spacer(Modifier.height(DotSpacing.md))
+        Text(
+            text = buildString {
+                append(place.name)
+                if (place.region.isNotBlank()) append(" • ${place.region.uppercase()}")
+                if (!chosen) append(" (from time zone)")
+            },
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.height(DotSpacing.sm))
+        DotButton(
+            text = "Use my location",
+            onClick = {
+                if (AppPermission.Location.isGranted(context)) useDeviceLocation()
+                else locationPermission.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+            },
+            enabled = !busy,
+            icon = Icons.Default.MyLocation,
+            style = DotButtonStyle.Secondary,
+            modifier = Modifier.fillMaxWidth().testTag("use_my_location")
+        )
+        Spacer(Modifier.height(DotSpacing.sm))
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Or search a city") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { search() }),
+            trailingIcon = {
+                TextButton(onClick = { search() }, enabled = !busy) {
+                    Text("Search", color = MaterialTheme.colorScheme.primary)
                 }
-            }
+            },
+            colors = dotFieldColors(),
+            modifier = Modifier.fillMaxWidth().testTag("city_search")
+        )
+
+        results.forEach { result ->
+            Text(
+                text = "${result.name}${if (result.region.isNotBlank()) " — ${result.region}" else ""}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = DotTheme.colors.textPrimary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(role = Role.Button) { choose(result) }
+                    .padding(horizontal = DotSpacing.sm, vertical = DotSpacing.sm)
+                    .testTag("city_result_${result.name.lowercase().replace(" ", "_")}")
+            )
+        }
+
+        if (chosen) {
+            DotButton(
+                text = "Use time zone instead",
+                onClick = { choose(null) },
+                style = DotButtonStyle.Ghost,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

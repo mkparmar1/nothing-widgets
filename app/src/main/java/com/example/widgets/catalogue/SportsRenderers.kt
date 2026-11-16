@@ -125,9 +125,19 @@ object SportsRenderers {
         val series = spec.options.string("series", "F1")
         val race = SportsRepository.nextRace(context, series)
         kit.header("$series • NEXT RACE")
+        if (race.name == "Schedule unavailable") {
+            kit.labelCentered("SCHEDULE UNAVAILABLE", kit.height * 0.52f, kit.textPaint(kit.greyColor, 10f, 13f))
+            return
+        }
         DotMatrixRenderer.drawFittedLabel(kit.canvas, race.name.uppercase(), kit.pad, kit.height * 0.42f, kit.maxW, kit.textPaint(kit.onColor, 12f, 16f))
-        kit.labelCentered(race.circuit.uppercase(), kit.height * 0.60f, kit.textPaint(kit.greyColor, 10f, 13f))
-        kit.labelCentered("${race.date} • IN ${race.daysAway}D", kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.accentColor, 10f, 13f))
+        if (race.circuit.isNotBlank()) {
+            kit.labelCentered(race.circuit.uppercase(), kit.height * 0.60f, kit.textPaint(kit.greyColor, 10f, 13f))
+        }
+        kit.labelCentered(
+            if (race.date == "TBA") "2027 CALENDAR TBA" else "${race.date} • IN ${race.daysAway}D",
+            kit.height - kit.pad - 2f * kit.d,
+            kit.textPaint(kit.accentColor, 10f, 13f)
+        )
     }
 
     fun renderCricketOvers(context: Context, spec: WidgetSpec, canvas: Canvas) {

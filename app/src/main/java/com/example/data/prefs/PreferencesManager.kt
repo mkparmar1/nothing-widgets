@@ -38,6 +38,22 @@ class PreferencesManager(context: Context) {
         _accent.value = option
     }
 
+    /** Material You: the accent follows the wallpaper (the [AccentOption.DYNAMIC] accent). */
+    fun isMaterialYou(): Boolean = getSavedAccent() == AccentOption.DYNAMIC
+
+    fun setMaterialYou(enabled: Boolean) {
+        if (enabled) {
+            val current = getSavedAccent()
+            if (current != AccentOption.DYNAMIC) {
+                prefs.edit().putString("last_static_accent", current.name).apply()
+            }
+            setGlobalAccent(AccentOption.DYNAMIC)
+        } else if (isMaterialYou()) {
+            val last = prefs.getString("last_static_accent", AccentOption.RED.name) ?: AccentOption.RED.name
+            setGlobalAccent(AccentOption.fromName(last))
+        }
+    }
+
     fun getSavedBgMode(): BackgroundMode {
         val name = prefs.getString("global_bg_mode", BackgroundMode.SOLID.name)
         return BackgroundMode.fromName(name)

@@ -782,7 +782,7 @@ object DeepVariantRenderers {
         kit.background()
         val conn = (context.getSystemService(Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager)
         val active = conn?.activeNetworkInfo
-        val subtype = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && active?.type == android.net.ConnectivityManager.TYPE_MOBILE) {
+        val subtype = if (active?.type == android.net.ConnectivityManager.TYPE_MOBILE) {
             when (active.subtype) {
                 android.telephony.TelephonyManager.NETWORK_TYPE_LTE -> "4G LTE"
                 android.telephony.TelephonyManager.NETWORK_TYPE_NR -> "5G"

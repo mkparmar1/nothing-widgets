@@ -4,7 +4,8 @@
      those are typically http://homeassistant.local:8123 or http://192.168.x.x:8123, and
      network-security-config can't match private IP ranges. The URL is entered by the user,
      and the setup screen warns that http:// is unencrypted. -->
-<network-security-config>
+<network-security-config xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="InsecureBaseConfiguration">
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />

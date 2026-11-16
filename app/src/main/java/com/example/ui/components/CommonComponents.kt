@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SearchOff
@@ -32,6 +35,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,21 +46,22 @@ import com.example.core.bitmap.SizeBucket
 import com.example.core.theme.AccentOption
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 fun AccentSelectorRow(
     selected: AccentOption,
     onSelect: (AccentOption) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    FlowRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         AccentOption.entries.forEach { option ->
             val isSelected = option == selected
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .then(if (option == AccentOption.DYNAMIC) rainbowModifier() else Modifier.background(option.color))
                     .border(
@@ -62,7 +69,12 @@ fun AccentSelectorRow(
                         color = if (isSelected) MaterialTheme.colorScheme.onBackground else Color.Transparent,
                         shape = CircleShape
                     )
-                    .clickable { onSelect(option) }
+                    .selectable(
+                        selected = isSelected,
+                        role = Role.RadioButton,
+                        onClick = { onSelect(option) }
+                    )
+                    .semantics { contentDescription = "${option.displayName} accent" }
                     .testTag("accent_option_${option.name.lowercase()}"),
                 contentAlignment = Alignment.Center
             ) {

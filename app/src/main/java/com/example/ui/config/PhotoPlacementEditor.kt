@@ -11,10 +11,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -134,14 +138,6 @@ internal fun PhotoPlacementEditor(
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f).padding(start = 8.dp)
                 )
-                Button(
-                    onClick = {
-                        clampNow()
-                        onDone(initial.copy(zoom = zoom, cx = cx, cy = cy, dim = dim, filter = filter, dotSize = dotSize))
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = accent),
-                    modifier = Modifier.testTag("photo_edit_done")
-                ) { Text("Done") }
             }
 
             Box(
@@ -227,7 +223,14 @@ internal fun PhotoPlacementEditor(
                 }
             }
 
-            Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
                     "Pinch to zoom · drag to move · double-tap to reset",
                     color = Color.White.copy(alpha = 0.7f),
@@ -298,6 +301,19 @@ internal fun PhotoPlacementEditor(
                     )
                 }
             }
+
+            Button(
+                onClick = {
+                    clampNow()
+                    onDone(initial.copy(zoom = zoom, cx = cx, cy = cy, dim = dim, filter = filter, dotSize = dotSize))
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = accent),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp)
+                    .height(52.dp)
+                    .testTag("photo_edit_done")
+            ) { Text("Save photo") }
         }
     }
 }

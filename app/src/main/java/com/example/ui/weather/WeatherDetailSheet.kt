@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.example.core.theme.AccentOption
 import com.example.data.weather.WeatherData
 import com.example.data.weather.WeatherRepository
+import com.example.ui.theme.DotTheme
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +58,7 @@ fun WeatherDetailSheet(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val colors = DotTheme.colors
     // null = the user's own place (chosen city or device location)
     var selectedCity by remember { mutableStateOf<String?>(null) }
     val myPlaceName = remember { WeatherRepository.currentPlace(context).name }
@@ -151,7 +153,7 @@ fun WeatherDetailSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF000000))
+                            .background(colors.surface)
                             .padding(24.dp)
                     ) {
                         Column {

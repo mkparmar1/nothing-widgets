@@ -4,21 +4,16 @@ import android.app.WallpaperManager
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,8 +34,14 @@ import com.example.core.theme.BackgroundMode
 import com.example.core.theme.ThemeMode
 import com.example.themes.ThemePack
 import com.example.themes.ThemeRepository
+import com.example.ui.components.DotButton
+import com.example.ui.components.DotButtonStyle
+import com.example.ui.components.DotCard
+import com.example.ui.components.DotLabel
 import com.example.ui.components.WidgetBitmapPreview
-import com.example.ui.components.tonalButtonColors
+import com.example.ui.theme.DotSpacing
+import com.example.ui.theme.DotTheme
+import com.example.ui.theme.DotType
 import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetRenderEngine
 import com.example.widgets.base.WidgetSpec
@@ -58,29 +59,22 @@ fun ThemeStudioCard() {
     var selected by remember { mutableStateOf(ThemeRepository.selected(context).id) }
     var animate by remember { mutableStateOf(ThemeRepository.animationsEnabled(context)) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
-            .padding(16.dp)
-            .testTag("theme_studio_card"),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Column {
-            Text("Themes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text(
-                "Add widgets from the Themes filter on the Widgets tab, then choose how they look here.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = com.example.ui.theme.DotTheme.colors.textSecondary
-            )
-        }
+    DotCard(modifier = Modifier.fillMaxWidth().testTag("theme_studio_card")) {
+        DotLabel("Themes")
+        Text("Theme packs", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+        Text(
+            "Add widgets from the Themes filter on the Widgets tab, then choose how they look here.",
+            style = MaterialTheme.typography.bodySmall,
+            color = DotTheme.colors.textSecondary
+        )
+        Spacer(Modifier.height(DotSpacing.md))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
-                Text("Animations", style = MaterialTheme.typography.bodyLarge)
+                Text("Animations", style = MaterialTheme.typography.titleMedium, color = DotTheme.colors.textPrimary)
                 Text(
                     "Light sweeps and pulses on theme widgets",
                     style = MaterialTheme.typography.bodySmall,
-                    color = com.example.ui.theme.DotTheme.colors.textSecondary
+                    color = DotTheme.colors.textSecondary
                 )
             }
             Switch(
@@ -94,6 +88,7 @@ fun ThemeStudioCard() {
             )
         }
         packs.forEach { pack ->
+            Spacer(Modifier.height(DotSpacing.md))
             PackRow(
                 pack = pack,
                 isSelected = pack.id == selected,
@@ -114,29 +109,31 @@ fun ThemeStudioCard() {
 
 @Composable
 private fun PackRow(pack: ThemePack, isSelected: Boolean, onUse: () -> Unit, onWallpaper: () -> Unit) {
-    val accent = MaterialTheme.colorScheme.primary
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("theme_pack_${pack.id}")) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm), modifier = Modifier.testTag("theme_pack_${pack.id}")) {
+        Row(horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
             PackPreview(pack, "toggle.theme.quick", SizeBucket.S, Modifier.width(88.dp))
             PackPreview(pack, "prod.focus.timer.theme", SizeBucket.M, Modifier.weight(1f))
         }
-        Text(pack.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+        Text(pack.name, style = MaterialTheme.typography.titleMedium, color = DotTheme.colors.textPrimary)
         Text(
             pack.description,
             style = MaterialTheme.typography.bodySmall,
-            color = com.example.ui.theme.DotTheme.colors.textSecondary
+            color = DotTheme.colors.textSecondary
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Button(
+        Row(horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm), verticalAlignment = Alignment.CenterVertically) {
+            DotButton(
+                text = if (isSelected) "In use" else "Use theme",
                 onClick = onUse,
                 enabled = !isSelected,
-                colors = tonalButtonColors(accent),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.height(44.dp).testTag("theme_use_${pack.id}")
-            ) { Text(if (isSelected) "In use" else "Use theme", style = MaterialTheme.typography.labelLarge) }
-            TextButton(onClick = onWallpaper, colors = ButtonDefaults.textButtonColors(contentColor = accent)) {
-                Text("Set wallpaper", style = MaterialTheme.typography.labelLarge)
-            }
+                style = DotButtonStyle.Secondary,
+                modifier = Modifier.weight(1f).testTag("theme_use_${pack.id}")
+            )
+            DotButton(
+                text = "Wallpaper",
+                onClick = onWallpaper,
+                style = DotButtonStyle.Ghost,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

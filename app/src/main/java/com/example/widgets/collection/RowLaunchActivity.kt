@@ -1,5 +1,6 @@
 package com.example.widgets.collection
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -11,6 +12,7 @@ import com.example.widgets.collection.CollectionWidgetService.Companion.EXTRA_RO
  * event). Android 14+ forbids a widget's mutable row template from being an implicit intent, so
  * the template targets this explicit, non-exported activity, which then opens the real target.
  */
+@SuppressLint("CustomSplashScreen")
 class RowLaunchActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {

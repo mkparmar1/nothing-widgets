@@ -81,9 +81,7 @@ object BatteryHelper {
             } else {
                 val bm = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
                 val capacity = bm?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: 82
-                val isCharging = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                    bm?.isCharging == true
-                } else false
+                val isCharging = bm?.isCharging == true
                 BatteryStatus(level = capacity.coerceIn(0, 100), isCharging = isCharging, isPlugged = isCharging)
             }
         } catch (_: Exception) {
