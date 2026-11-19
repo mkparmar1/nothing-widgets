@@ -2,6 +2,7 @@ package com.example.widgets.base
 
 import com.example.core.bitmap.SizeBucket
 import com.example.core.config.WidgetOptions
+import com.example.core.render.Frame
 import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.ThemeMode
@@ -33,7 +34,17 @@ data class WidgetSpec(
      */
     val liveOverlays: Boolean = false,
     /** Resolved advanced-option values (from `configJson`'s `"opt"` object). */
-    val options: WidgetOptions = WidgetOptions.parse(configJson)
+    val options: WidgetOptions = WidgetOptions.parse(configJson),
+    /** Outline of the widget. [WidgetShape.ROUNDED] keeps the legacy corner-radius look. */
+    val shape: WidgetShape = WidgetShape.ROUNDED,
+    /** Normalized outline points used when [shape] is [WidgetShape.CUSTOM]. */
+    val customPoints: List<ShapePoint> = emptyList(),
+    /** Overrides the background fill colour for the shape; null keeps the theme background. */
+    val shapeFillColor: Int? = null,
+    /** Overrides the border colour; null keeps the theme edge colour. */
+    val shapeBorderColor: Int? = null,
+    /** Overrides the frame style; null keeps the widget's Look frame. */
+    val shapeBorderStyle: Frame? = null
 )
 
 enum class TapAction(val displayName: String) {
@@ -44,6 +55,7 @@ enum class TapAction(val displayName: String) {
     OPEN_WEATHER("In-App Weather Forecast"),
     OPEN_MAIN("Open Dot Widgets App"),
     OPEN_SEARCH("Web Search"),
+    OPEN_APP("Open an app"),
     NONE("Do Nothing")
 }
 

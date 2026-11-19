@@ -88,20 +88,26 @@ class MyWidgetsScreenTest {
         }
     }
 
-    private fun clickInRow(rowTag: String, actionTag: String) {
+    private fun openRowMenu(rowTag: String) {
         compose.waitUntil(5_000) {
             compose.onAllNodesWithTag(rowTag).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNode(
-            hasTestTag(actionTag) and hasAnyAncestor(hasTestTag(rowTag)),
+            hasTestTag("my_widgets_menu") and hasAnyAncestor(hasTestTag(rowTag)),
             useUnmergedTree = true
         ).performScrollTo().performClick()
+        compose.waitForIdle()
+    }
+
+    private fun clickMenuAction(actionTag: String) {
+        compose.onNode(hasTestTag(actionTag), useUnmergedTree = true).performClick()
     }
 
     @Test
     fun `saved widget can be duplicated`() {
         launch()
-        clickInRow("my_widget_saved_${widget.id}", "my_widgets_duplicate")
+        openRowMenu("my_widget_saved_${widget.id}")
+        clickMenuAction("my_widgets_duplicate")
 
         compose.waitUntil(5_000) {
             runBlocking { customDao.getAll() }.any { it.name == "Test widget copy" }
@@ -116,7 +122,8 @@ class MyWidgetsScreenTest {
         var edited: Pair<WidgetInstance, WidgetDefinition>? = null
         launch { instance, definition -> edited = instance to definition }
 
-        clickInRow("my_widget_placed_$placedId", "my_widgets_edit")
+        openRowMenu("my_widget_placed_$placedId")
+        clickMenuAction("my_widgets_edit")
 
         assertEquals(placedId, edited?.first?.appWidgetId)
         assertEquals(placedDefinition.id, edited?.second?.id)

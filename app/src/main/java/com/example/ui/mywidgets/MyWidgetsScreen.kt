@@ -5,8 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,8 +22,12 @@ import androidx.compose.material.icons.filled.AddHome
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -261,7 +263,6 @@ fun MyWidgetsScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MyWidgetRow(
     entry: MyWidgetEntry,
@@ -271,6 +272,7 @@ private fun MyWidgetRow(
     onDuplicate: (() -> Unit)?,
     onDelete: (() -> Unit)?
 ) {
+    var menuOpen by remember { mutableStateOf(false) }
     DotCard(
         style = DotCardStyle.Standard,
         padding = DotSpacing.md,
@@ -314,37 +316,79 @@ private fun MyWidgetRow(
             }
         }
         if (onEdit != null || onAddToHome != null || onDuplicate != null || onDelete != null) {
-            Spacer(Modifier.height(DotSpacing.xs))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(DotSpacing.xs),
-                verticalArrangement = Arrangement.spacedBy(DotSpacing.xs)
+            Spacer(Modifier.height(DotSpacing.sm))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)
             ) {
-                if (onEdit != null) {
-                    TextButton(onClick = onEdit, modifier = Modifier.testTag("my_widgets_edit")) {
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(DotSpacing.xs))
-                        Text("Edit")
-                    }
-                }
                 if (onAddToHome != null) {
-                    TextButton(onClick = onAddToHome, modifier = Modifier.testTag("my_widgets_add_home")) {
-                        Icon(Icons.Default.AddHome, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(DotSpacing.xs))
-                        Text("Add to home")
-                    }
+                    DotButton(
+                        text = "Add to home screen",
+                        onClick = onAddToHome,
+                        icon = Icons.Default.AddHome,
+                        style = DotButtonStyle.Primary,
+                        modifier = Modifier.weight(1f).testTag("my_widgets_add_home")
+                    )
+                } else {
+                    Spacer(Modifier.weight(1f))
                 }
-                if (onDuplicate != null) {
-                    TextButton(onClick = onDuplicate, modifier = Modifier.testTag("my_widgets_duplicate")) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(DotSpacing.xs))
-                        Text("Duplicate")
-                    }
-                }
-                if (onDelete != null) {
-                    TextButton(onClick = onDelete, modifier = Modifier.testTag("my_widgets_delete")) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp), tint = DotTheme.colors.danger)
-                        Spacer(Modifier.width(DotSpacing.xs))
-                        Text("Delete", color = DotTheme.colors.danger)
+                if (onEdit != null || onDuplicate != null || onDelete != null) {
+                    Box {
+                        IconButton(
+                            onClick = { menuOpen = true },
+                            modifier = Modifier.testTag("my_widgets_menu")
+                        ) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "More actions",
+                                tint = DotTheme.colors.textPrimary
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuOpen,
+                            onDismissRequest = { menuOpen = false }
+                        ) {
+                            if (onEdit != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Edit") },
+                                    leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        onEdit()
+                                    },
+                                    modifier = Modifier.testTag("my_widgets_edit")
+                                )
+                            }
+                            if (onDuplicate != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Duplicate") },
+                                    leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        onDuplicate()
+                                    },
+                                    modifier = Modifier.testTag("my_widgets_duplicate")
+                                )
+                            }
+                            if (onDelete != null) {
+                                DropdownMenuItem(
+                                    text = { Text("Delete", color = DotTheme.colors.danger) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = null,
+                                            tint = DotTheme.colors.danger
+                                        )
+                                    },
+                                    onClick = {
+                                        menuOpen = false
+                                        onDelete()
+                                    },
+                                    modifier = Modifier.testTag("my_widgets_delete")
+                                )
+                            }
+                        }
                     }
                 }
             }

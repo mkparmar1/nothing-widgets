@@ -11,6 +11,8 @@ import android.graphics.Typeface
 import com.example.core.theme.BackgroundMode
 import com.example.core.time.DotStyle
 import com.example.data.photos.PhotoFilter
+import com.example.widgets.base.ShapePoint
+import com.example.widgets.base.WidgetShape
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -26,6 +28,9 @@ object DotMatrixRenderer {
     private val dotStyle = ThreadLocal.withInitial { DotStyle.ROUND }
     private val skin = ThreadLocal.withInitial { Skin.DOT }
     private val frame = ThreadLocal.withInitial { Frame.HAIRLINE }
+    private val shapeFill = ThreadLocal<Int?>()
+    private val shapeBorder = ThreadLocal<Int?>()
+    private val shapeBorderStyle = ThreadLocal<Frame?>()
     private val textScale = ThreadLocal.withInitial { 1f }
     private val cornerDot = ThreadLocal.withInitial { true }
     /** Optional custom photo behind the widget, with how much to darken it (0..1). */
@@ -77,23 +82,43 @@ object DotMatrixRenderer {
     /** Dot shape of the widget being drawn, so photo filters can match it. */
     val currentDotStyle: DotStyle get() = dotStyle.get() ?: DotStyle.ROUND
 
-    fun <T> withStyle(style: DotStyle, widgetSkin: Skin, widgetFrame: Frame = Frame.HAIRLINE, block: () -> T): T {
+    fun <T> withStyle(
+        style: DotStyle,
+        widgetSkin: Skin,
+        widgetFrame: Frame = Frame.HAIRLINE,
+        fillOverride: Int? = null,
+        borderOverride: Int? = null,
+        borderOverrideStyle: Frame? = null,
+        block: () -> T
+    ): T {
         val previousStyle = dotStyle.get()
         val previousSkin = skin.get()
         val previousFrame = frame.get()
+        val previousFill = shapeFill.get()
+        val previousBorder = shapeBorder.get()
+        val previousBorderStyle = shapeBorderStyle.get()
         dotStyle.set(style)
         skin.set(widgetSkin)
         frame.set(widgetFrame)
+        shapeFill.set(fillOverride)
+        shapeBorder.set(borderOverride)
+        shapeBorderStyle.set(borderOverrideStyle)
         try {
             return block()
         } finally {
             dotStyle.set(previousStyle)
             skin.set(previousSkin)
             frame.set(previousFrame)
+            shapeFill.set(previousFill)
+            shapeBorder.set(previousBorder)
+            shapeBorderStyle.set(previousBorderStyle)
         }
     }
 
-    fun <T> withDotStyle(style: DotStyle, block: () -> T): T = withStyle(style, currentSkin, frame.get() ?: Frame.HAIRLINE, block)
+    fun <T> withDotStyle(style: DotStyle, block: () -> T): T = withStyle(
+        style, currentSkin, frame.get() ?: Frame.HAIRLINE,
+        shapeFill.get(), shapeBorder.get(), shapeBorderStyle.get(), block
+    )
 
     /** Draws one lit dot in the current skin and dot style (used by the photo dot filter). */
     fun drawLitDot(canvas: Canvas, cx: Float, cy: Float, radius: Float, paint: Paint) {
@@ -591,10 +616,21 @@ object DotMatrixRenderer {
         }
     }
 
-    /** The custom photo, cropped to fill the widget's rounded shape, then darkened so content reads. */
-    private fun drawPhotoBackground(canvas: Canvas, rect: RectF, radius: Float, photo: PhotoBackground, accentColor: Int) {
+    /** The custom photo, cropped to fill the widget's outline, then darkened so content reads. */
+    private fun drawPhotoBackground(
+        canvas: Canvas,
+        rect: RectF,
+        radius: Float,
+        shape: WidgetShape,
+        customPoints: List<ShapePoint>,
+        photo: PhotoBackground,
+        accentColor: Int
+    ) {
         val image = photo.image
-        val path = Path().apply { addRoundRect(rect, radius, radius, Path.Direction.CW) }
+        val path = WidgetShapes.path(
+            shape, rect.right + 1.5f, rect.bottom + 1.5f, radius,
+            inset = 1.5f, customPoints = customPoints
+        )
         canvas.save()
         canvas.clipPath(path)
         val b = PhotoFraming.bounds(image.width, image.height, rect.left, rect.top, rect.width(), rect.height(), photo.zoom, photo.cx, photo.cy)
@@ -634,15 +670,24 @@ object DotMatrixRenderer {
         accentColor: Int,
         /** Fill opacity, 0 = see-through, 1 = fully opaque. Ignored when [bgMode] is TRANSPARENT. */
         bgAlpha: Float = 1f,
-        showAccentDot: Boolean = true
+        showAccentDot: Boolean = true,
+        shape: WidgetShape = WidgetShape.ROUNDED,
+        customPoints: List<ShapePoint> = emptyList()
     ) {
         val rect = RectF(1.5f, 1.5f, width - 1.5f, height - 1.5f)
+        val shapePath = WidgetShapes.path(
+            shape, width, height, cornerRadius,
+            inset = 1.5f, customPoints = customPoints
+        )
         val alpha = bgAlpha.coerceIn(0f, 1f)
+        val fillOverride = shapeFill.get()
+        val borderOverride = shapeBorder.get()
+        val effectiveFrame = shapeBorderStyle.get() ?: frame.get() ?: Frame.HAIRLINE
 
         val activeSkin = currentSkin
 
         // Fill
-        val bgColor = when (bgMode) {
+        val bgColor = fillOverride ?: when (bgMode) {
             BackgroundMode.SOLID -> {
                 val a = (alpha * 255).toInt()
                 when {
@@ -664,10 +709,10 @@ object DotMatrixRenderer {
 
         val photo = backgroundImage.get()
         if (photo != null) {
-            drawPhotoBackground(canvas, rect, cornerRadius, photo, accentColor)
+            drawPhotoBackground(canvas, rect, cornerRadius, shape, customPoints, photo, accentColor)
         } else if (bgColor != Color.TRANSPARENT) {
             paintFill.color = bgColor
-            canvas.drawRoundRect(rect, cornerRadius, cornerRadius, paintFill)
+            canvas.drawPath(shapePath, paintFill)
             if (activeSkin == Skin.TERMINAL) {
                 // CRT scan lines
                 canvas.save()
@@ -683,46 +728,59 @@ object DotMatrixRenderer {
         }
 
         if (activeSkin == Skin.NEON) {
-            drawGlow(canvas, accentColor, 10f) { p ->
+            drawGlow(canvas, borderOverride ?: accentColor, 10f) { p ->
                 p.style = Paint.Style.STROKE
                 p.strokeWidth = 3f
-                canvas.drawRoundRect(rect, cornerRadius, cornerRadius, p)
+                canvas.drawPath(shapePath, p)
                 p.style = Paint.Style.FILL
             }
         }
 
         // Edge: 18%-alpha hairline by default, or the widget's chosen frame
-        val edgeColor = if (isDark) Color.argb(46, 255, 255, 255) else Color.argb(46, 10, 10, 10)
-        when (frame.get() ?: Frame.HAIRLINE) {
+        val edgeColor = borderOverride ?: if (isDark) Color.argb(46, 255, 255, 255) else Color.argb(46, 10, 10, 10)
+        when (effectiveFrame) {
             Frame.HAIRLINE -> {
                 paintStroke.color = edgeColor
                 paintStroke.strokeWidth = 2f
-                canvas.drawRoundRect(rect, cornerRadius, cornerRadius, paintStroke)
+                canvas.drawPath(shapePath, paintStroke)
             }
             Frame.NONE -> Unit
             Frame.DOTTED -> {
-                paintStroke.color = if (isDark) Color.argb(140, 255, 255, 255) else Color.argb(140, 10, 10, 10)
+                paintStroke.color = borderOverride ?: if (isDark) Color.argb(140, 255, 255, 255) else Color.argb(140, 10, 10, 10)
                 paintStroke.strokeWidth = 3f
                 paintStroke.strokeCap = Paint.Cap.ROUND
                 paintStroke.pathEffect = android.graphics.DashPathEffect(floatArrayOf(0.1f, 9f), 0f)
-                val inset = RectF(rect.left + 3f, rect.top + 3f, rect.right - 3f, rect.bottom - 3f)
-                canvas.drawRoundRect(inset, cornerRadius, cornerRadius, paintStroke)
+                val dottedPath = WidgetShapes.path(
+                    shape, width, height, cornerRadius,
+                    inset = 4.5f, customPoints = customPoints
+                )
+                canvas.drawPath(dottedPath, paintStroke)
                 paintStroke.pathEffect = null
                 paintStroke.strokeCap = Paint.Cap.BUTT
             }
-            Frame.GLOW -> drawGlow(canvas, accentColor, 9f) { p ->
+            Frame.GLOW -> drawGlow(canvas, borderOverride ?: accentColor, 9f) { p ->
                 p.style = Paint.Style.STROKE
                 p.strokeWidth = 3f
-                canvas.drawRoundRect(rect, cornerRadius, cornerRadius, p)
+                canvas.drawPath(shapePath, p)
                 p.style = Paint.Style.FILL
             }
         }
 
-        // Accent indicator dot in top-right corner (can be turned off per widget)
+        // Accent indicator dot near the top-right corner (can be turned off per widget)
         if (showAccentDot && cornerDot.get() != false) {
-            val dotInset = (cornerRadius * 0.72f).coerceIn(16f, 24f)
+            val (dotX, dotY) = when (shape) {
+                WidgetShape.CIRCLE, WidgetShape.SQUIRCLE, WidgetShape.CUT -> {
+                    val dx = (width / 2f - 12f) * 0.72f
+                    val dy = (height / 2f - 12f) * 0.72f
+                    width / 2f + dx to height / 2f - dy
+                }
+                else -> {
+                    val dotInset = (cornerRadius * 0.72f).coerceIn(16f, 24f)
+                    width - dotInset to dotInset
+                }
+            }
             paintOn.color = accentColor
-            canvas.drawCircle(width - dotInset, dotInset, 4.0f, paintOn)
+            canvas.drawCircle(dotX, dotY, 4.0f, paintOn)
         }
     }
 

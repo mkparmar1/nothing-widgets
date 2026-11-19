@@ -27,12 +27,14 @@ import com.example.core.theme.AccentOption
 import com.example.core.theme.BackgroundMode
 import com.example.core.theme.MaterialYouPalette
 import com.example.core.theme.ThemeMode
+import com.example.core.theme.WidgetAccent
 import com.example.data.db.AppDatabase
 import com.example.data.db.WidgetInstance
 import com.example.core.config.UniversalOptions
 import com.example.core.render.DotMatrixRenderer
 import com.example.core.render.Frame
 import com.example.core.render.Skin
+import com.example.core.render.WidgetShapes
 import com.example.core.time.ClockOptions
 import com.example.core.time.ClockSupport
 import com.example.core.time.TimeFormat
@@ -75,7 +77,9 @@ object WidgetRenderEngine {
             BitmapCache.makeKey(
                 widgetTypeId = definition.id,
                 instanceId = instanceId,
-                valueHash = spec.configJson.hashCode() + definition.renderVersion + (System.currentTimeMillis() / 60000).toInt(),
+                valueHash = spec.configJson.hashCode() + spec.shape.name.hashCode() + spec.customPoints.hashCode() +
+                    spec.shapeFillColor.hashCode() + spec.shapeBorderColor.hashCode() + spec.shapeBorderStyle.hashCode() +
+                    definition.renderVersion + (System.currentTimeMillis() / 60000).toInt(),
                 size = spec.sizeBucket,
                 isDark = spec.isDark,
                 accent = spec.accentColor.toString()
@@ -93,9 +97,27 @@ object WidgetRenderEngine {
             Bitmap.Config.ARGB_8888
         )
         val canvas = Canvas(bitmap)
+        if (spec.shape != WidgetShape.ROUNDED) {
+            canvas.clipPath(
+                WidgetShapes.path(
+                    shape = spec.shape,
+                    width = spec.widthPx.toFloat(),
+                    height = spec.heightPx.toFloat(),
+                    cornerRadius = spec.cornerRadiusDp * spec.density,
+                    customPoints = spec.customPoints
+                )
+            )
+        }
 
         try {
-            DotMatrixRenderer.withStyle(ClockOptions.dotStyle(spec.configJson), Skin.from(spec.configJson), Frame.from(spec.configJson)) {
+            DotMatrixRenderer.withStyle(
+                style = ClockOptions.dotStyle(spec.configJson),
+                widgetSkin = Skin.from(spec.configJson),
+                widgetFrame = Frame.from(spec.configJson),
+                fillOverride = spec.shapeFillColor,
+                borderOverride = spec.shapeBorderColor,
+                borderOverrideStyle = spec.shapeBorderStyle
+            ) {
                 DotMatrixRenderer.withUniversal(UniversalOptions.textScale(spec.options), UniversalOptions.cornerDot(spec.options)) {
                     DotMatrixRenderer.withBackgroundImage(photo) {
                         definition.render(context, spec, canvas)
@@ -199,7 +221,13 @@ object WidgetRenderEngine {
             showLabel = showLabel,
             tapAction = tapAction,
             configJson = configJson,
-            liveOverlays = true
+            liveOverlays = true,
+            shape = WidgetShape.fromName(instance.getShape()),
+            customPoints = WidgetShape.decodePoints(instance.getString("shape_points")),
+            shapeFillColor = WidgetAccent.parseHex(instance.getString("shape_fill")),
+            shapeBorderColor = WidgetAccent.parseHex(instance.getString("shape_border")),
+            shapeBorderStyle = instance.getString("shape_border_style")
+                .takeIf { it.isNotEmpty() }?.let { Frame.fromName(it) }
         )
 
         return spec
@@ -227,6 +255,7 @@ object WidgetRenderEngine {
         val spec = if (useFallback) baseSpec.copy(tapAction = definition.defaultTap) else baseSpec
         val sizeBucket = spec.sizeBucket
         val tapAction = spec.tapAction
+        val tapAppPackage = instance.getString("tap_app_package").takeIf { it.isNotBlank() }
 
         val missingPermissions = definition.requiredPermissions.filterNot { it.isGranted(context) }
         val bitmap = if (missingPermissions.isNotEmpty()) {
@@ -298,7 +327,7 @@ object WidgetRenderEngine {
                 "toggle.hotspot" -> makeTogglePendingIntent(context, appWidgetId, "HOTSPOT", 8)
                 "toggle.airplane" -> makeTogglePendingIntent(context, appWidgetId, "AIRPLANE", 9)
                 "prod.habit.dots" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_HABIT_TOGGLE")
-                else -> createTapPendingIntent(context, appWidgetId, tapAction)
+                else -> createTapPendingIntent(context, appWidgetId, tapAction, tapAppPackage)
             }
 
             views.setOnClickPendingIntent(R.id.widget_image_view, pendingIntent)
@@ -472,7 +501,12 @@ object WidgetRenderEngine {
         return PendingIntent.getBroadcast(context, reqCode, intent, flags)
     }
 
-    private fun createTapPendingIntent(context: Context, appWidgetId: Int, tapAction: TapAction): PendingIntent {
+    private fun createTapPendingIntent(
+        context: Context,
+        appWidgetId: Int,
+        tapAction: TapAction,
+        tapAppPackage: String? = null
+    ): PendingIntent {
         val intent = when (tapAction) {
             TapAction.OPEN_CLOCK -> {
                 Intent(AlarmClock.ACTION_SHOW_ALARMS).apply {
@@ -494,6 +528,13 @@ object WidgetRenderEngine {
                 Intent(Intent.ACTION_WEB_SEARCH).apply {
                     putExtra(SearchManager.QUERY, "")
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+            }
+            TapAction.OPEN_APP -> {
+                val launch = tapAppPackage?.let { context.packageManager.getLaunchIntentForPackage(it) }
+                launch?.apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK } ?: Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    putExtra("launch_widget_id", appWidgetId)
                 }
             }
             TapAction.OPEN_WEATHER, TapAction.OPEN_MAIN, TapAction.DEFAULT -> {

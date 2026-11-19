@@ -43,6 +43,8 @@ data class WidgetInstance(
         }
     }
 
+    fun getShape(defaultVal: String = "ROUNDED"): String = getString("shape", defaultVal)
+
     fun getShowLabel(defaultVal: Boolean = true): Boolean {
         return try {
             JSONObject(configJson).optBoolean("show_label", defaultVal)

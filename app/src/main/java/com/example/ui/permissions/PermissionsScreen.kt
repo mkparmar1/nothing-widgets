@@ -3,6 +3,8 @@ package com.example.ui.permissions
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -12,12 +14,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -41,15 +42,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.core.bitmap.BitmapCache
 import com.example.core.theme.AccentOption
 import com.example.data.weather.WeatherRepository
+import com.example.ui.components.AnimatedDotMark
+import com.example.ui.components.DotBrand
 import com.example.widgets.base.WidgetAlarmScheduler
 import com.example.widgets.base.WidgetRenderEngine
 import kotlinx.coroutines.CoroutineScope
@@ -118,33 +121,65 @@ fun PermissionsScreen(
             .navigationBarsPadding()
             .testTag("permissions_screen")
     ) {
-        // ---- Welcome: what the app makes, shown live, on the faint dot grid
+        // ---- Welcome: live widgets on the faint dot grid, led by the dot-matrix mark
         Box(Modifier.weight(1f).fillMaxWidth()) {
-        com.example.ui.components.DotMatrixBackdrop(Modifier.fillMaxSize())
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = "Dot Widgets",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Dot-matrix widgets for your home screen",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "Clocks, weather, battery, calendar and 200 more. Most work offline.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = muted
-            )
-            WelcomePreview(accent)
-        }
+            com.example.ui.components.DotMatrixBackdrop(Modifier.fillMaxSize())
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(
+                                1.dp,
+                                com.example.ui.theme.DotTheme.colors.border,
+                                RoundedCornerShape(16.dp)
+                            )
+                    ) {
+                        AnimatedDotMark(
+                            modifier = Modifier.size(30.dp),
+                            dotColor = MaterialTheme.colorScheme.onBackground,
+                            accentColor = DotBrand.red
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "DOT WIDGETS",
+                            style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 4.sp),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "dot-matrix, always live",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Text(
+                    text = "Your home screen,\nin dots.",
+                    style = MaterialTheme.typography.displaySmall,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "Clocks, weather, battery, calendar and 200 more. Most work offline.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = muted
+                )
+
+                WelcomeShowcase(accent)
+            }
         }
 
         // ---- Thumb zone: the one permission and the main action
@@ -220,46 +255,75 @@ fun PermissionsScreen(
     }
 }
 
-/** Two live widgets in the app accent, so the first screen shows what the app makes. */
+/** Live widgets in the app accent: a large clock with a battery card, then a three-up strip. */
 @Composable
-private fun WelcomePreview(accent: AccentOption) {
-    val context = LocalContext.current
+private fun WelcomeShowcase(accent: AccentOption) {
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
+    val alpha by animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = tween(600),
+        label = "showcaseAlpha"
+    )
+    val rise by animateFloatAsState(
+        targetValue = if (shown) 0f else 28f,
+        animationSpec = tween(600),
+        label = "showcaseRise"
+    )
+
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                this.alpha = alpha
+                translationY = rise.dp.toPx()
+            },
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        listOf("clock.dotdigital.m", "battery.ring").forEach { id ->
-            val def = remember(id) { com.example.widgets.base.WidgetRegistry.getById(id) } ?: return@forEach
-            val size = def.sizes.first()
-            val dims = remember(size) { com.example.core.bitmap.SizeResolver.resolveDimensions(context, size) }
-            val spec = remember(id, accent) {
-                com.example.widgets.base.WidgetSpec(
-                    widthPx = dims.widthPx,
-                    heightPx = dims.heightPx,
-                    density = dims.density,
-                    sizeBucket = size,
-                    accent = accent,
-                    accentColor = com.example.core.theme.WidgetAccent.resolve(context, accent, null),
-                    bgMode = com.example.core.theme.BackgroundMode.SOLID,
-                    themeMode = com.example.core.theme.ThemeMode.FORCE_DARK,
-                    isDark = true,
-                    cornerRadiusDp = 24,
-                    showLabel = true,
-                    tapAction = def.defaultTap
-                )
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Box(Modifier.width(200.dp)) {
+                WelcomeWidget("clock.dotdigital.l", accent, "welcome_hero_clock")
             }
-            val aspect = dims.widthPx.toFloat() / dims.heightPx.coerceAtLeast(1)
-            com.example.ui.components.WidgetBitmapPreview(
-                definition = def,
-                spec = spec,
-                modifier = Modifier
-                    .heightIn(max = 160.dp)
-                    .widthIn(max = 160.dp * aspect)
-                    .testTag("welcome_preview_$id")
-            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(Modifier.weight(1f)) { WelcomeWidget("battery.ring", accent, "welcome_strip_battery") }
+            Box(Modifier.weight(1f)) { WelcomeWidget("calendar.day.date", accent, "welcome_strip_calendar") }
+            Box(Modifier.weight(1f)) { WelcomeWidget("weather.moon.phase", accent, "welcome_strip_moon") }
         }
     }
+}
+
+@Composable
+private fun WelcomeWidget(id: String, accent: AccentOption, tag: String) {
+    val context = LocalContext.current
+    val definition = remember(id) { com.example.widgets.base.WidgetRegistry.getById(id) } ?: return
+    val size = definition.sizes.first()
+    val dims = remember(size) { com.example.core.bitmap.SizeResolver.resolveDimensions(context, size) }
+    val spec = remember(id, accent) {
+        com.example.widgets.base.WidgetSpec(
+            widthPx = dims.widthPx,
+            heightPx = dims.heightPx,
+            density = dims.density,
+            sizeBucket = size,
+            accent = accent,
+            accentColor = com.example.core.theme.WidgetAccent.resolve(context, accent, null),
+            bgMode = com.example.core.theme.BackgroundMode.SOLID,
+            themeMode = com.example.core.theme.ThemeMode.FORCE_DARK,
+            isDark = true,
+            cornerRadiusDp = 24,
+            showLabel = true,
+            tapAction = definition.defaultTap
+        )
+    }
+    com.example.ui.components.WidgetBitmapPreview(
+        definition = definition,
+        spec = spec,
+        modifier = Modifier.fillMaxWidth().testTag(tag)
+    )
 }
 
 /**

@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
@@ -62,10 +64,13 @@ import androidx.compose.ui.unit.dp
 import com.example.core.bitmap.SizeBucket
 import com.example.core.render.Frame
 import com.example.core.render.Skin
+import com.example.core.render.WidgetShapes
 import com.example.core.theme.AccentOption
 import com.example.core.theme.WidgetAccent
+import com.example.widgets.base.ShapePoint
 import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRenderEngine
+import com.example.widgets.base.WidgetShape
 import com.example.widgets.base.WidgetSpec
 import org.json.JSONObject
 
@@ -153,6 +158,30 @@ internal fun FrameGlyph(frame: Frame, accent: Color, modifier: Modifier = Modifi
     }
 }
 
+// ------------------------------------------------------------------ shapes
+
+/** Miniature of each widget outline. */
+@Composable
+internal fun WidgetShapeGlyph(
+    shape: WidgetShape,
+    accent: Color,
+    customPoints: List<ShapePoint> = emptyList(),
+    modifier: Modifier = Modifier.size(width = 24.dp, height = 16.dp)
+) {
+    Canvas(modifier) {
+        val path = WidgetShapes.path(
+            shape = shape,
+            width = size.width,
+            height = size.height,
+            cornerRadius = size.minDimension * 0.3f,
+            inset = 1.dp.toPx(),
+            customPoints = customPoints
+        ).asComposePath()
+        drawPath(path, color = accent.copy(alpha = 0.22f))
+        drawPath(path, color = accent, style = Stroke(1.5.dp.toPx()))
+    }
+}
+
 // ------------------------------------------------------------------ sizes
 
 /** Cell-grid miniature of a widget size (2×2, 4×2, 4×4). */
@@ -224,6 +253,53 @@ internal fun AccentSwatches(
             initial = customAccent ?: selected.hex,
             onDismiss = { showPicker = false },
             onPick = { onCustom(it); showPicker = false }
+        )
+    }
+}
+
+@Composable
+internal fun ShapeColorRow(
+    label: String,
+    color: Int?,
+    tag: String,
+    onPick: (Int) -> Unit,
+    onClear: () -> Unit
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = PagePadding, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(color?.let { Color(it) } ?: Color.Gray)
+                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f), CircleShape)
+                .clickable { showPicker = true }
+                .testTag(tag)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            color?.let { WidgetAccent.toHex(it) } ?: "Default",
+            style = MaterialTheme.typography.labelSmall,
+            color = mutedText()
+        )
+        TextButton(onClick = onClear, enabled = color != null) { Text("Default") }
+    }
+    if (showPicker) {
+        CustomColorDialog(
+            initial = color ?: Color.White.toArgb(),
+            onDismiss = { showPicker = false },
+            onPick = { onPick(it); showPicker = false }
         )
     }
 }

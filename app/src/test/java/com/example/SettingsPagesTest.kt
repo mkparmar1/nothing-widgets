@@ -61,7 +61,10 @@ class SettingsPagesTest {
         compose.mainClock.advanceTimeBy(500)
         compose.onNodeWithTag("theme_studio_card").assertDoesNotExist()
 
+        compose.mainClock.autoAdvance = true
+        compose.onNodeWithTag("settings_row_about").performScrollTo()
         compose.onNodeWithTag("settings_row_about").performClick()
+        compose.mainClock.autoAdvance = false
         compose.mainClock.advanceTimeBy(500)
         compose.onNodeWithTag("non_affiliation").assertExists()
     }

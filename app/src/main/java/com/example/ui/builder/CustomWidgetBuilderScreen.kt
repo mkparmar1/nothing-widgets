@@ -1,4 +1,4 @@
-package com.example.ui.builder
+﻿package com.example.ui.builder
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -63,8 +62,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.example.core.bitmap.SizeBucket
 import com.example.core.bitmap.SizeResolver
 import com.example.core.theme.AccentOption
@@ -121,6 +118,7 @@ fun CustomWidgetBuilderScreen(
     var sliderHistorySaved by remember { mutableStateOf(false) }
     var showMoreBlockTypes by remember(existing?.id) { mutableStateOf(false) }
     var showAdvancedSettings by remember(selectedId) { mutableStateOf(false) }
+    var showTemplates by remember(existing?.id) { mutableStateOf(false) }
     val selected = blocks.firstOrNull { it.id == selectedId }
 
     // The preview redraws from a debounced copy so dragging a block doesn't re-render every frame.
@@ -191,18 +189,12 @@ fun CustomWidgetBuilderScreen(
         }
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .testTag("builder_screen")
     ) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .testTag("builder_screen")
-        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -227,84 +219,79 @@ fun CustomWidgetBuilderScreen(
                 }
             }
 
+            BuilderPreview(
+                blocks = previewBlocks,
+                sizes = supportedSizes,
+                name = name,
+                existingId = existing?.id,
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .testTag("builder_preview")
+            )
+
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp)
-                    .padding(top = 8.dp, bottom = 16.dp),
+                    .padding(top = 12.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (existing == null && blocks.isEmpty()) {
-                    Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
-                        Text("Choose a starting point", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
-                        Text(
-                            "Pick a ready-made layout. You can move, remove, or add blocks afterward.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = DotTheme.colors.textSecondary
-                        )
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
-                            verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
-                        ) {
-                            BuilderTemplates.all.forEachIndexed { index, (title, layout) ->
-                                DotCard(
-                                    modifier = Modifier.fillMaxWidth(0.48f).testTag("builder_template_$index"),
-                                    style = DotCardStyle.Interactive,
-                                    padding = DotSpacing.md,
-                                    onClick = {
-                                        change(layout.blocks)
-                                        selectedId = null
-                                    }
-                                ) {
-                                    Text(title, style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
-                                    Text(
-                                        layout.blocks.take(3).joinToString(" + ") { it.type.displayLabel() },
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = DotTheme.colors.textSecondary,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                BuilderPreview(
-                    blocks = previewBlocks,
-                    sizes = supportedSizes,
-                    name = name,
-                    existingId = existing?.id,
-                    modifier = Modifier.testTag("builder_preview")
-                )
-
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it.take(40) },
                     label = { Text("Widget name") },
                     singleLine = true,
                     colors = dotFieldColors(),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("builder_name")
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
-                    Text("Widget sizes", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
-                        verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
-                    ) {
-                        SizeBucket.entries.forEach { size ->
-                            DotChip(
-                                label = size.label,
-                                selected = size in supportedSizes,
-                                onClick = {
-                                    supportedSizes =
-                                        if (size in supportedSizes) supportedSizes - size else supportedSizes + size
-                                },
-                                modifier = Modifier.testTag("builder_size_${size.name.lowercase()}")
+                if (existing == null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Start from a template", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+                                Text(
+                                    "Optional. Pick a ready-made layout, then tweak it.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = DotTheme.colors.textSecondary
+                                )
+                            }
+                            DotButton(
+                                text = if (showTemplates) "Hide" else "Browse",
+                                onClick = { showTemplates = !showTemplates },
+                                style = DotButtonStyle.Ghost,
+                                modifier = Modifier.testTag("builder_templates_toggle")
                             )
+                        }
+                        androidx.compose.animation.AnimatedVisibility(visible = showTemplates) {
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
+                                verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
+                            ) {
+                                BuilderTemplates.all.forEachIndexed { index, (title, layout) ->
+                                    DotCard(
+                                        modifier = Modifier.fillMaxWidth(0.48f).testTag("builder_template_$index"),
+                                        style = DotCardStyle.Interactive,
+                                        padding = DotSpacing.md,
+                                        onClick = {
+                                            change(layout.blocks)
+                                            selectedId = null
+                                            showTemplates = false
+                                        }
+                                    ) {
+                                        Text(title, style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+                                        Text(
+                                            layout.blocks.take(3).joinToString(" + ") { it.type.displayLabel() },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = DotTheme.colors.textSecondary,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -366,6 +353,26 @@ fun CustomWidgetBuilderScreen(
                             icon = Icons.AutoMirrored.Filled.Redo,
                             enabled = redo.isNotEmpty()
                         )
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)) {
+                    Text("Widget sizes", style = DotType.CardTitle, color = DotTheme.colors.textPrimary)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm),
+                        verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
+                    ) {
+                        SizeBucket.entries.forEach { size ->
+                            DotChip(
+                                label = size.label,
+                                selected = size in supportedSizes,
+                                onClick = {
+                                    supportedSizes =
+                                        if (size in supportedSizes) supportedSizes - size else supportedSizes + size
+                                },
+                                modifier = Modifier.testTag("builder_size_${size.name.lowercase()}")
+                            )
+                        }
                     }
                 }
 
@@ -546,6 +553,7 @@ fun CustomWidgetBuilderScreen(
                 Modifier
                     .fillMaxWidth()
                     .background(DotTheme.colors.surface)
+                    .navigationBarsPadding()
                     .padding(horizontal = 20.dp, vertical = 12.dp)
             ) {
                 error?.let {
@@ -561,7 +569,6 @@ fun CustomWidgetBuilderScreen(
                 )
             }
         }
-    }
 }
 
 /** The live widget render, refreshed from a debounced copy of the layout. */
@@ -630,7 +637,7 @@ private fun BuilderPreview(
             DotLabel("Preview")
             Spacer(Modifier.weight(1f))
             if (definition != null) {
-                DotBadge("${size.label} Â· ${blocks.size} blocks")
+                DotBadge("${size.label} · ${blocks.size} blocks")
             }
         }
     }
@@ -746,7 +753,7 @@ private fun SliderRow(
 ) {
     Column {
         Text(
-            "$label Â· ${display(value)}",
+            "$label · ${display(value)}",
             style = MaterialTheme.typography.bodySmall,
             color = DotTheme.colors.textSecondary
         )

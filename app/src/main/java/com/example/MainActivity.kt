@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,6 +40,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -58,6 +60,11 @@ import com.example.ui.components.BottomNav
 import com.example.ui.components.DotNavItem
 import com.example.ui.home.HomeScreen
 import com.example.ui.mywidgets.MyWidgetsScreen
+import com.example.ui.onboarding.APP_TOUR_STEPS
+import com.example.ui.onboarding.AppTourOverlay
+import com.example.ui.onboarding.TourTarget
+import com.example.ui.onboarding.hasSeenAppTour
+import com.example.ui.onboarding.markAppTourSeen
 import com.example.ui.permissions.AppPermission
 import com.example.ui.permissions.PermissionsScreen
 import com.example.ui.permissions.markPermissionsSeen
@@ -120,7 +127,7 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 } else {
-                    DotWidgetsApp()
+                    DotWidgetsApp(startWithTour = !hasSeenAppTour(context))
                 }
 
                 if (!showPermissions && showWeatherSheet) {
@@ -184,11 +191,33 @@ private sealed interface AppOverlay {
 }
 
 @Composable
-fun DotWidgetsApp() {
+fun DotWidgetsApp(startWithTour: Boolean = false) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableIntStateOf(0) }
     var overlay by remember { mutableStateOf<AppOverlay?>(null) }
+    var showTour by rememberSaveable { mutableStateOf(startWithTour) }
+    var tourStep by rememberSaveable { mutableIntStateOf(0) }
+
+    fun finishTour() {
+        markAppTourSeen(context)
+        showTour = false
+        tourStep = 0
+        overlay = null
+        selectedTab = 0
+    }
+
+    LaunchedEffect(showTour, tourStep) {
+        if (!showTour || tourStep !in APP_TOUR_STEPS.indices) return@LaunchedEffect
+        when (APP_TOUR_STEPS[tourStep].target) {
+            TourTarget.HOME -> { selectedTab = 0; overlay = null }
+            TourTarget.EXPLORE -> { selectedTab = 1; overlay = null }
+            TourTarget.MY_WIDGETS -> { selectedTab = 2; overlay = null }
+            TourTarget.SETTINGS -> { selectedTab = 3; overlay = null }
+            TourTarget.BUILDER -> { selectedTab = 2; overlay = AppOverlay.Builder() }
+            TourTarget.SETUPS -> { selectedTab = 0; overlay = AppOverlay.Setups }
+        }
+    }
 
     val navItems = remember {
         listOf(
@@ -199,76 +228,95 @@ fun DotWidgetsApp() {
         )
     }
 
-    BackHandler(enabled = overlay != null) { overlay = null }
+    BackHandler(enabled = overlay != null && !showTour) { overlay = null }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            // The menu stays on every screen, including Builder / Setups / Wallpapers, so the user
-            // can move around without backing out first.
-            Box(Modifier.fillMaxWidth().navigationBarsPadding()) {
-                BottomNav(
-                    items = navItems,
-                    selectedIndex = selectedTab,
-                    onSelect = {
-                        overlay = null
-                        selectedTab = it
-                    },
-                    onPlus = { overlay = AppOverlay.Builder() }
-                )
-            }
-        }
-    ) { innerPadding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .statusBarsPadding(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            when (val current = overlay) {
-                AppOverlay.Setups -> SetupsScreen()
-                AppOverlay.Wallpapers -> WallpapersScreen()
-                is AppOverlay.Builder -> CustomWidgetBuilderScreen(
-                    existing = current.existing,
-                    onDismiss = { overlay = null },
-                    onSaved = {
-                        overlay = null
-                        scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context, force = true) }
-                    }
-                )
-                is AppOverlay.EditInstance -> EditPlacedWidgetScreen(
-                    instance = current.instance,
-                    definition = current.definition,
-                    onDismiss = {
-                        overlay = null
-                        scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context, force = true) }
-                    }
-                )
-                null -> Crossfade(
-                    targetState = selectedTab,
-                    animationSpec = tween(200),
-                    label = "tabs"
-                ) { tab ->
-                    when (tab) {
-                        0 -> HomeScreen(
-                            onExplore = { selectedTab = 1 },
-                            onBuilder = { overlay = AppOverlay.Builder() },
-                            onSetups = { overlay = AppOverlay.Setups },
-                            onWallpapers = { overlay = AppOverlay.Wallpapers }
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            bottomBar = {
+                // The menu stays on every screen except the Builder, which is a full-screen editor.
+                if (overlay !is AppOverlay.Builder) {
+                    Box(Modifier.fillMaxWidth().navigationBarsPadding()) {
+                        BottomNav(
+                            items = navItems,
+                            selectedIndex = selectedTab,
+                            onSelect = {
+                                overlay = null
+                                selectedTab = it
+                            },
+                            onPlus = { overlay = AppOverlay.Builder() }
                         )
-                        1 -> BrowserScreen()
-                        2 -> MyWidgetsScreen(
-                            onCreate = { overlay = AppOverlay.Builder() },
-                            onEditCustom = { custom -> overlay = AppOverlay.Builder(custom) },
-                            onEditInstance = { instance, definition ->
-                                overlay = AppOverlay.EditInstance(instance, definition)
-                            }
-                        )
-                        else -> SettingsScreen()
                     }
                 }
             }
+        ) { innerPadding ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .statusBarsPadding(),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                when (val current = overlay) {
+                    AppOverlay.Setups -> SetupsScreen()
+                    AppOverlay.Wallpapers -> WallpapersScreen()
+                    is AppOverlay.Builder -> CustomWidgetBuilderScreen(
+                        existing = current.existing,
+                        onDismiss = { overlay = null },
+                        onSaved = {
+                            overlay = null
+                            scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context, force = true) }
+                        }
+                    )
+                    is AppOverlay.EditInstance -> EditPlacedWidgetScreen(
+                        instance = current.instance,
+                        definition = current.definition,
+                        onDismiss = {
+                            overlay = null
+                            scope.launch { WidgetRenderEngine.updateAllPlacedWidgets(context, force = true) }
+                        }
+                    )
+                    null -> Crossfade(
+                        targetState = selectedTab,
+                        animationSpec = tween(200),
+                        label = "tabs"
+                    ) { tab ->
+                        when (tab) {
+                            0 -> HomeScreen(
+                                onExplore = { selectedTab = 1 },
+                                onBuilder = { overlay = AppOverlay.Builder() },
+                                onSetups = { overlay = AppOverlay.Setups },
+                                onWallpapers = { overlay = AppOverlay.Wallpapers }
+                            )
+                            1 -> BrowserScreen()
+                            2 -> MyWidgetsScreen(
+                                onCreate = { overlay = AppOverlay.Builder() },
+                                onEditCustom = { custom -> overlay = AppOverlay.Builder(custom) },
+                                onEditInstance = { instance, definition ->
+                                    overlay = AppOverlay.EditInstance(instance, definition)
+                                }
+                            )
+                            else -> SettingsScreen(onStartTour = { tourStep = 0; showTour = true })
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showTour && tourStep in APP_TOUR_STEPS.indices) {
+            BackHandler {
+                if (tourStep > 0) tourStep-- else finishTour()
+            }
+            AppTourOverlay(
+                step = APP_TOUR_STEPS[tourStep],
+                index = tourStep,
+                count = APP_TOUR_STEPS.size,
+                onNext = {
+                    if (tourStep < APP_TOUR_STEPS.lastIndex) tourStep++ else finishTour()
+                },
+                onBack = { if (tourStep > 0) tourStep-- },
+                onSkip = { finishTour() }
+            )
         }
     }
 }

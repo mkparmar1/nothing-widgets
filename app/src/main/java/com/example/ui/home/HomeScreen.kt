@@ -2,7 +2,6 @@ package com.example.ui.home
 
 import android.provider.Settings
 import android.widget.Toast
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -54,6 +52,8 @@ import com.example.data.prefs.PreferencesManager
 import com.example.data.setups.SetupRepository
 import com.example.data.wallpapers.WallpaperManagerHelper
 import com.example.ui.browse.CatalogueHighlights
+import com.example.ui.components.DotBrand
+import com.example.ui.components.DotMark
 import com.example.ui.components.DotSetupCard
 import com.example.ui.components.HeroCard
 import com.example.ui.components.QuickAccessTile
@@ -273,7 +273,7 @@ private fun HomeTopBar(accent: Color) {
             .padding(horizontal = DotSpacing.lg, vertical = DotSpacing.md),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        DotLogo(accent)
+        DotLogo()
         Spacer(Modifier.width(DotSpacing.sm))
         Text("Dot Widgets", style = DotType.Section, color = DotTheme.colors.textPrimary)
         Spacer(Modifier.width(2.dp))
@@ -287,10 +287,9 @@ private fun HomeTopBar(accent: Color) {
     }
 }
 
-/** Three-by-three dot mark, the app's logo. */
+/** Dot-matrix "D." mark, the app's logo, matching the launcher icon. */
 @Composable
-private fun DotLogo(accent: Color) {
-    val dotColor = DotTheme.colors.textPrimary
+private fun DotLogo() {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -298,16 +297,11 @@ private fun DotLogo(accent: Color) {
             .clip(DotShape.button)
             .background(DotTheme.colors.surfaceSecondary)
     ) {
-        Canvas(Modifier.size(16.dp)) {
-            val step = size.width / 3f
-            val radius = step * 0.22f
-            for (row in 0 until 3) {
-                for (col in 0 until 3) {
-                    val color = if (row == 1 && col == 1) accent else dotColor
-                    drawCircle(color, radius, Offset(step * (col + 0.5f), step * (row + 0.5f)))
-                }
-            }
-        }
+        DotMark(
+            modifier = Modifier.size(18.dp),
+            dotColor = DotTheme.colors.textPrimary,
+            accentColor = DotBrand.red
+        )
     }
 }
 

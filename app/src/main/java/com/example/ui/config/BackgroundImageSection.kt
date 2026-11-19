@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.core.render.WidgetShapes
 import com.example.data.photos.BackgroundImageStore
 import com.example.widgets.base.WidgetSpec
 import kotlin.math.roundToInt
@@ -204,8 +205,13 @@ internal fun BackgroundImageSection(
             image = bitmap,
             initial = choice,
             widgetAspect = width / spec.heightPx.coerceAtLeast(1),
-            // Same rounding as the widget: the corner setting in dp, at most a full pill.
-            cornerFraction = (spec.cornerRadiusDp * spec.density) / width,
+            // Same outline as the widget: shape-aware radius, at most a full pill.
+            cornerFraction = WidgetShapes.radiusFor(
+                shape = spec.shape,
+                width = width,
+                height = spec.heightPx.coerceAtLeast(1).toFloat(),
+                cornerRadius = spec.cornerRadiusDp * spec.density
+            ) / width,
             accent = ui,
             onCancel = {
                 // A just-picked photo that was never used is thrown away.

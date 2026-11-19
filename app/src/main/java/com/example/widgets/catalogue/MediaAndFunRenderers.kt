@@ -24,6 +24,8 @@ object MediaAndFunRenderers {
             width = spec.widthPx.toFloat(),
             height = spec.heightPx.toFloat(),
             cornerRadius = spec.cornerRadiusDp * spec.density,
+            shape = spec.shape,
+            customPoints = spec.customPoints,
             bgMode = spec.bgMode,
             isDark = spec.isDark,
             accentColor = accentColor
@@ -80,6 +82,8 @@ object MediaAndFunRenderers {
             width = spec.widthPx.toFloat(),
             height = spec.heightPx.toFloat(),
             cornerRadius = spec.cornerRadiusDp * spec.density,
+            shape = spec.shape,
+            customPoints = spec.customPoints,
             bgMode = spec.bgMode,
             isDark = spec.isDark,
             accentColor = accentColor
@@ -185,6 +189,8 @@ object MediaAndFunRenderers {
             width = spec.widthPx.toFloat(),
             height = spec.heightPx.toFloat(),
             cornerRadius = spec.cornerRadiusDp * spec.density,
+            shape = spec.shape,
+            customPoints = spec.customPoints,
             bgMode = spec.bgMode,
             isDark = spec.isDark,
             accentColor = accentColor

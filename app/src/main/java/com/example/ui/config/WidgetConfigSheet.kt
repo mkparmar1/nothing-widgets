@@ -161,7 +161,12 @@ private suspend fun pinPreview(
         cornerRadiusDp = state.cornerRadius,
         showLabel = state.showLabel,
         tapAction = state.tapAction,
-        configJson = state.toConfigJson(definition.id)
+        configJson = state.toConfigJson(definition.id),
+        shape = state.shape,
+        customPoints = state.customPoints,
+        shapeFillColor = state.shapeFillColor,
+        shapeBorderColor = state.shapeBorderColor,
+        shapeBorderStyle = state.shapeBorderStyle
     )
     var bitmap = WidgetRenderEngine.renderBitmap(context, definition, spec, 0)
     val maxSide = 480

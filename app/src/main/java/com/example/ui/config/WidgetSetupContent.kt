@@ -1,9 +1,14 @@
 package com.example.ui.config
 
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -11,6 +16,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +26,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -55,12 +63,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.core.graphics.drawable.toBitmap
 import com.example.core.bitmap.SizeBucket
 import com.example.core.bitmap.SizeResolver
 import com.example.core.config.WidgetOption
@@ -83,9 +93,13 @@ import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.SegmentTabs
 import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.permissions.AppPermission
+import com.example.ui.theme.DotTheme
+import com.example.widgets.base.ShapeGroup
+import com.example.widgets.base.ShapePoint
 import com.example.widgets.base.TapAction
 import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
+import com.example.widgets.base.WidgetShape
 import com.example.widgets.base.WidgetSpec
 import com.example.widgets.collection.CollectionWidgets
 import com.example.widgets.collection.StackMode
@@ -105,6 +119,8 @@ data class WidgetSetupState(
     val cornerRadius: Int,
     val showLabel: Boolean,
     val tapAction: TapAction,
+    /** Package name launched when [tapAction] is [TapAction.OPEN_APP]; null = not chosen yet. */
+    val tapAppPackage: String? = null,
     /** Null = the widget's default format (see [ClockSupport]). */
     val timeFormat: TimeFormat? = null,
     val dateFormat: DateFormat? = null,
@@ -122,7 +138,17 @@ data class WidgetSetupState(
     /** A custom accent colour (ARGB); overrides [accent] when set. */
     val customAccent: Int? = null,
     /** Optional custom background photo with its placement and darkening; null = plain background. */
-    val backgroundPhoto: BackgroundImageStore.Choice? = null
+    val backgroundPhoto: BackgroundImageStore.Choice? = null,
+    /** Outline of the widget; [WidgetShape.ROUNDED] keeps the original corner-radius look. */
+    val shape: WidgetShape = WidgetShape.ROUNDED,
+    /** Normalized outline points used when [shape] is [WidgetShape.CUSTOM]. */
+    val customPoints: List<ShapePoint> = emptyList(),
+    /** Shape fill colour override; null keeps the theme background. */
+    val shapeFillColor: Int? = null,
+    /** Shape border colour override; null keeps the theme edge colour. */
+    val shapeBorderColor: Int? = null,
+    /** Shape border style override; null keeps the Look frame. */
+    val shapeBorderStyle: Frame? = null
 ) {
     fun toConfigJson(widgetTypeId: String, existingConfigJson: String? = null): String {
         val base = (runCatching { JSONObject(existingConfigJson ?: "{}") }.getOrElse { JSONObject() }).apply {
@@ -134,8 +160,14 @@ data class WidgetSetupState(
             backgroundPhoto?.writeTo(this)
             put("theme_mode", theme.name)
             put("corner_radius", cornerRadius)
+            put("shape", shape.name)
+            if (shape == WidgetShape.CUSTOM) put("shape_points", WidgetShape.encodePoints(customPoints)) else remove("shape_points")
+            if (shapeFillColor != null) put("shape_fill", WidgetAccent.toHex(shapeFillColor)) else remove("shape_fill")
+            if (shapeBorderColor != null) put("shape_border", WidgetAccent.toHex(shapeBorderColor)) else remove("shape_border")
+            if (shapeBorderStyle != null) put("shape_border_style", shapeBorderStyle.name) else remove("shape_border_style")
             put("show_label", showLabel)
             put("tap_action", tapAction.name)
+            if (tapAppPackage != null) put("tap_app_package", tapAppPackage) else remove("tap_app_package")
             put("widget_type_id", widgetTypeId)
             put("size", size.name)
             put("configured", true)
@@ -177,6 +209,7 @@ data class WidgetSetupState(
                 tapAction = runCatching {
                     TapAction.valueOf(json.optString("tap_action", definition.defaultTap.name))
                 }.getOrDefault(definition.defaultTap),
+                tapAppPackage = json.optString("tap_app_package").takeIf { it.isNotEmpty() },
                 timeFormat = json.optString(ClockOptions.KEY_TIME).takeIf { it.isNotEmpty() }?.let { TimeFormat.fromName(it) },
                 dateFormat = json.optString(ClockOptions.KEY_DATE).takeIf { it.isNotEmpty() }?.let { DateFormat.fromName(it) },
                 dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
@@ -188,7 +221,12 @@ data class WidgetSetupState(
                 timeZoneId = ClockOptions.timeZone(importedConfigJson ?: "{}"),
                 optionValues = resolveOptions(definition, importedConfigJson),
                 customAccent = WidgetAccent.custom(importedConfigJson),
-                backgroundPhoto = BackgroundImageStore.fromConfig(importedConfigJson)
+                backgroundPhoto = BackgroundImageStore.fromConfig(importedConfigJson),
+                shape = WidgetShape.fromName(json.optString("shape")),
+                customPoints = WidgetShape.decodePoints(json.optString("shape_points")),
+                shapeFillColor = WidgetAccent.parseHex(json.optString("shape_fill")),
+                shapeBorderColor = WidgetAccent.parseHex(json.optString("shape_border")),
+                shapeBorderStyle = json.optString("shape_border_style").takeIf { it.isNotEmpty() }?.let { Frame.fromName(it) }
             )
         }
 
@@ -213,6 +251,7 @@ data class WidgetSetupState(
                 tapAction = runCatching {
                     TapAction.valueOf(json.optString("tap_action", definition.defaultTap.name))
                 }.getOrDefault(definition.defaultTap),
+                tapAppPackage = json.optString("tap_app_package").takeIf { it.isNotEmpty() },
                 timeFormat = json.optString(ClockOptions.KEY_TIME).takeIf { it.isNotEmpty() }?.let { TimeFormat.fromName(it) },
                 dateFormat = json.optString(ClockOptions.KEY_DATE).takeIf { it.isNotEmpty() }?.let { DateFormat.fromName(it) },
                 dotStyle = DotStyle.fromName(json.optString(ClockOptions.KEY_DOT_STYLE)),
@@ -224,7 +263,12 @@ data class WidgetSetupState(
                 timeZoneId = ClockOptions.timeZone(instance.configJson),
                 optionValues = resolveOptions(definition, instance.configJson),
                 customAccent = WidgetAccent.custom(instance.configJson),
-                backgroundPhoto = BackgroundImageStore.fromConfig(instance.configJson)
+                backgroundPhoto = BackgroundImageStore.fromConfig(instance.configJson),
+                shape = WidgetShape.fromName(json.optString("shape")),
+                customPoints = WidgetShape.decodePoints(json.optString("shape_points")),
+                shapeFillColor = WidgetAccent.parseHex(json.optString("shape_fill")),
+                shapeBorderColor = WidgetAccent.parseHex(json.optString("shape_border")),
+                shapeBorderStyle = json.optString("shape_border_style").takeIf { it.isNotEmpty() }?.let { Frame.fromName(it) }
             )
         }
 
@@ -266,6 +310,7 @@ data class WidgetSetupState(
  * (content, format, style, size, colour, shape, advanced, tap) and a pinned save bar.
  * Used by the in-app sheet and by the launcher's configure activity.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun WidgetSetupContent(
     definition: WidgetDefinition,
@@ -283,6 +328,7 @@ fun WidgetSetupContent(
         mutableStateOf(initial.copy(size = lockedSize ?: initial.size))
     }
     var contentVersion by remember { mutableIntStateOf(0) }
+    var showAppPicker by remember(definition.id) { mutableStateOf(false) }
     val isDark = when (state.theme) {
         ThemeMode.FORCE_DARK -> true
         ThemeMode.FORCE_LIGHT -> false
@@ -310,7 +356,12 @@ fun WidgetSetupContent(
         showLabel = state.showLabel,
         tapAction = state.tapAction,
         // So the preview reflects format and dot-style choices.
-        configJson = state.toConfigJson(definition.id)
+        configJson = state.toConfigJson(definition.id),
+        shape = state.shape,
+        customPoints = state.customPoints,
+        shapeFillColor = state.shapeFillColor,
+        shapeBorderColor = state.shapeBorderColor,
+        shapeBorderStyle = state.shapeBorderStyle
     )
     // Controls use the app accent so the screen stays consistent whatever colour the widget gets.
     val ui = MaterialTheme.colorScheme.primary
@@ -546,15 +597,144 @@ fun WidgetSetupContent(
                         BackgroundImageSection(state, spec, ui, update)
                     }
 
-                    SetupSection("Corners") {
-                        SegmentedControl(
-                            // FULL_ROUND makes a pill (or a circle on square widgets).
-                            options = listOf(0, 12, 20, 28, FULL_ROUND).map { SegmentOption(it, if (it == FULL_ROUND) "Full" else "$it") },
-                            selected = state.cornerRadius,
-                            accent = ui,
-                            tagPrefix = "corner"
-                        ) { update(state.copy(cornerRadius = it)) }
+                    val shapeGroups = ShapeGroup.entries
+                    val groupLabels = listOf("Basic", "Shapes", "Fun", "Special", "Custom")
+                    var shapeGroupIndex by remember(definition.id) {
+                        mutableIntStateOf(shapeGroups.indexOf(state.shape.group).coerceAtLeast(0))
+                    }
+                    SetupSection("Shape", trailing = state.shape.label) {
+                        LaunchedEffect(state.shape) {
+                            shapeGroupIndex = shapeGroups.indexOf(state.shape.group).coerceAtLeast(0)
+                        }
+                        SegmentTabs(
+                            items = groupLabels,
+                            selectedIndex = shapeGroupIndex,
+                            onSelect = { shapeGroupIndex = it },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = PagePadding),
+                            tagPrefix = "shape_group"
+                        )
                         Spacer(Modifier.height(12.dp))
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = PagePadding),
+                            maxItemsInEachRow = 4,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            WidgetShape.entries
+                                .filter { it.group == shapeGroups[shapeGroupIndex] }
+                                .forEach { option ->
+                                    val selected = option == state.shape
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier
+                                            .width(76.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(
+                                                if (selected) Color(resolvedAccent).copy(alpha = 0.14f)
+                                                else DotTheme.colors.surfaceSecondary.copy(alpha = 0.45f)
+                                            )
+                                            .border(
+                                                1.dp,
+                                                if (selected) Color(resolvedAccent) else Color.Transparent,
+                                                RoundedCornerShape(12.dp)
+                                            )
+                                            .clickable {
+                                                update(
+                                                    state.copy(
+                                                        shape = option,
+                                                        customPoints = if (option == WidgetShape.CUSTOM && state.customPoints.isEmpty()) {
+                                                            WidgetShape.defaultCustomPoints()
+                                                        } else state.customPoints
+                                                    )
+                                                )
+                                            }
+                                            .padding(horizontal = 4.dp, vertical = 10.dp)
+                                            .testTag("shape_${option.name.lowercase()}")
+                                    ) {
+                                        WidgetShapeGlyph(
+                                            shape = option,
+                                            accent = Color(resolvedAccent),
+                                            customPoints = state.customPoints.ifEmpty { WidgetShape.defaultCustomPoints() },
+                                            modifier = Modifier.size(width = 44.dp, height = 30.dp)
+                                        )
+                                        Text(
+                                            option.label,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (selected) Color(resolvedAccent) else DotTheme.colors.textPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                        }
+                        AnimatedVisibility(visible = state.shape == WidgetShape.CUSTOM) {
+                            Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 16.dp)) {
+                                CustomShapeEditor(
+                                    points = state.customPoints.ifEmpty { WidgetShape.defaultCustomPoints() },
+                                    accent = Color(resolvedAccent),
+                                    onPointsChange = { update(state.copy(customPoints = it)) },
+                                    modifier = Modifier.testTag("custom_shape_editor")
+                                )
+                            }
+                        }
+                    }
+
+                    SetupSection("Shape style") {
+                        ShapeColorRow(
+                            label = "Fill colour",
+                            color = state.shapeFillColor,
+                            tag = "shape_fill_color",
+                            onPick = { update(state.copy(shapeFillColor = it)) },
+                            onClear = { update(state.copy(shapeFillColor = null)) }
+                        )
+                        ShapeColorRow(
+                            label = "Border colour",
+                            color = state.shapeBorderColor,
+                            tag = "shape_border_color",
+                            onPick = { update(state.copy(shapeBorderColor = it)) },
+                            onClear = { update(state.copy(shapeBorderColor = null)) }
+                        )
+                        Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 8.dp)) {
+                            Text(
+                                "Border style",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            val borderOptions = listOf<Frame?>(null) + Frame.entries
+                            SegmentTabs(
+                                items = listOf("Look") + Frame.entries.map { it.label },
+                                selectedIndex = borderOptions.indexOf(state.shapeBorderStyle),
+                                onSelect = { update(state.copy(shapeBorderStyle = borderOptions[it])) },
+                                modifier = Modifier.fillMaxWidth(),
+                                tagPrefix = "shape_border_style"
+                            )
+                        }
+                        AnimatedVisibility(
+                            visible = state.shape in setOf(
+                                WidgetShape.ROUNDED, WidgetShape.CUT, WidgetShape.BEVEL, WidgetShape.CUSTOM
+                            )
+                        ) {
+                            Column(Modifier.fillMaxWidth().padding(horizontal = PagePadding).padding(top = 16.dp)) {
+                                Text(
+                                    "Corner radius",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                SegmentedControl(
+                                    // FULL_ROUND makes a pill (or a circle on square widgets).
+                                    options = listOf(0, 12, 20, 28, FULL_ROUND).map { SegmentOption(it, if (it == FULL_ROUND) "Full" else "$it") },
+                                    selected = state.cornerRadius,
+                                    accent = ui,
+                                    tagPrefix = "corner"
+                                ) { update(state.copy(cornerRadius = it)) }
+                            }
+                        }
+                    }
+
+                    SetupSection("Details") {
                         SettingsGroup {
                             ToggleRow(
                                 title = "Show label",
@@ -590,13 +770,50 @@ fun WidgetSetupContent(
                         SettingsGroup {
                             val actions = listOf(
                                 TapAction.DEFAULT, TapAction.OPEN_CLOCK, TapAction.OPEN_CALENDAR,
-                                TapAction.OPEN_BATTERY, TapAction.OPEN_WEATHER, TapAction.NONE
+                                TapAction.OPEN_BATTERY, TapAction.OPEN_WEATHER, TapAction.OPEN_APP,
+                                TapAction.NONE
                             )
                             actions.forEachIndexed { i, action ->
-                                RadioRow(action.displayName, action == state.tapAction, ui) { update(state.copy(tapAction = action)) }
+                                RadioRow(action.displayName, action == state.tapAction, ui) {
+                                    if (action == TapAction.OPEN_APP) showAppPicker = true
+                                    update(state.copy(tapAction = action))
+                                }
                                 if (i < actions.lastIndex) GroupDivider()
                             }
+                            if (state.tapAction == TapAction.OPEN_APP) {
+                                GroupDivider()
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showAppPicker = true }
+                                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            "App",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            state.tapAppPackage?.let { appLabel(context, it) ?: it } ?: "Choose an app",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = mutedText()
+                                        )
+                                    }
+                                    Text("Change", style = MaterialTheme.typography.labelLarge, color = ui)
+                                }
+                            }
                         }
+                    }
+                    if (showAppPicker) {
+                        AppPickerDialog(
+                            onDismiss = { showAppPicker = false },
+                            onPick = { pkg ->
+                                update(state.copy(tapAction = TapAction.OPEN_APP, tapAppPackage = pkg))
+                                showAppPicker = false
+                            }
+                        )
                     }
                 }
             }
@@ -675,7 +892,12 @@ private fun SetupPreview(
             cornerRadiusDp = state.cornerRadius,
             showLabel = state.showLabel,
             tapAction = state.tapAction,
-            configJson = state.copy(size = size).toConfigJson(definition.id)
+            configJson = state.copy(size = size).toConfigJson(definition.id),
+            shape = state.shape,
+            customPoints = state.customPoints,
+            shapeFillColor = state.shapeFillColor,
+            shapeBorderColor = state.shapeBorderColor,
+            shapeBorderStyle = state.shapeBorderStyle
         )
     }
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
@@ -970,3 +1192,71 @@ private fun StackItemsSection(state: WidgetSetupState, accent: Color, update: (W
 
 /** Corner radius large enough to fully round any widget edge. */
 private const val FULL_ROUND = 999
+
+private data class InstalledApp(val label: String, val packageName: String)
+
+private fun appLabel(context: Context, packageName: String): String? = runCatching {
+    val pm = context.packageManager
+    pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
+}.getOrNull()
+
+/** Lets the user pick any installed, launchable app to open when the widget is tapped. */
+@Composable
+private fun AppPickerDialog(onDismiss: () -> Unit, onPick: (String) -> Unit) {
+    val context = LocalContext.current
+    val pm = remember { context.packageManager }
+    val apps = remember {
+        runCatching {
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val infos = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                pm.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0L))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.queryIntentActivities(intent, 0)
+            }
+            infos.mapNotNull { info ->
+                val pkg = info.activityInfo?.packageName ?: return@mapNotNull null
+                InstalledApp(info.loadLabel(pm).toString(), pkg)
+            }.distinctBy { it.packageName }.sortedBy { it.label.lowercase() }
+        }.getOrDefault(emptyList())
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Open an app on tap") },
+        text = {
+            if (apps.isEmpty()) {
+                Text("No launchable apps found.", style = MaterialTheme.typography.bodySmall)
+            } else {
+                LazyColumn(Modifier.fillMaxWidth().heightIn(max = 420.dp)) {
+                    items(apps, key = { it.packageName }) { app ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { onPick(app.packageName) }
+                                .padding(horizontal = 4.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val icon = remember(app.packageName) {
+                                runCatching {
+                                    pm.getApplicationIcon(app.packageName).toBitmap(64, 64).asImageBitmap()
+                                }.getOrNull()
+                            }
+                            if (icon != null) {
+                                Image(bitmap = icon, contentDescription = null, modifier = Modifier.size(32.dp))
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                app.label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}

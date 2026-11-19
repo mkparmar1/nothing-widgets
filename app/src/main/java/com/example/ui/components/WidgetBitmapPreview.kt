@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,14 +49,18 @@ fun WidgetBitmapPreview(
 
     // The real proportions of the bitmap being drawn, so the preview matches the home screen.
     val aspect = (spec.widthPx.toFloat() / spec.heightPx.coerceAtLeast(1)).coerceIn(0.5f, 3f)
+    val outline = remember(spec.shape, spec.cornerRadiusDp, spec.density, spec.widthPx, spec.heightPx, spec.customPoints) {
+        val shortSide = minOf(spec.widthPx, spec.heightPx).coerceAtLeast(1)
+        widgetShape(spec.shape, (spec.cornerRadiusDp * spec.density) / shortSide, spec.customPoints)
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(aspect)
-            .clip(RoundedCornerShape(spec.cornerRadiusDp.dp))
+            .clip(outline)
             .background(if (spec.isDark) Color(0xFF000000) else Color(0xFFF2F2F2))
-            .border(1.dp, com.example.ui.theme.DotTheme.colors.surfaceSecondary, RoundedCornerShape(spec.cornerRadiusDp.dp)),
+            .border(1.dp, com.example.ui.theme.DotTheme.colors.surfaceSecondary, outline),
         contentAlignment = Alignment.Center
     ) {
         val currentBitmap = bitmap

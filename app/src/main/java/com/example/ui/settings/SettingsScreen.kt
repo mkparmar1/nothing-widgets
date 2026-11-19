@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,15 +23,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
@@ -54,7 +57,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -71,10 +73,12 @@ import com.example.core.theme.WidgetAccent
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.AccentSelectorRow
 import com.example.ui.components.DotBadge
+import com.example.ui.components.DotBrand
 import com.example.ui.components.DotButton
 import com.example.ui.components.DotButtonStyle
 import com.example.ui.components.DotCard
 import com.example.ui.components.DotLabel
+import com.example.ui.components.DotMark
 import com.example.ui.components.SegmentTabs
 import com.example.ui.components.SettingsRow
 import com.example.ui.components.StatusHero
@@ -99,6 +103,7 @@ private const val SOURCE_URL = "https://github.com/mkparmar1/nothing-widgets"
 
 /** The Settings tab: a short menu, with each group of settings on its own page. */
 private enum class SettingsPage(val title: String, val subtitle: String, val icon: ImageVector) {
+    HELP("Help & guide", "Replay the app tour and quick tips", Icons.AutoMirrored.Filled.HelpOutline),
     APPEARANCE("Appearance", "Themes, Looks and accent colour", Icons.Default.Palette),
     DATA("Weather & connections", "Weather location, Home Assistant, sports feed", Icons.Default.Link),
     PERMISSIONS("Permissions", "What widgets are allowed to read", Icons.Default.Security),
@@ -113,6 +118,7 @@ private enum class SettingsPage(val title: String, val subtitle: String, val ico
 
 @Composable
 fun SettingsScreen(
+    onStartTour: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var openPage by rememberSaveable { mutableStateOf<SettingsPage?>(null) }
@@ -134,6 +140,7 @@ fun SettingsScreen(
         } else {
             SettingsPageHeader(page.title, onBack = { back() })
             when (page) {
+                SettingsPage.HELP -> HelpPage(onStartTour = onStartTour)
                 SettingsPage.APPEARANCE -> AppearancePage(onPreview = { openPage = SettingsPage.PREVIEW })
                 SettingsPage.DATA -> DataPage()
                 SettingsPage.PERMISSIONS -> PermissionsPage()
@@ -191,6 +198,102 @@ private fun SettingsMenu(onOpen: (SettingsPage) -> Unit) {
                     color = colors.divider
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HelpPage(onStartTour: () -> Unit) {
+    val colors = DotTheme.colors
+
+    DotCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(DotShape.button)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.HelpOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(Modifier.width(DotSpacing.md))
+            Column(Modifier.weight(1f)) {
+                Text("Take the app tour", style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
+                Text(
+                    "A quick walkthrough of Home, Explore, Builder and every screen in between.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textSecondary
+                )
+            }
+        }
+        Spacer(Modifier.height(DotSpacing.md))
+        DotButton(
+            text = "Start the app tour",
+            onClick = onStartTour,
+            icon = Icons.Default.PlayArrow,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("help_start_tour")
+        )
+    }
+
+    DotLabel("Quick tips")
+    DotCard(padding = DotSpacing.xs) {
+        HelpTip(
+            icon = Icons.Default.Home,
+            title = "Add a widget",
+            body = "Explore, open a widget, then Add to home screen, or tap + in the nav to build one."
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(start = DotSpacing.xxl),
+            thickness = 0.5.dp,
+            color = colors.divider
+        )
+        HelpTip(
+            icon = Icons.Default.Widgets,
+            title = "Build your own",
+            body = "Start from a template or a blank canvas, then add time, battery, weather and text blocks."
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(start = DotSpacing.xxl),
+            thickness = 0.5.dp,
+            color = colors.divider
+        )
+        HelpTip(
+            icon = Icons.Default.Security,
+            title = "Missing data?",
+            body = "Open Settings, Permissions. Weather, calendar and health are only read when a widget uses them."
+        )
+    }
+}
+
+@Composable
+private fun HelpTip(icon: ImageVector, title: String, body: String) {
+    val colors = DotTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = DotSpacing.md, vertical = DotSpacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(DotSpacing.md),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = colors.textSecondary,
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(20.dp)
+        )
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = colors.textPrimary)
+            Text(body, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
         }
     }
 }
@@ -619,17 +722,11 @@ private fun AboutLogo() {
             .clip(DotShape.large)
             .background(colors.surfaceSecondary)
     ) {
-        val accent = MaterialTheme.colorScheme.primary
-        Canvas(Modifier.size(30.dp)) {
-            val step = size.width / 3f
-            val radius = step * 0.22f
-            for (row in 0 until 3) {
-                for (col in 0 until 3) {
-                    val color = if (row == 1 && col == 1) accent else colors.textPrimary
-                    drawCircle(color, radius, Offset(step * (col + 0.5f), step * (row + 0.5f)))
-                }
-            }
-        }
+        DotMark(
+            modifier = Modifier.size(30.dp),
+            dotColor = colors.textPrimary,
+            accentColor = DotBrand.red
+        )
     }
 }
 

@@ -37,7 +37,9 @@ class RenderKit(val spec: WidgetSpec, val canvas: Canvas) {
             bgMode = spec.bgMode,
             isDark = spec.isDark,
             accentColor = accentColor,
-            bgAlpha = spec.bgAlpha
+            bgAlpha = spec.bgAlpha,
+            shape = spec.shape,
+            customPoints = spec.customPoints
         )
     }
 
