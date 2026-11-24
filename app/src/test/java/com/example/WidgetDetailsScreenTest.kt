@@ -1,6 +1,7 @@
 package com.example
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -11,6 +12,7 @@ import com.example.ui.browse.WidgetDetailsScreen
 import com.example.ui.theme.DotWidgetsTheme
 import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
+import com.example.widgets.styles.StyleSelection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -57,5 +59,22 @@ class WidgetDetailsScreenTest {
 
         compose.onNodeWithTag("details_back").performScrollTo().performClick()
         assertTrue(backed)
+    }
+
+    @Test
+    fun `picking a style selects it and carries it into customize`() {
+        val styled = WidgetRegistry.getById("battery.ring")!!
+        compose.setContent {
+            DotWidgetsTheme(accentOption = AccentOption.RED) {
+                WidgetDetailsScreen(definition = styled, onBack = {}, onCustomize = {})
+            }
+        }
+        compose.onNodeWithTag("details_style_picker").performScrollTo()
+        compose.onNodeWithTag("style_classic").assertIsSelected()
+        compose.onNodeWithTag("style_soft_ring").performClick()
+        compose.onNodeWithTag("style_soft_ring").assertIsSelected()
+        compose.onNodeWithTag("details_customize").performScrollTo().performClick()
+        compose.waitForIdle()
+        assertEquals("soft_ring", StyleSelection.take("battery.ring"))
     }
 }

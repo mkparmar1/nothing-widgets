@@ -522,6 +522,8 @@ fun WidgetCard(
         ) {
             SizeBadge(size = previewSize)
             if (exclusive) DotBadge("EXCLUSIVE", color = colors.textPrimary)
+            val designs = com.example.widgets.styles.StyleCatalog.designCount(definition.id)
+            if (designs > 1) DotBadge("$designs STYLES")
             badges.forEach { DotBadge(it) }
         }
     }

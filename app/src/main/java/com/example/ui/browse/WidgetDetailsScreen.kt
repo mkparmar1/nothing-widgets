@@ -3,12 +3,19 @@ package com.example.ui.browse
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import com.example.core.config.WidgetOptions
+import com.example.widgets.styles.StyleCatalog
+import com.example.widgets.styles.StyleSelection
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -53,6 +60,7 @@ import com.example.ui.components.DotButtonStyle
 import com.example.ui.components.DotCard
 import com.example.ui.components.DotCardStyle
 import com.example.ui.components.DotChip
+import com.example.ui.components.StylePickerRow
 import com.example.ui.components.WidgetBitmapPreview
 import com.example.ui.config.WidgetSetupState
 import com.example.ui.config.pinWidgetToHomeScreen
@@ -87,6 +95,11 @@ fun WidgetDetailsScreen(
     val permissions = remember(definition.id) {
         definition.requiredPermissions.filter { it.isApplicable() }
     }
+
+    // Extra designs of this widget (Classic is always first and the default).
+    val styles = remember(definition.id) { StyleCatalog.stylesFor(definition.id) }
+    var selectedStyle by rememberSaveable(definition.id) { mutableStateOf(StyleCatalog.CLASSIC) }
+    val styleConfig = remember(selectedStyle) { styleConfigJson(selectedStyle) }
 
     BackHandler(onBack = onBack)
 
@@ -138,7 +151,7 @@ fun WidgetDetailsScreen(
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         WidgetBitmapPreview(
                             definition = definition,
-                            spec = previewSpec(context, definition, size, accent),
+                            spec = previewSpec(context, definition, size, accent, styleConfig),
                             modifier = Modifier.width(previewWidth)
                         )
                     }
@@ -182,9 +195,32 @@ fun WidgetDetailsScreen(
             ) {
                 DotBadge(definition.category.title)
                 DotBadge("Dot matrix")
+                if (styles.isNotEmpty()) DotBadge("${styles.size + 1} styles")
                 if (definition.lockSafe) DotBadge("Lock screen")
                 if (definition.requiresNetwork) DotBadge("Live data")
                 if (definition.options.isNotEmpty()) DotBadge("Options")
+            }
+        }
+
+        if (styles.isNotEmpty()) {
+            Column(
+                modifier = Modifier.padding(top = DotSpacing.xl),
+                verticalArrangement = Arrangement.spacedBy(DotSpacing.sm)
+            ) {
+                Text(
+                    "Style",
+                    style = DotType.CardTitle,
+                    color = DotTheme.colors.textPrimary,
+                    modifier = Modifier.padding(horizontal = DotSpacing.lg)
+                )
+                StylePickerRow(
+                    definition = definition,
+                    spec = previewSpec(context, definition, currentSize, accent, styleConfig),
+                    selected = selectedStyle,
+                    contentPadding = PaddingValues(horizontal = DotSpacing.lg),
+                    modifier = Modifier.testTag("details_style_picker"),
+                    onSelect = { selectedStyle = it }
+                )
             }
         }
 
@@ -289,10 +325,12 @@ fun WidgetDetailsScreen(
                 text = "Add to Home Screen",
                 onClick = {
                     scope.launch {
+                        val setup = WidgetSetupState.defaults(definition, prefs, lockedSize = currentSize)
                         pinWidgetToHomeScreen(
                             context,
                             definition,
-                            WidgetSetupState.defaults(definition, prefs, lockedSize = currentSize)
+                            if (selectedStyle == StyleCatalog.CLASSIC) setup
+                            else setup.copy(optionValues = setup.optionValues + (StyleCatalog.KEY to selectedStyle))
                         )
                     }
                 },
@@ -303,7 +341,10 @@ fun WidgetDetailsScreen(
             )
             DotButton(
                 text = "Customize",
-                onClick = { onCustomize(definition) },
+                onClick = {
+                    StyleSelection.set(definition.id, selectedStyle)
+                    onCustomize(definition)
+                },
                 style = DotButtonStyle.Secondary,
                 icon = Icons.Default.Tune,
                 modifier = Modifier
@@ -319,10 +360,11 @@ private fun previewSpec(
     context: android.content.Context,
     definition: WidgetDefinition,
     size: SizeBucket,
-    accent: AccentOption
+    accent: AccentOption,
+    configJson: String = "{}"
 ): WidgetSpec {
     val dims = remember(definition.id, size) { SizeResolver.resolveDimensions(context, size) }
-    return remember(definition.id, size, accent) {
+    return remember(definition.id, size, accent, configJson) {
         WidgetSpec(
             widthPx = dims.widthPx,
             heightPx = dims.heightPx,
@@ -334,7 +376,12 @@ private fun previewSpec(
             isDark = true,
             cornerRadiusDp = 20,
             showLabel = true,
-            tapAction = definition.defaultTap
+            tapAction = definition.defaultTap,
+            configJson = configJson
         )
     }
 }
+
+/** configJson carrying only the chosen style ("{}" for Classic, i.e. exactly the original preview). */
+private fun styleConfigJson(styleId: String): String =
+    if (styleId == StyleCatalog.CLASSIC) "{}" else WidgetOptions.write("{}", mapOf(StyleCatalog.KEY to styleId))

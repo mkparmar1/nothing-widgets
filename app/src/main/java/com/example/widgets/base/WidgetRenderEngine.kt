@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.net.Uri
 import android.os.Bundle
 import android.provider.AlarmClock
@@ -44,6 +45,8 @@ import com.example.widgets.collection.CollectionViews
 import com.example.widgets.collection.CollectionWidgets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Calendar
+import java.util.TimeZone
 
 object WidgetRenderEngine {
 
@@ -121,6 +124,7 @@ object WidgetRenderEngine {
                 DotMatrixRenderer.withUniversal(UniversalOptions.textScale(spec.options), UniversalOptions.cornerDot(spec.options)) {
                     DotMatrixRenderer.withBackgroundImage(photo) {
                         definition.render(context, spec, canvas)
+                        drawClockFormatCaption(canvas, spec, definition.id, photo != null)
                     }
                 }
             }
@@ -132,6 +136,59 @@ object WidgetRenderEngine {
             BitmapCache.put(cacheKey, bitmap)
         }
         bitmap
+    }
+
+    /**
+     * Small caption for clocks whose artwork cannot show a time/date format by itself. Drawn only when
+     * the user explicitly chose that format, and never over a restyled widget, so a default clock
+     * looks exactly as designed.
+     */
+    private fun drawClockFormatCaption(
+        canvas: Canvas,
+        spec: WidgetSpec,
+        widgetTypeId: String,
+        hasPhoto: Boolean
+    ) {
+        if (widgetTypeId !in ClockSupport.CAPTION_WIDGETS) return
+        if (widgetTypeId == "photo.clock.overlay" && !hasPhoto) return
+        if (com.example.widgets.styles.StyleCatalog.selectedStyle(widgetTypeId, spec.configJson) != null) return
+
+        val config = runCatching { org.json.JSONObject(spec.configJson) }.getOrNull() ?: return
+        val choseTime = config.optString(ClockOptions.KEY_TIME).isNotBlank()
+        val choseDate = config.optString(ClockOptions.KEY_DATE).isNotBlank()
+        if (!choseTime && !choseDate) return
+
+        val options = ClockOptions.from(spec.configJson)
+        val zoneId = ClockOptions.timeZone(spec.configJson)
+            ?: spec.options.string(if (widgetTypeId == "travel.clock.city") "city" else "zone", "").takeIf { it.isNotBlank() }
+            ?: "Europe/London".takeIf { widgetTypeId == "travel.clock.city" }
+        val calendar = Calendar.getInstance(
+            if (zoneId.isNullOrBlank()) TimeZone.getDefault() else TimeZone.getTimeZone(zoneId)
+        )
+        // Several cities have no single time, and the bitmap redraws once a minute (no seconds).
+        val showTime = choseTime && widgetTypeId !in ClockSupport.DRAWS_TIME && widgetTypeId != "travel.clock.multi"
+        val timeFormat = if (options.time.is24h) TimeFormat.H24 else TimeFormat.H12
+        val time = if (showTime) {
+            timeFormat.format(calendar) + (timeFormat.amPm(calendar)?.let { " $it" } ?: "")
+        } else null
+        val date = if (choseDate && widgetTypeId !in ClockSupport.DRAWS_DATE) options.date.format(calendar) else null
+        val caption = listOfNotNull(time, date).joinToString("  ·  ")
+        if (caption.isBlank()) return
+
+        val density = spec.density
+        val padding = 10f * density
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = if (spec.isDark) 0xFFBFC3C7.toInt() else 0xFF3A3E42.toInt()
+            textSize = (9.5f * density).coerceAtMost(13f)
+            isFakeBoldText = true
+        }
+        // Right-aligned, clear of the corner dot.
+        val right = spec.widthPx - padding - if (DotMatrixRenderer.hasCornerDot) maxOf(18f * density, 24f) else 0f
+        val maxWidth = spec.widthPx * 0.62f
+        val scaled = paint.measureText(caption) * DotMatrixRenderer.currentTextScale
+        DotMatrixRenderer.drawFittedLabel(
+            canvas, caption, right - scaled.coerceAtMost(maxWidth), padding + 11f * density, maxWidth, paint
+        )
     }
 
     suspend fun buildRemoteViews(
@@ -287,18 +344,21 @@ object WidgetRenderEngine {
         val views = RemoteViews(context.packageName, R.layout.widget_canvas_layout)
         views.setImageViewBitmap(R.id.widget_image_view, bitmap)
         views.setContentDescription(R.id.widget_image_view, definition.describe(context))
-        applyLiveClock(views, definition.id, spec)
-        applyLiveTimer(context, views, definition.id, spec)
-        applyAnimation(context, views, definition.id, spec)
+        // A non-classic style draws its own layout, so classic id-specific overlays and tap regions
+        // (live clock digits, timers, animations, multi-zone taps) are switched off for it.
+        val overlayId = com.example.widgets.styles.StyleCatalog.overlayId(definition.id, spec.configJson)
+        applyLiveClock(views, overlayId, spec)
+        applyLiveTimer(context, views, overlayId, spec)
+        applyAnimation(context, views, overlayId, spec)
 
-        val regions = WidgetTapTargets.regions(context, appWidgetId, definition.id, sizeBucket)
+        val regions = WidgetTapTargets.regions(context, appWidgetId, overlayId, sizeBucket)
         if (regions == null) views.setViewVisibility(R.id.dynamic_regions, View.GONE)
 
         // Multi-region check for 2x2 toggles
         if (regions != null) {
             views.setViewVisibility(R.id.multi_region_container, View.GONE)
             WidgetTapTargets.applyRegions(context, views, regions)
-        } else if (definition.id == "toggle.grid.2x2") {
+        } else if (overlayId == "toggle.grid.2x2") {
             views.setViewVisibility(R.id.multi_region_container, View.VISIBLE)
 
             views.setOnClickPendingIntent(R.id.click_region_tl, makeTogglePendingIntent(context, appWidgetId, "WIFI", 1))

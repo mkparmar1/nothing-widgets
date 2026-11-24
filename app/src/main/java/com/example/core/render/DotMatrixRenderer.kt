@@ -77,6 +77,8 @@ object DotMatrixRenderer {
 
     /** Skin of the widget being drawn, for renderers that draw their own shapes. */
     val currentSkin: Skin get() = skin.get() ?: Skin.DOT
+    /** The universal "text size" multiplier for the widget being drawn (1 = normal). */
+    val currentTextScale: Float get() = textScale.get() ?: 1f
     val hasCornerDot: Boolean get() = cornerDot.get() != false
 
     /** Dot shape of the widget being drawn, so photo filters can match it. */
@@ -112,6 +114,20 @@ object DotMatrixRenderer {
             shapeFill.set(previousFill)
             shapeBorder.set(previousBorder)
             shapeBorderStyle.set(previousBorderStyle)
+        }
+    }
+
+    /** True when the user (or a shape) already chose the card fill, so styles must not replace it. */
+    val hasFillOverride: Boolean get() = shapeFill.get() != null
+
+    /** Draws [block] with [color] as the card fill; everything else keeps its current style. */
+    fun <T> withCardFill(color: Int, block: () -> T): T {
+        val previous = shapeFill.get()
+        shapeFill.set(color)
+        try {
+            return block()
+        } finally {
+            shapeFill.set(previous)
         }
     }
 

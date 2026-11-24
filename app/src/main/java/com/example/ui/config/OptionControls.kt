@@ -71,7 +71,7 @@ fun AdvancedOptionsSection(
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = "${definition.options.size}",
+            text = "${definition.options.count { it.key != com.example.widgets.styles.StyleCatalog.KEY }}",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = accent,
@@ -108,7 +108,8 @@ fun AdvancedOptionsSection(
                     }
                 }
             }
-            definition.options.forEach { option ->
+            // The design has its own visual picker, so it isn't repeated as chips here.
+            definition.options.filter { it.key != com.example.widgets.styles.StyleCatalog.KEY }.forEach { option ->
                 val value = state.optionValues[option.key]
                 when (option) {
                     is WidgetOption.Choice -> OptionChoiceRow(

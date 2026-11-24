@@ -669,7 +669,9 @@ object WidgetRegistry {
         com.example.themes.ThemeWidgets.ALL.forEach(::register)
     }
 
-    private fun register(def: WidgetDefinition) {
+    private fun register(original: WidgetDefinition) {
+        // Widgets with extra designs gain a "Style" option; Classic (the default) renders as before.
+        val def = com.example.widgets.styles.StyleCatalog.decorate(original)
         widgetsList.add(
             if (def.id in LOCK_SAFE_EXTRA && !def.lockSafe) object : WidgetDefinition by def {
                 override val lockSafe = true

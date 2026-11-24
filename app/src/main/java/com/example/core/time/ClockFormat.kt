@@ -103,18 +103,33 @@ object ClockSupport {
     /** Clocks whose live TextClock overlay needs a zone from configJson. */
     val LIVE_ZONE_FROM_CONFIG = setOf("clock.world.custom")
 
-    /** Clocks that only switch between 12- and 24-hour (no live seconds overlay). */
-    private val HOUR_CYCLE_ONLY = setOf("clock.minimal.pill", "clock.flip.style", "clock.stacked.hhmm")
+    /** Clocks that need a caption because their artwork does not show the chosen formats. */
+    val CAPTION_WIDGETS = setOf(
+        "clock.analog.ring", "clock.stacked.hhmm", "clock.seconds.bar", "clock.binary",
+        "clock.flip.style", "clock.text.words", "clock.minimal.pill", "clock.tally.marks",
+        "clock.radial.24", "clock.week.arc", "clock.dual.meridiem", "clock.iso.dots",
+        "clock.moon.time", "clock.hijri", "clock.segment.largewaves",
+        "travel.clock.multi", "travel.clock.city", "photo.clock.overlay"
+    )
 
-    private val DATE_WIDGETS = SECONDS_CAPABLE + setOf("clock.minimal.pill", "clock.flip.style")
+    /** Clocks that already draw the chosen 12/24-hour time, so a caption must not repeat it. */
+    val DRAWS_TIME = setOf("clock.stacked.hhmm", "clock.flip.style", "clock.minimal.pill")
 
-    fun timeFormats(widgetId: String): List<TimeFormat> = when (widgetId) {
-        in SECONDS_CAPABLE -> TimeFormat.entries
-        in HOUR_CYCLE_ONLY -> listOf(TimeFormat.H24, TimeFormat.H12)
-        else -> emptyList()
-    }
+    /** Clocks that already draw the chosen date. */
+    val DRAWS_DATE = setOf("clock.flip.style", "clock.minimal.pill")
 
-    fun showsDate(widgetId: String) = widgetId in DATE_WIDGETS
+    fun isClockLike(widgetId: String) =
+        widgetId.startsWith("clock.") || widgetId.startsWith("travel.clock.") || widgetId == "photo.clock.overlay"
+
+    fun timeFormats(widgetId: String): List<TimeFormat> =
+        when {
+            widgetId in SECONDS_CAPABLE -> TimeFormat.entries
+            // Other clocks redraw once a minute, so seconds would stand still.
+            isClockLike(widgetId) -> TimeFormat.entries.filterNot { it.hasSeconds }
+            else -> emptyList()
+        }
+
+    fun showsDate(widgetId: String) = isClockLike(widgetId)
 
     fun defaultTime(widgetId: String) = if (widgetId == "clock.seconds.live") TimeFormat.H24_SECONDS else TimeFormat.H24
 

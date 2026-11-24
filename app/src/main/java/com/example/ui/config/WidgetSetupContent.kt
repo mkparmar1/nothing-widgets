@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -91,7 +92,9 @@ import com.example.data.db.WidgetInstance
 import com.example.data.photos.BackgroundImageStore
 import com.example.data.prefs.PreferencesManager
 import com.example.ui.components.SegmentTabs
+import com.example.ui.components.StylePickerRow
 import com.example.ui.components.WidgetBitmapPreview
+import com.example.widgets.styles.StyleCatalog
 import com.example.ui.permissions.AppPermission
 import com.example.ui.theme.DotTheme
 import com.example.widgets.base.ShapeGroup
@@ -490,6 +493,20 @@ fun WidgetSetupContent(
                 }
 
                 if (tab == SetupTab.SKIN) {
+                    if (StyleCatalog.stylesFor(definition.id).isNotEmpty()) {
+                        val design = state.optionValues[StyleCatalog.KEY] as? String ?: StyleCatalog.CLASSIC
+                        SetupSection("Style") {
+                            StylePickerRow(
+                                definition = definition,
+                                spec = spec,
+                                selected = design,
+                                contentPadding = PaddingValues(horizontal = PagePadding),
+                                modifier = Modifier.testTag("setup_style_picker"),
+                                onSelect = { update(state.copy(optionValues = state.optionValues + (StyleCatalog.KEY to it))) }
+                            )
+                        }
+                    }
+
                     SetupSection("Skin", trailing = state.skin.label) {
                         SkinCarousel(definition, spec, state.skin, ui) { update(state.copy(skin = it)) }
                     }
