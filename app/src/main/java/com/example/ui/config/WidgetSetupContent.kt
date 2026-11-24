@@ -193,6 +193,14 @@ data class WidgetSetupState(
         return com.example.core.config.WidgetOptions.write(base, optionValues)
     }
 
+    /** A new widget in [styleId], in the theme that design was shown in. The user can change both. */
+    fun withNewStyle(widgetId: String, styleId: String): WidgetSetupState =
+        if (styleId == StyleCatalog.CLASSIC) this
+        else copy(
+            optionValues = optionValues + (StyleCatalog.KEY to styleId),
+            theme = if (StyleCatalog.prefersLight(widgetId, styleId)) ThemeMode.FORCE_LIGHT else theme
+        )
+
     companion object {
         fun defaults(
             definition: WidgetDefinition,

@@ -68,6 +68,8 @@ import com.example.ui.theme.DotTheme
 import com.example.ui.theme.DotType
 import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
+import com.example.widgets.styles.StyleCatalog
+import com.example.widgets.styles.StyleSelection
 import com.example.widgets.base.WidgetSpec
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -202,6 +204,35 @@ fun HomeScreen(
 
         Spacer(Modifier.height(DotSpacing.xl))
         SectionHeader(
+            title = "New designs",
+            subtitle = "${StyleCatalog.allDesigns().size} designs",
+            onSeeAll = onExplore,
+            modifier = Modifier.padding(horizontal = DotSpacing.lg)
+        )
+        Spacer(Modifier.height(DotSpacing.md))
+        val designs = remember {
+            StyleCatalog.allDesigns().mapNotNull { (id, style) -> WidgetRegistry.getById(id)?.let { it to style } }
+        }
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = DotSpacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(DotSpacing.md)
+        ) {
+            items(designs, key = { (def, style) -> "${def.id}/${style.id}" }) { (def, style) ->
+                WidgetCard(
+                    definition = def,
+                    styleId = style.id,
+                    onClick = {
+                        StyleSelection.set(def.id, style.id)
+                        configuring = def
+                    },
+                    modifier = Modifier.width(196.dp),
+                    accent = accent
+                )
+            }
+        }
+
+        Spacer(Modifier.height(DotSpacing.xl))
+        SectionHeader(
             title = "Featured widgets",
             subtitle = "Only in Dot Widgets",
             onSeeAll = onExplore,
@@ -215,7 +246,10 @@ fun HomeScreen(
             items(featured, key = { it.id }) { definition ->
                 WidgetCard(
                     definition = definition,
-                    onClick = { configuring = definition },
+                    onClick = {
+                        StyleSelection.set(definition.id, StyleCatalog.listingStyle(definition.id))
+                        configuring = definition
+                    },
                     modifier = Modifier.width(196.dp),
                     accent = accent,
                     exclusive = definition.id in CatalogueHighlights.EXCLUSIVE

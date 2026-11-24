@@ -47,10 +47,7 @@ fun WidgetConfigSheet(
     val prefs = remember { PreferencesManager.getInstance(context) }
     val initial = remember(definition.id) {
         val picked = com.example.widgets.styles.StyleSelection.take(definition.id)
-        WidgetSetupState.defaults(definition, prefs).let { state ->
-            if (picked == com.example.widgets.styles.StyleCatalog.CLASSIC) state
-            else state.copy(optionValues = state.optionValues + (com.example.widgets.styles.StyleCatalog.KEY to picked))
-        }
+        WidgetSetupState.defaults(definition, prefs).withNewStyle(definition.id, picked)
     }
     val scope = rememberCoroutineScope()
     var lockGuideFor by remember { mutableStateOf<WidgetSetupState?>(null) }

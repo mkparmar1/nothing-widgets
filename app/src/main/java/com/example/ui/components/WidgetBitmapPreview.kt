@@ -22,9 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.data.sensor.CompassRepository
 import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRenderEngine
 import com.example.widgets.base.WidgetSpec
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @Composable
 fun WidgetBitmapPreview(
@@ -44,6 +47,14 @@ fun WidgetBitmapPreview(
             bitmap = WidgetRenderEngine.renderBitmap(context, definition, spec, 0)
         } catch (e: Exception) {
             android.util.Log.e("WidgetBitmapPreview", "Failed to render preview for ${definition.id}", e)
+        }
+        // The sensor only reports while the app is open, so the compass preview follows it live here.
+        if (definition.id == "sensor.compass.heading" && CompassRepository.hasSensor(context)) {
+            while (isActive) {
+                CompassRepository.refresh(context)
+                bitmap = WidgetRenderEngine.renderBitmap(context, definition, spec, 0)
+                delay(250)
+            }
         }
     }
 

@@ -206,7 +206,12 @@ object DeepVariantRenderers {
         kit.dotTextCentered(if (data.isStale) "--" else "${data.windKmh}", kit.height * 0.42f, kit.height * 0.34f, 11f * kit.d,
             accentIndices = setOf(1))
         kit.labelCentered("KM/H", kit.height * 0.73f, kit.textPaint(kit.greyColor, 10f, 13f))
-        val dir = spec.options.string("direction", "N").uppercase()
+        // Live direction; the text option is only a fallback when the service reports none.
+        val dir = when {
+            data.isStale -> "--"
+            data.windFrom != null -> "FROM ${data.windFrom}"
+            else -> spec.options.string("direction", "").uppercase()
+        }
         kit.labelCentered(dir, kit.height - kit.pad - 2f * kit.d, kit.textPaint(kit.accentColor, 12f, 16f))
     }
 
@@ -214,16 +219,14 @@ object DeepVariantRenderers {
         val kit = RenderKit(spec, canvas)
         kit.background()
         val data = WeatherRepository.getWeatherInstant(context)
-        // Open-Meteo helper doesn't expose pressure; derive a plausible sea-level reading from the
-        // forecast so the gauge is still meaningful rather than blank.
-        val hpa = 1013 + (data.temperatureC - 15)
+        val hpa = data.pressureHpa?.takeIf { !data.isStale }
         WeatherRenderers.renderDataHeader(context, kit, data, "PRESSURE", spec.options.boolean("show_weather_alert", false))
-        kit.dotTextCentered("$hpa", kit.height * 0.42f, kit.height * 0.32f, 10f * kit.d,
+        kit.dotTextCentered(hpa?.toString() ?: "--", kit.height * 0.42f, kit.height * 0.32f, 10f * kit.d,
             accentIndices = setOf(3))
         kit.labelCentered("HPA", kit.height * 0.72f, kit.textPaint(kit.greyColor, 10f, 13f))
         val lo = 980
         val hi = 1040
-        val frac = ((hpa - lo).toFloat() / (hi - lo)).coerceIn(0f, 1f)
+        val frac = (((hpa ?: lo) - lo).toFloat() / (hi - lo)).coerceIn(0f, 1f)
         DotMatrixRenderer.drawDotRun(
             canvas = canvas, current = (frac * 20).roundToInt(), max = 20, totalDots = 20,
             startX = kit.pad, startY = kit.height - kit.pad - 5f * kit.d, dotRadius = 2.2f * kit.d,

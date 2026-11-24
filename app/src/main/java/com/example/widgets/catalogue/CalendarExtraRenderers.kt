@@ -205,7 +205,7 @@ object CalendarExtraRenderers {
         val today = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
-        val days = target?.let { TimeUnit.MILLISECONDS.toDays(it.time - today.timeInMillis + 43_200_000L).toInt() }
+        val days = target?.let { Math.floorDiv(it.time - today.timeInMillis + 43_200_000L, 86_400_000L).toInt() }
 
         val (value, caption) = when {
             days == null -> "--" to "SET A DATE IN THE APP"

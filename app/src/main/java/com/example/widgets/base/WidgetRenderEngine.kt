@@ -68,6 +68,7 @@ object WidgetRenderEngine {
         val spec = if (photo != null) spec.copy(isDark = true) else spec
         val isDynamic = definition.id.startsWith("battery.") || 
                         definition.id.startsWith("fun.") || 
+                        definition.id == "sensor.compass.heading" ||
                         definition.id.startsWith("sensor.stopwatch") ||
                         definition.id.startsWith("prod.focus.timer") ||
                         definition.id.startsWith("prod.countdown") ||
@@ -386,6 +387,13 @@ object WidgetRenderEngine {
                 "toggle.datasaver" -> makeTogglePendingIntent(context, appWidgetId, "DATA_SAVER", 7)
                 "toggle.hotspot" -> makeTogglePendingIntent(context, appWidgetId, "HOTSPOT", 8)
                 "toggle.airplane" -> makeTogglePendingIntent(context, appWidgetId, "AIRPLANE", 9)
+                "sensor.compass.heading" -> if (tapAction == TapAction.DEFAULT) {
+                    PendingIntent.getActivity(
+                        context, appWidgetId * 100 + 49,
+                        Intent(context, com.example.ui.compass.CompassActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                } else createTapPendingIntent(context, appWidgetId, tapAction, tapAppPackage)
                 "prod.habit.dots" -> makeActionPendingIntent(context, appWidgetId, "com.aistudio.dotwidgets.ACTION_HABIT_TOGGLE")
                 else -> createTapPendingIntent(context, appWidgetId, tapAction, tapAppPackage)
             }

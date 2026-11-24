@@ -24,7 +24,7 @@ object CalendarStyles {
         "calendar.day.date" to listOf(
             WidgetStyle("bold_date", "Bold Date", StyleFamily.BOLD) { c, s, cv -> renderDateTile(c, s, cv, StyleFamily.BOLD) },
             WidgetStyle("soft_date", "Soft Date", StyleFamily.SOFT) { c, s, cv -> renderDateTile(c, s, cv, StyleFamily.SOFT) },
-            WidgetStyle("dot_date", "Stacked Dot Date", StyleFamily.SPECIAL, render = ::renderStackedDotDate)
+            WidgetStyle("dot_date", "Stacked Dot Date", StyleFamily.SOFT, render = ::renderStackedDotDate)
         ),
         "calendar.minimal.split" to listOf(
             WidgetStyle("soft_split", "Soft Split", StyleFamily.SOFT, render = ::renderSoftSplit)
@@ -229,7 +229,7 @@ object CalendarStyles {
         val today = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
-        return TimeUnit.MILLISECONDS.toDays(target.time - today.timeInMillis + 43_200_000L).toInt()
+        return Math.floorDiv(target.time - today.timeInMillis + 43_200_000L, 86_400_000L).toInt()
     }
 
     private fun drawCountdown(k: StyleKit, name: String, days: Int?) {

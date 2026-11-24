@@ -35,6 +35,12 @@ object CompassRepository {
         return p.getInt("heading", 0)
     }
 
+    /** Stores a heading read elsewhere (the live compass screen). */
+    fun save(context: Context, heading: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putInt("heading", ((heading % 360) + 360) % 360).apply()
+    }
+
     /** Samples the sensor (at most ~1.5 s) and stores the heading. Call before rendering compass widgets. */
     suspend fun refresh(context: Context) {
         val sm = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return

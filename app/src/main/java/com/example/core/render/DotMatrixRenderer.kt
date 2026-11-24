@@ -189,22 +189,34 @@ object DotMatrixRenderer {
         shape(p)
     }
 
-    private val paintOn = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
+    private val paintOnLocal = ThreadLocal.withInitial {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+        }
     }
+    private val paintOn: Paint get() = paintOnLocal.get()!!
 
-    private val paintOff = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
+    private val paintOffLocal = ThreadLocal.withInitial {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+        }
     }
+    private val paintOff: Paint get() = paintOffLocal.get()!!
 
-    private val paintStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 2f
+    private val paintStrokeLocal = ThreadLocal.withInitial {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 2f
+        }
     }
+    private val paintStroke: Paint get() = paintStrokeLocal.get()!!
 
-    private val paintFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
+    private val paintFillLocal = ThreadLocal.withInitial {
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+        }
     }
+    private val paintFill: Paint get() = paintFillLocal.get()!!
 
     /**
      * Draws a line of dot-matrix text using the 5x7 glyph table.

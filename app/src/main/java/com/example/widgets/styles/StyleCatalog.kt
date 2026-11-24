@@ -20,6 +20,7 @@ object StyleCatalog {
         listOf(
             ClockStyles.ALL,
             CalendarStyles.ALL,
+            IndiaStyles.ALL,
             WeatherStyles.ALL,
             BatteryStyles.ALL,
             SystemStyles.ALL
@@ -34,6 +35,20 @@ object StyleCatalog {
 
     /** Every widget id that has extra styles. */
     fun styledWidgetIds(): Set<String> = byWidget.keys
+
+    /** Every new design as (widget id, style), in catalogue order: one list card each. */
+    fun allDesigns(): List<Pair<String, WidgetStyle>> = byWidget.flatMap { (id, styles) -> styles.map { id to it } }
+
+    /** The design shown in widget lists and preselected for a newly added widget; Classic when it has no other. */
+    fun listingStyle(widgetId: String): String = stylesFor(widgetId).firstOrNull()?.id ?: CLASSIC
+
+    /** Soft cards are light-grey designs, so lists and new widgets show them light. */
+    fun prefersLight(widgetId: String, styleId: String): Boolean =
+        stylesFor(widgetId).firstOrNull { it.id == styleId }?.family == StyleFamily.SOFT
+
+    /** configJson carrying only [styleId] ("{}" for Classic). */
+    fun configFor(styleId: String): String =
+        if (styleId == CLASSIC) "{}" else WidgetOptions.write("{}", mapOf(KEY to styleId))
 
     /** Number of designs including Classic, for the browse badge. */
     fun designCount(widgetId: String): Int = stylesFor(widgetId).size + 1

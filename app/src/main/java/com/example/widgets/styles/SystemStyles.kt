@@ -258,21 +258,23 @@ object SystemStyles {
         val r = if (k.isWide) (k.bottom - k.top) * 0.5f else minOf(k.contentW, k.bottom - k.top) * 0.48f
         val x = if (k.isWide) k.left + r else k.cx
         val y = k.cy
+        // The dial turns so N lies toward magnetic north; the fixed arrow is the way the phone faces.
+        val turn = -(heading ?: 0).toFloat()
+        k.canvas.save()
+        k.canvas.rotate(turn, x, y)
         k.ticks(x, y, r, 36, r * 0.06f, r * 0.14f, 9, k.sub, maxOf(1f, r * 0.025f))
+        k.canvas.restore()
         val letter = 7.5f * (r / (40f * k.u)).coerceIn(0.8f, 1.6f)
         listOf("N" to 0f, "E" to 90f, "S" to 180f, "W" to 270f).forEach { (l, deg) ->
-            val a = Math.toRadians(deg - 90.0)
+            val a = Math.toRadians(deg + turn - 90.0)
             val lr = r * 0.66f
             k.text(l, x + lr * Math.cos(a).toFloat(), y + lr * Math.sin(a).toFloat() + letter * k.u * 0.36f, letter, if (l == "N") k.accent else k.ink, Weight.SEMIBOLD, Align.CENTER)
         }
-        k.canvas.save()
-        k.canvas.rotate((heading ?: 0).toFloat(), x, y)
         k.icon(Icons.Filled.Navigation, x, y, r * 0.62f, if (k.bold) k.accent else k.ink)
-        k.canvas.restore()
         if (k.isWide) {
             val tx = x + r + 8f * k.u
-            k.text(heading?.let { "$it°" } ?: "--°", tx, k.cy + 4f * k.u, 28f, k.ink, Weight.SEMIBOLD, maxWidth = k.right - tx)
-            k.text(heading?.let { CompassRepository.cardinal(it) } ?: "Calibrating", tx, k.cy + 17f * k.u, 11f, k.sub, Weight.MEDIUM, maxWidth = k.right - tx)
+            k.text(heading?.let { "$it°" } ?: "--°", tx, k.cy + 1f * k.u, 28f, k.ink, Weight.SEMIBOLD, maxWidth = k.right - tx)
+            k.text(heading?.let { "${CompassRepository.cardinal(it)} · tap for live" } ?: "Tap for live", tx, k.cy + 17f * k.u, 11f, k.sub, Weight.MEDIUM, maxWidth = k.right - tx)
         }
     }
 

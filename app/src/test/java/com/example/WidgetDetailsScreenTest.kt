@@ -70,7 +70,7 @@ class WidgetDetailsScreenTest {
             }
         }
         compose.onNodeWithTag("details_style_picker").performScrollTo()
-        compose.onNodeWithTag("style_classic").assertIsSelected()
+        compose.onNodeWithTag("style_bold_ring").assertIsSelected()
         compose.onNodeWithTag("style_soft_ring").performClick()
         compose.onNodeWithTag("style_soft_ring").assertIsSelected()
         compose.onNodeWithTag("details_customize").performScrollTo().performClick()

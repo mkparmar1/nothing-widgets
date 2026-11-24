@@ -460,13 +460,16 @@ fun WidgetCard(
     modifier: Modifier = Modifier,
     accent: AccentOption = AccentOption.RED,
     exclusive: Boolean = false,
-    badges: List<String> = emptyList()
+    badges: List<String> = emptyList(),
+    /** Show this one design (and its name) instead of the widget's listed design. */
+    styleId: String? = null
 ) {
     val context = LocalContext.current
     val colors = DotTheme.colors
     val previewSize = definition.sizes.first()
     val dims = remember(previewSize) { SizeResolver.resolveDimensions(context, previewSize) }
-    val spec = remember(definition.id, previewSize, accent) {
+    val listing = styleId ?: com.example.widgets.styles.StyleCatalog.listingStyle(definition.id)
+    val spec = remember(definition.id, previewSize, accent, listing) {
         WidgetSpec(
             widthPx = dims.widthPx,
             heightPx = dims.heightPx,
@@ -475,10 +478,11 @@ fun WidgetCard(
             accent = accent,
             bgMode = BackgroundMode.SOLID,
             themeMode = ThemeMode.AUTO,
-            isDark = true,
+            isDark = !com.example.widgets.styles.StyleCatalog.prefersLight(definition.id, listing),
             cornerRadiusDp = 20,
             showLabel = true,
-            tapAction = definition.defaultTap
+            tapAction = definition.defaultTap,
+            configJson = com.example.widgets.styles.StyleCatalog.configFor(listing)
         )
     }
     val source = remember { MutableInteractionSource() }
@@ -509,7 +513,9 @@ fun WidgetCard(
         )
         Spacer(Modifier.height(DotSpacing.xs))
         Text(
-            text = definition.description,
+            text = styleId?.let { id ->
+                com.example.widgets.styles.StyleCatalog.stylesFor(definition.id).firstOrNull { it.id == id }?.label
+            } ?: definition.description,
             style = MaterialTheme.typography.bodySmall,
             color = colors.textSecondary,
             maxLines = 2,
@@ -523,7 +529,7 @@ fun WidgetCard(
             SizeBadge(size = previewSize)
             if (exclusive) DotBadge("EXCLUSIVE", color = colors.textPrimary)
             val designs = com.example.widgets.styles.StyleCatalog.designCount(definition.id)
-            if (designs > 1) DotBadge("$designs STYLES")
+            if (designs > 1 && styleId == null) DotBadge("$designs STYLES")
             badges.forEach { DotBadge(it) }
         }
     }

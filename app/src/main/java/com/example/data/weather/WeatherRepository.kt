@@ -40,8 +40,20 @@ data class WeatherData(
     val hourly: List<HourlyForecast> = emptyList(),
     val isStale: Boolean = false,
     val isOffline: Boolean = false,
-    val fetchedAt: Long = System.currentTimeMillis()
-)
+    val fetchedAt: Long = System.currentTimeMillis(),
+    /** Degrees the wind blows FROM (0 = north, clockwise), or null when not reported. */
+    val windDirectionDeg: Int? = null,
+    /** Sea-level pressure, or null when not reported. */
+    val pressureHpa: Int? = null
+) {
+    /** "NW"-style label of where the wind comes from, or null. */
+    val windFrom: String?
+        get() = windDirectionDeg?.let { COMPASS_8[((((it % 360) + 360) % 360 + 22.5f) / 45f).toInt() % 8] }
+
+    private companion object {
+        val COMPASS_8 = listOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
+    }
+}
 
 data class DailyForecast(
     /** yyyy-MM-dd in the city's local time. */
@@ -300,7 +312,7 @@ object WeatherRepository {
         try {
             val response = httpGet(
                 "https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}" +
-                    "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,uv_index" +
+                    "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,pressure_msl,uv_index" +
                     "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
                     "&hourly=temperature_2m,weather_code,precipitation_probability,is_day" +
                     "&forecast_days=5&timezone=auto"
@@ -361,7 +373,9 @@ object WeatherRepository {
                     daily = days,
                     hourly = hours,
                     isStale = false,
-                    fetchedAt = now
+                    fetchedAt = now,
+                    windDirectionDeg = current.optDouble("wind_direction_10m").takeIf { !it.isNaN() }?.toInt(),
+                    pressureHpa = current.optDouble("pressure_msl").takeIf { !it.isNaN() }?.let { Math.round(it).toInt() }
                 )
                 cache[key] = data
                 return@withContext data

@@ -139,11 +139,12 @@ class WidgetConfigureActivity : ComponentActivity() {
                         lockScreenOnly = lockScreenOnly,
                         onSelect = { selected ->
                             definition = selected
-                            setupState = WidgetSetupState.defaults(
-                                selected,
-                                preferences,
-                                size,
-                                com.example.data.setups.SetupShareRepository.importedConfig(this@WidgetConfigureActivity, selected.id)?.toString()
+                            val imported = com.example.data.setups.SetupShareRepository
+                                .importedConfig(this@WidgetConfigureActivity, selected.id)?.toString()
+                            val fresh = WidgetSetupState.defaults(selected, preferences, size, imported)
+                            // The design shown in the list; an imported setup keeps its own.
+                            setupState = if (imported != null) fresh else fresh.withNewStyle(
+                                selected.id, com.example.widgets.styles.StyleCatalog.listingStyle(selected.id)
                             )
                             saveError = null
                         }
@@ -277,6 +278,7 @@ private fun WidgetDesignPicker(
                 }
                 items(definitions, key = { it.id }) { definition ->
                     val dimensions = remember(size) { SizeResolver.resolveDimensions(context, size) }
+                    val listing = com.example.widgets.styles.StyleCatalog.listingStyle(definition.id)
                     val spec = remember(definition.id, accent, dark, dimensions) {
                         WidgetSpec(
                             widthPx = dimensions.widthPx,
@@ -286,10 +288,11 @@ private fun WidgetDesignPicker(
                             accent = accent,
                             bgMode = preferences.getSavedBgMode(),
                             themeMode = ThemeMode.AUTO,
-                            isDark = dark,
+                            isDark = dark && !com.example.widgets.styles.StyleCatalog.prefersLight(definition.id, listing),
                             cornerRadiusDp = 16,
                             showLabel = true,
-                            tapAction = definition.defaultTap
+                            tapAction = definition.defaultTap,
+                            configJson = com.example.widgets.styles.StyleCatalog.configFor(listing)
                         )
                     }
                     Card(

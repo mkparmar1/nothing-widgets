@@ -13,7 +13,7 @@ object IndiaCalendar {
     data class Festival(val date: String, val name: String, val approximate: Boolean) {
         fun daysAway(today: Calendar = startOfToday()): Int {
             val d = SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date) ?: return -1
-            return TimeUnit.MILLISECONDS.toDays(d.time - today.timeInMillis + 43_200_000L).toInt()
+            return Math.floorDiv(d.time - today.timeInMillis + 43_200_000L, 86_400_000L).toInt()
         }
     }
 

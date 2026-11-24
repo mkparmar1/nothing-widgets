@@ -66,6 +66,8 @@ object DemoData {
             description = "Clear",
             humidityPct = 72,
             windKmh = 11,
+            windDirectionDeg = 270,
+            pressureHpa = 1012,
             highC = 30,
             lowC = 24,
             feelsLikeC = 29,

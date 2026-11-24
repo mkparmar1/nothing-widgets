@@ -182,7 +182,11 @@ class StyleCatalogTest {
 
     @Test
     fun `weather styles never show invented readings without data`() {
-        // No demo snapshot and no network: the repository returns its stale placeholder.
+        // Network off and a place nothing has cached: the repository returns its stale placeholder.
+        com.example.data.weather.WeatherRepository.setNetworkEnabled(context, false)
+        com.example.data.weather.WeatherRepository.setPlace(
+            context, com.example.data.weather.WeatherPlace("Nowhere", 1.23, 4.56, "UTC")
+        )
         val ids = listOf(
             "weather.current.temp", "weather.uv.index", "weather.aqi.dial", "weather.pressure.gauge",
             "weather.wind.compass", "weather.feels.humidity", "weather.hourly.strip"
@@ -221,6 +225,53 @@ class StyleCatalogTest {
         assertEquals(blocks(def, spec(SizeBucket.M, true, "{}")).size, count("{}"))
         assertEquals(count("{}") + 1, count(iso))
         assertEquals(count(styleJson("classic_light")), count(WidgetOptions.write(iso, mapOf(StyleCatalog.KEY to "classic_light"))))
+    }
+
+    @Test
+    fun `new widgets get the listed design while existing configs stay classic`() {
+        val prefs = com.example.data.prefs.PreferencesManager.getInstance(context)
+        val def = WidgetRegistry.getById("weather.uv.index")!!
+        val plain = com.example.ui.config.WidgetSetupState.defaults(def, prefs)
+        assertEquals(StyleCatalog.CLASSIC, plain.optionValues[StyleCatalog.KEY])
+        val fresh = plain.withNewStyle(def.id, StyleCatalog.listingStyle(def.id))
+        assertEquals("soft_gauge", fresh.optionValues[StyleCatalog.KEY])
+        assertEquals(ThemeMode.FORCE_LIGHT, fresh.theme)
+        assertEquals(StyleCatalog.CLASSIC, StyleCatalog.listingStyle("clock.binary"))
+    }
+
+    @Test
+    fun `dark and light widgets drawn at the same time keep their own colours`() {
+        val def = WidgetRegistry.getById("clock.dotdigital.s")!!
+        val bold = spec(SizeBucket.S, false, styleJson("bold_time"))
+        val soft = spec(SizeBucket.S, false, styleJson("soft_time"))
+        fun corner(sp: WidgetSpec) = render(def, sp).getPixel(sp.widthPx / 2, 6)
+        val expected = listOf(corner(bold), corner(soft))
+        val wrong = java.util.concurrent.atomic.AtomicInteger()
+        listOf(0, 1, 0, 1).map { which ->
+            Thread { repeat(300) { if (corner(if (which == 0) bold else soft) != expected[which]) wrong.incrementAndGet() } }
+        }.onEach { it.start() }.forEach { it.join() }
+        assertEquals(0, wrong.get())
+    }
+
+    @Test
+    fun `yesterdays festival is not shown as today`() {
+        val day = java.util.Calendar.getInstance().apply { clear(); set(2026, 10, 25) }
+        val f = com.example.data.india.IndiaCalendar.Festival("2026-11-24", "X", true)
+        assertEquals(-1, f.daysAway(day))
+    }
+
+    @Test
+    fun `wind label follows the reported direction`() {
+        fun from(deg: Int?) = com.example.data.weather.WeatherData("X", 1, 0, "", windDirectionDeg = deg).windFrom
+        assertEquals(listOf("N", "E", "SW", "N", null), listOf(from(5), from(90), from(225), from(350), from(null)))
+    }
+
+    @Test
+    fun `every design has its own list entry with a real widget`() {
+        val designs = StyleCatalog.allDesigns()
+        assertEquals(StyleCatalog.styledWidgetIds().sumOf { StyleCatalog.stylesFor(it).size }, designs.size)
+        assertEquals(designs.size, designs.map { (id, style) -> "$id/${style.id}" }.toSet().size)
+        assertTrue(designs.all { (id, _) -> WidgetRegistry.getById(id) != null })
     }
 
     @Test

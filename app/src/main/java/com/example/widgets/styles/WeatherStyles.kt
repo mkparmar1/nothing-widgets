@@ -337,37 +337,41 @@ object WeatherStyles {
     fun renderPressure(context: Context, spec: WidgetSpec, canvas: Canvas) {
         val k = StyleKit(context, spec, canvas, StyleFamily.SOFT)
         k.card()
-        // The weather source has no pressure; this is the classic gauge's derived value, labelled as such.
         val data = weather(context)
-        val hpa = 1013 + (data.temperatureC - 15)
-        val value = if (data.isStale) "--" else "$hpa"
-        gauge(k, context, data, "Pressure · hPa", value, if (data.isStale) "No data" else "Estimate", if (data.isStale) 0f else (hpa - 980) / 60f)
+        val hpa = data.pressureHpa?.takeIf { !data.isStale }
+        val band = when {
+            hpa == null -> "No data"
+            hpa >= 1022 -> "High"
+            hpa <= 1003 -> "Low"
+            else -> "Normal"
+        }
+        gauge(k, context, data, "Pressure · hPa", hpa?.toString() ?: "--", band, hpa?.let { (it - 980) / 60f } ?: 0f)
     }
-
-    private val DIRECTIONS = listOf("N", "NE", "E", "SE", "S", "SW", "W", "NW")
 
     /** Wind dial with a needle and speed (mockup "Wind speed"). */
     fun renderWind(context: Context, spec: WidgetSpec, canvas: Canvas) {
         val k = StyleKit(context, spec, canvas, StyleFamily.SOFT)
         k.card()
         val data = weather(context)
-        val dir = spec.options.string("direction", "N").uppercase(Locale.US)
-        val deg = (DIRECTIONS.indexOf(dir).takeIf { it >= 0 } ?: 0) * 45f
+        val from = data.windDirectionDeg?.takeIf { !data.isStale }
         titleOrAlert(k, context, "Wind", data)
         val top = k.contentTop
         val r = (k.bottom - top) * 0.48f
         val x = k.left + r + 2f * k.u
         val y = top + r
         k.ticks(x, y, r, 36, r * 0.07f, r * 0.16f, 9, k.sub, maxOf(1f, r * 0.03f))
-        k.canvas.save()
-        k.canvas.rotate(deg, x, y)
-        k.icon(Icons.Filled.Navigation, x, y, r * 1.0f, k.ink)
-        k.canvas.restore()
+        if (from != null) {
+            // The arrow flies with the wind: it points to where the wind is going.
+            k.canvas.save()
+            k.canvas.rotate(from + 180f, x, y)
+            k.icon(Icons.Filled.Navigation, x, y, r * 1.0f, k.ink)
+            k.canvas.restore()
+        }
         val tx = x + r + 8f * k.u
         val unit = if (spec.options.boolean("show_unit", true)) " km/h" else ""
         k.text((if (data.isStale) "--" else "${data.windKmh}") + unit, tx, k.cy + 4f * k.u, 22f, k.ink, Weight.SEMIBOLD, maxWidth = k.right - tx)
         k.icon(Icons.Filled.Air, tx + 4f * k.u, k.cy + 15f * k.u, 8f * k.u, k.sub)
-        k.text("From $dir", tx + 10f * k.u, k.cy + 18f * k.u, 10f, k.sub, Weight.MEDIUM, maxWidth = k.right - tx - 10f * k.u)
+        k.text(if (from != null) "From ${data.windFrom}" else "Direction --", tx + 10f * k.u, k.cy + 18f * k.u, 10f, k.sub, Weight.MEDIUM, maxWidth = k.right - tx - 10f * k.u)
     }
 
     /** "🌅 07:00 · 18:14 🌇" sunrise/sunset card (mockup). */

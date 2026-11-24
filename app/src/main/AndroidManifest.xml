@@ -208,6 +208,11 @@
             android:name=".ui.config.WidgetConfigReceiver"
             android:exported="false" />
 
+        <activity
+            android:name="com.example.ui.compass.CompassActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:label="Compass" />
     </application>
 
 </manifest>

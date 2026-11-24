@@ -45,6 +45,8 @@ fun StylePickerRow(
     selected: String,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
+    /** Show each design in the theme it was made for (details); false keeps the preview's theme (setup). */
+    ownColours: Boolean = false,
     onSelect: (String) -> Unit
 ) {
     val entries = remember(definition.id) {
@@ -60,9 +62,13 @@ fun StylePickerRow(
     ) {
         entries.forEach { (id, label) ->
             val isSelected = id == selected
-            val thumbSpec = remember(spec, id) {
+            val thumbSpec = remember(spec, id, ownColours) {
                 val json = WidgetOptions.write(spec.configJson, mapOf(StyleCatalog.KEY to id))
-                spec.copy(configJson = json, options = WidgetOptions.parse(json))
+                spec.copy(
+                    configJson = json,
+                    options = WidgetOptions.parse(json),
+                    isDark = if (ownColours) !StyleCatalog.prefersLight(definition.id, id) else spec.isDark
+                )
             }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

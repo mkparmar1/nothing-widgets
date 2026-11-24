@@ -6,7 +6,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import com.example.core.config.WidgetOptions
 import com.example.widgets.styles.StyleCatalog
 import com.example.widgets.styles.StyleSelection
 import androidx.compose.foundation.layout.Arrangement
@@ -81,7 +80,9 @@ fun WidgetDetailsScreen(
     definition: WidgetDefinition,
     onBack: () -> Unit,
     onCustomize: (WidgetDefinition) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Design to open on; null opens on the one its list card shows. */
+    initialStyle: String? = null
 ) {
     val context = LocalContext.current
     val prefs = remember { PreferencesManager.getInstance(context) }
@@ -96,10 +97,12 @@ fun WidgetDetailsScreen(
         definition.requiredPermissions.filter { it.isApplicable() }
     }
 
-    // Extra designs of this widget (Classic is always first and the default).
+    // Extra designs of this widget; opens on the one its list card showed.
     val styles = remember(definition.id) { StyleCatalog.stylesFor(definition.id) }
-    var selectedStyle by rememberSaveable(definition.id) { mutableStateOf(StyleCatalog.CLASSIC) }
-    val styleConfig = remember(selectedStyle) { styleConfigJson(selectedStyle) }
+    var selectedStyle by rememberSaveable(definition.id, initialStyle) {
+        mutableStateOf(initialStyle ?: StyleCatalog.listingStyle(definition.id))
+    }
+    val styleConfig = remember(selectedStyle) { StyleCatalog.configFor(selectedStyle) }
 
     BackHandler(onBack = onBack)
 
@@ -151,7 +154,8 @@ fun WidgetDetailsScreen(
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         WidgetBitmapPreview(
                             definition = definition,
-                            spec = previewSpec(context, definition, size, accent, styleConfig),
+                            spec = previewSpec(context, definition, size, accent, styleConfig)
+                                .copy(isDark = !StyleCatalog.prefersLight(definition.id, selectedStyle)),
                             modifier = Modifier.width(previewWidth)
                         )
                     }
@@ -219,6 +223,7 @@ fun WidgetDetailsScreen(
                     selected = selectedStyle,
                     contentPadding = PaddingValues(horizontal = DotSpacing.lg),
                     modifier = Modifier.testTag("details_style_picker"),
+                    ownColours = true,
                     onSelect = { selectedStyle = it }
                 )
             }
@@ -329,8 +334,7 @@ fun WidgetDetailsScreen(
                         pinWidgetToHomeScreen(
                             context,
                             definition,
-                            if (selectedStyle == StyleCatalog.CLASSIC) setup
-                            else setup.copy(optionValues = setup.optionValues + (StyleCatalog.KEY to selectedStyle))
+                            setup.withNewStyle(definition.id, selectedStyle)
                         )
                     }
                 },
@@ -381,7 +385,3 @@ private fun previewSpec(
         )
     }
 }
-
-/** configJson carrying only the chosen style ("{}" for Classic, i.e. exactly the original preview). */
-private fun styleConfigJson(styleId: String): String =
-    if (styleId == StyleCatalog.CLASSIC) "{}" else WidgetOptions.write("{}", mapOf(StyleCatalog.KEY to styleId))

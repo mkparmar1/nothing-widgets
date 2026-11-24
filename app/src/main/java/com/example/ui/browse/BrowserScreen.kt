@@ -63,6 +63,7 @@ import com.example.widgets.base.WidgetDefinition
 import com.example.widgets.base.WidgetRegistry
 import com.example.widgets.base.WidgetRenderEngine
 import com.example.widgets.builder.BuilderRenderer
+import com.example.widgets.styles.StyleCatalog
 import kotlinx.coroutines.launch
 
 private val RECOMMENDED = CatalogueHighlights.RECOMMENDED
@@ -79,7 +80,10 @@ fun BrowserScreen(modifier: Modifier = Modifier) {
 
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(Category.ALL) }
+    // Opens on the new designs, one card per design; any category chip shows the widget catalogue.
+    var showDesigns by remember { mutableStateOf(true) }
     var detailsFor by remember { mutableStateOf<WidgetDefinition?>(null) }
+    var detailsStyle by remember { mutableStateOf<String?>(null) }
     var activeConfigWidget by remember { mutableStateOf<WidgetDefinition?>(null) }
 
     var showBuilder by remember { mutableStateOf(false) }
@@ -113,7 +117,11 @@ fun BrowserScreen(modifier: Modifier = Modifier) {
     if (currentDetails != null) {
         WidgetDetailsScreen(
             definition = currentDetails,
-            onBack = { detailsFor = null },
+            initialStyle = detailsStyle,
+            onBack = {
+                detailsFor = null
+                detailsStyle = null
+            },
             onCustomize = { activeConfigWidget = it }
         )
     } else {
@@ -162,17 +170,26 @@ fun BrowserScreen(modifier: Modifier = Modifier) {
                     .padding(horizontal = DotSpacing.lg, vertical = DotSpacing.xs),
                 horizontalArrangement = Arrangement.spacedBy(DotSpacing.sm)
             ) {
+                DotChip(
+                    label = "New designs",
+                    selected = showDesigns,
+                    onClick = { showDesigns = true },
+                    modifier = Modifier.testTag("category_chip_designs")
+                )
                 Category.entries.forEach { category ->
                     DotChip(
                         label = category.title,
-                        selected = category == selectedCategory,
-                        onClick = { selectedCategory = category },
+                        selected = !showDesigns && category == selectedCategory,
+                        onClick = {
+                            showDesigns = false
+                            selectedCategory = category
+                        },
                         modifier = Modifier.testTag("category_chip_${category.name.lowercase()}")
                     )
                 }
             }
 
-            if (selectedCategory == Category.CUSTOM && searchQuery.isBlank()) {
+            if (!showDesigns && selectedCategory == Category.CUSTOM && searchQuery.isBlank()) {
                 Row(
                     Modifier
                         .fillMaxWidth()
@@ -191,7 +208,41 @@ fun BrowserScreen(modifier: Modifier = Modifier) {
                 }
             }
 
-            if (filteredWidgets.isEmpty()) {
+            if (showDesigns) {
+                val designs = remember(searchQuery) {
+                    val q = searchQuery.trim()
+                    StyleCatalog.allDesigns().mapNotNull { (id, style) -> WidgetRegistry.getById(id)?.let { it to style } }
+                        .filter { (def, style) ->
+                            q.isEmpty() || def.title.contains(q, true) || style.label.contains(q, true) ||
+                                def.category.title.contains(q, true)
+                        }
+                }
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(if (LocalConfiguration.current.screenWidthDp >= 600) 3 else 2),
+                    contentPadding = PaddingValues(
+                        start = DotSpacing.lg, end = DotSpacing.lg, top = DotSpacing.sm, bottom = DotSpacing.xl
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(DotSpacing.md),
+                    verticalArrangement = Arrangement.spacedBy(DotSpacing.md),
+                    modifier = Modifier.fillMaxSize().testTag("designs_grid")
+                ) {
+                    item(key = "designs_count", span = { GridItemSpan(maxLineSpan) }) {
+                        SectionHeader(title = "New designs", action = { DotLabel("${designs.size}") })
+                    }
+                    gridItems(designs, key = { (def, style) -> "${def.id}/${style.id}" }) { (def, style) ->
+                        WidgetCard(
+                            definition = def,
+                            styleId = style.id,
+                            onClick = {
+                                detailsStyle = style.id
+                                detailsFor = def
+                            },
+                            accent = globalAccent,
+                            modifier = Modifier.testTag("design_${def.id}_${style.id}")
+                        )
+                    }
+                }
+            } else if (filteredWidgets.isEmpty()) {
                 EmptyStateView(
                     title = "No Matching Widgets",
                     message = "No widget matched '$searchQuery'. Try searching 'clock', 'weather', or 'battery'.",
